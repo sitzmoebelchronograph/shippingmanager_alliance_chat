@@ -101,7 +101,8 @@ Since Shipping Manager runs in Steam's built-in browser, you need a network traf
 
 **Note**: For HTTPS decryption in Wireshark, you'll need to configure SSLKEYLOGFILE environment variable.
 
-7. Create a `.env` file in the project root:
+
+### Step 4 - Create a `.env` file in the project root:
 ```env
 SHIPPING_MANAGER_COOKIE=your_cookie_value_here
 ```
@@ -112,12 +113,12 @@ SHIPPING_MANAGER_COOKIE=your_cookie_value_here
 
 #### Windows
 ```cmd
-node allychat.js
+node app.js
 ```
 
 #### Linux/macOS
 ```bash
-node allychat.js
+node app.js
 ```
 
 The server will start on `http://localhost:12345`
@@ -131,15 +132,6 @@ The server will start on `http://localhost:12345`
 5. **Mention Members**: Type `@` to see member suggestions
 6. **Multi-line Messages**: Use Shift+Enter for line breaks
 
-## API Endpoints
-
-The tool provides several REST API endpoints:
-
-- `GET /api/chat` - Fetch current chat feed
-- `POST /api/send-message` - Send a message to alliance chat
-- `POST /api/company-name` - Get company name by user ID
-- `GET /api/alliance-members` - List all alliance members
-
 ## WebSocket Features
 
 The tool uses WebSocket for real-time updates:
@@ -150,11 +142,12 @@ The tool uses WebSocket for real-time updates:
 ## File Structure
 ```
 shipping-manager-chat/
-├── allychat.js          # Main server application
-├── index.html           # Web interface (served from root)
+├── public
+|     └── index.html     # Main server application
+├── app.js               # Web interface (served from root)
 ├── .env                 # Session cookie configuration
 ├── package.json         # Node.js dependencies
-└── README.md           # This file
+└── README.md            # This file
 ```
 
 ## Security Features
