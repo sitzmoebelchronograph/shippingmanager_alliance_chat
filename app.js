@@ -1,4 +1,4 @@
-// allychat.js - Shipping Manager Alliance Chat Web App
+// app.js - Shipping Manager Alliance Chat Web App
 // Run: npm install express ws axios dotenv helmet validator express-rate-limit
 // Then: node app.js
 
