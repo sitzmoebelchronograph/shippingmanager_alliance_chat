@@ -16,6 +16,10 @@ This tool provides a standalone web-based chat interface that connects directly 
 - **Character Counter**: Track message length (1000 char limit)
 - **Multi-line Support**: Use Shift+Enter for line breaks
 
+## Screenshot
+
+![Example](./screenshot1.png)
+
 ## Requirements
 
 ### All Platforms
