@@ -41,12 +41,66 @@ npm install express ws axios dotenv helmet validator express-rate-limit
 
 ### Step 3: Configure Session Cookie
 
-1. Open Shipping Manager in your browser
-2. Open Developer Tools (F12)
-3. Go to Network tab
-4. Perform any action in the game
-5. Find a request to `shippingmanager.cc/api`
-6. Copy the `shipping_manager_session` cookie value
+Since Shipping Manager runs in Steam's built-in browser, you need a network traffic interceptor to capture the session cookie.
+
+#### Windows - Using Fiddler
+
+1. Download and install [Fiddler Classic](https://www.telerik.com/download/fiddler)
+2. Start Fiddler
+3. In Fiddler, go to Tools → Options → HTTPS
+4. Enable "Decrypt HTTPS traffic"
+5. Start Shipping Manager in Steam
+6. In Fiddler, look for requests to `shippingmanager.cc`
+7. Click on a request and go to the "Inspectors" tab
+8. In the "Headers" section, find `Cookie: shipping_manager_session=...`
+9. Copy the cookie value (everything after `shipping_manager_session=`)
+
+#### Linux - Using mitmproxy
+
+1. Install mitmproxy:
+   - Debian/Ubuntu: sudo apt install mitmproxy
+   - Arch: sudo pacman -S mitmproxy
+   - Fedora: sudo dnf install mitmproxy
+
+2. Start mitmproxy:
+   - Run: mitmproxy --set confdir=~/.mitmproxy
+
+3. Configure Steam to use proxy:
+   - Steam → Settings → Web Browser
+   - Set HTTP Proxy to `127.0.0.1:8080`
+
+4. Start Shipping Manager in Steam
+5. In mitmproxy, look for requests to `shippingmanager.cc`
+6. Press Enter on the request to view details
+7. Press `q` to go to request headers
+8. Find the `Cookie` header with `shipping_manager_session`
+9. Copy the cookie value
+
+#### macOS - Using Charles Proxy
+
+1. Download and install [Charles Proxy](https://www.charlesproxy.com/download/)
+2. Start Charles
+3. Go to Proxy → SSL Proxying Settings
+4. Add `shippingmanager.cc` to the locations
+5. Install Charles Root Certificate (Help → SSL Proxying → Install Charles Root Certificate)
+6. Start Shipping Manager in Steam
+7. In Charles, find requests to `shippingmanager.cc`
+8. Right-click the request → View Request
+9. Go to the "Headers" tab
+10. Copy the `shipping_manager_session` cookie value
+
+#### Alternative: Using Wireshark (All Platforms)
+
+1. Download and install [Wireshark](https://www.wireshark.org/download.html)
+2. Start capture on your network interface
+3. Filter: http.host == "shippingmanager.cc"
+4. Start Shipping Manager in Steam
+5. Find HTTP requests to the API
+6. Expand "Hypertext Transfer Protocol" → "Cookie"
+7. Copy the `shipping_manager_session` value
+
+**Note**: For HTTPS decryption in Wireshark, you'll need to configure SSLKEYLOGFILE environment variable.
+
 7. Create a `.env` file in the project root:
 ```env
 SHIPPING_MANAGER_COOKIE=your_cookie_value_here
