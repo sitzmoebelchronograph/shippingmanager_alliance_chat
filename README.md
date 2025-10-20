@@ -242,15 +242,5 @@ MIT License - Use at your own risk
 
 ## Disclaimer
 
-This tool is not affiliated with Shipping Manager or Steam. It's a community-created workaround for the known chat bug. Use responsibly and in accordance with the game's terms of service.
-
-## Support
-
-For issues or questions:
-- Check existing issues on GitHub
-- Contact the Shipping Manager community
-- Review the game's official forums
-
----
-
+This tool is not affiliated with Shipping Manager or Steam. It's a community-created workaround for the known chat bug.
 **Important**: This tool will become obsolete once the developers fix the page reload bug. Check for game updates regularly. The tool is intended as a temporary solution to maintain alliance communication.
