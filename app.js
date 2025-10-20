@@ -37,13 +37,13 @@ app.use(express.static('public'));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   message: 'Too many requests, please try again later'
 });
 
 const messageLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 5,
+  max: 30,
   message: 'Too many messages, please wait before sending again'
 });
 
