@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipping Manager - Alliance Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: #252525;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+        }
+
+        .header {
+            background: #2a2a2a;
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            border-bottom: 2px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 12px;
+        }
+
+        .message {
+            background: #2a2a2a;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border-left: 3px solid #60a5fa;
+        }
+
+        .message.feed {
+            border-left-color: #a78bfa;
+            background: #2d2d3d;
+            font-style: italic;
+            color: #c4b5fd;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .company-name {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .timestamp {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .message-text {
+            color: #d1d5db;
+            line-height: 1.4;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .message-text strong {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #6b7280;
+            padding: 40px 20px;
+        }
+
+        .input-section {
+            background: #1f1f1f;
+            padding: 20px;
+            border-radius: 0 0 10px 10px;
+            border-top: 2px solid #404040;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            max-height: 50%;
+            overflow-y: auto;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            position: relative;
+            align-items: flex-end;
+        }
+
+        textarea {
+            flex: 1;
+            background: #2a2a2a;
+            border: 1px solid #404040;
+            color: #e0e0e0;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+            resize: none;
+            min-height: 44px;
+            max-height: 240px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s;
+            align-self: flex-end;
+            height: 44px;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        button:active {
+            background: #1d4ed8;
+        }
+
+        .char-count {
+            font-size: 12px;
+            color: #6b7280;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .char-count.warning {
+            color: #f59e0b;
+        }
+
+        .char-count.error {
+            color: #ef4444;
+        }
+
+        .error-message {
+            background: #7f1d1d;
+            color: #fecaca;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 10px;
+            border: 1px solid #ef4444;
+        }
+
+        .success-message {
+            background: #1f2937;
+            color: #86efac;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 10px;
+            border: 1px solid #4ade80;
+        }
+
+        #memberSuggestions {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: #2a2a2a;
+            border: 1px solid #404040;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1001;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .member-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #404040;
+            transition: background 0.2s;
+            color: #d1d5db;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .member-suggestion:hover {
+            background: #3a3a3a;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #505050;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚓ Shipping Manager - Alliance Chat</h1>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span>Connected</span>
+            </div>
+        </div>
+
+        <div class="chat-feed" id="chatFeed">
+            <div class="empty-message">Loading chat...</div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-wrapper">
+                <textarea 
+                    id="messageInput" 
+                    placeholder="Type your message here... Use @ for mentions (Shift+Enter for new line)"
+                    maxlength="1000"
+                    autocomplete="off"
+                ></textarea>
+                <button onclick="sendMessage()">Send</button>
+            </div>
+            <div class="char-count" id="charCount">0 / 1000 characters</div>
+            <div id="feedback"></div>
+        </div>
+    </div>
+
+    <script>
+        const chatFeed = document.getElementById('chatFeed');
+        const messageInput = document.getElementById('messageInput');
+        const charCount = document.getElementById('charCount');
+        const feedback = document.getElementById('feedback');
+        
+        let allMessages = [];
+        let autoScroll = true;
+        const userCache = new Map();
+        let allianceMembers = [];
+
+        loadMessages();
+
+        messageInput.addEventListener('input', () => {
+            const length = messageInput.value.length;
+            charCount.textContent = `${length} / 1000 characters`;
+            
+            if (length > 1000) {
+                charCount.classList.add('error');
+            } else if (length > 800) {
+                charCount.classList.add('warning');
+            } else {
+                charCount.classList.remove('warning', 'error');
+            }
+
+            handleMentionAutocomplete();
+            
+            // Auto-resize textarea
+            messageInput.style.height = 'auto';
+            const newHeight = Math.min(messageInput.scrollHeight, 240);
+            messageInput.style.height = newHeight + 'px';
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+            // Shift+Enter adds line break naturally
+        });
+
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideMemberSuggestions();
+            }
+        });
+
+        chatFeed.addEventListener('scroll', () => {
+            const isAtBottom = chatFeed.scrollHeight - chatFeed.scrollTop - chatFeed.clientHeight < 50;
+            autoScroll = isAtBottom;
+            
+            if (isAtBottom) {
+                const jumpButton = document.getElementById('jumpToBottomBtn');
+                if (jumpButton) jumpButton.remove();
+            }
+        });
+
+        async function loadMessages() {
+            try {
+                const response = await fetch('/api/chat');
+                if (!response.ok) throw new Error('Failed to load messages');
+                
+                const messages = await response.json();
+                
+                const newMessages = messages.filter(msg => 
+                    !allMessages.some(existing => 
+                        existing.type === msg.type && 
+                        existing.timestamp === msg.timestamp &&
+                        existing.message === msg.message
+                    )
+                );
+                
+                if (newMessages.length > 0) {
+                    allMessages = messages;
+                    displayMessages(newMessages, true);
+                    
+                    if (allMessages.length > 0 && !autoScroll) {
+                        showNewMessageButton();
+                    }
+                } else if (allMessages.length === 0) {
+                    allMessages = messages;
+                    displayMessages(messages, false);
+                }
+                
+            } catch (error) {
+                chatFeed.innerHTML = `<div class="empty-message">Error loading messages: ${error.message}</div>`;
+            }
+        }
+
+        function showNewMessageButton() {
+            if (document.getElementById('jumpToBottomBtn')) return;
+            
+            const btn = document.createElement('button');
+            btn.id = 'jumpToBottomBtn';
+            btn.textContent = '↓ New Messages';
+            btn.style.position = 'fixed';
+            btn.style.bottom = '120px';
+            btn.style.right = '30px';
+            btn.style.zIndex = '1000';
+            btn.style.padding = '10px 20px';
+            btn.style.background = '#ef4444';
+            btn.onclick = () => {
+                chatFeed.scrollTop = chatFeed.scrollHeight;
+                autoScroll = true;
+                btn.remove();
+            };
+            document.body.appendChild(btn);
+        }
+
+        async function parseMessageWithMentions(text) {
+            let result = text;
+            const mentionRegex = /\[(\d+)\]/g;
+            const matches = [...text.matchAll(mentionRegex)];
+            
+            for (const match of matches) {
+                const userId = parseInt(match[1]);
+                try {
+                    const companyName = await getCompanyNameCached(userId);
+                    result = result.replace(`[${userId}]`, `<strong>@${escapeHtml(companyName)}</strong>`);
+                } catch (e) {
+                    // Leave as is if can't resolve
+                }
+            }
+            
+            return result;
+        }
+
+        async function getCompanyNameCached(userId) {
+            if (userCache.has(userId)) {
+                return userCache.get(userId);
+            }
+            
+            try {
+                const response = await fetch('/api/company-name', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                
+                if (!response.ok) throw new Error('Failed to get company name');
+                const data = await response.json();
+                const name = data.company_name;
+                userCache.set(userId, name);
+                return name;
+            } catch {
+                throw new Error('Could not resolve user ID');
+            }
+        }
+
+        async function displayMessages(messagesToDisplay, isNewOnly) {
+            if (!messagesToDisplay || messagesToDisplay.length === 0) {
+                if (allMessages.length === 0) {
+                    chatFeed.innerHTML = '<div class="empty-message">No messages yet</div>';
+                }
+                return;
+            }
+
+            const messageHtmlPromises = messagesToDisplay.map(async msg => {
+                if (msg.type === 'chat') {
+                    const parsedMessage = await parseMessageWithMentions(msg.message);
+                    return `
+                        <div class="message">
+                            <div class="message-header">
+                                <span class="company-name">${escapeHtml(msg.company)}</span>
+                                <span class="timestamp">${msg.timestamp}</span>
+                            </div>
+                            <div class="message-text">${parsedMessage}</div>
+                        </div>
+                    `;
+                } else if (msg.type === 'feed') {
+                    return `
+                        <div class="message feed">
+                            <div class="message-header">
+                                <span>SYSTEM: ${msg.feedType}</span>
+                                <span class="timestamp">${msg.timestamp}</span>
+                            </div>
+                            <div class="message-text">${escapeHtml(msg.company)}</div>
+                        </div>
+                    `;
+                }
+            });
+
+            const messageHtmls = await Promise.all(messageHtmlPromises);
+            
+            if (isNewOnly && allMessages.length > messagesToDisplay.length) {
+                messagesToDisplay.forEach((_, i) => {
+                    const div = document.createElement('div');
+                    div.innerHTML = messageHtmls[i];
+                    chatFeed.appendChild(div.firstChild);
+                });
+            } else {
+                chatFeed.innerHTML = messageHtmls.join('');
+            }
+
+            if (autoScroll) {
+                chatFeed.scrollTop = chatFeed.scrollHeight;
+            }
+        }
+
+        async function handleMentionAutocomplete() {
+            const text = messageInput.value;
+            const lastAtIndex = text.lastIndexOf('@');
+            
+            if (lastAtIndex === -1) {
+                hideMemberSuggestions();
+                return;
+            }
+            
+            const afterAt = text.substring(lastAtIndex + 1);
+            
+            if (afterAt.includes(' ') || afterAt.includes('\n')) {
+                hideMemberSuggestions();
+                return;
+            }
+            
+            await showMemberSuggestions(afterAt, lastAtIndex);
+        }
+
+        async function fetchAllianceMembers() {
+            try {
+                const response = await fetch('/api/alliance-members');
+                if (!response.ok) throw new Error('Failed to fetch members');
+                allianceMembers = await response.json();
+            } catch (error) {
+                console.error('Failed to fetch alliance members:', error);
+            }
+        }
+
+        async function showMemberSuggestions(query, atIndex) {
+            if (allianceMembers.length === 0) {
+                await fetchAllianceMembers();
+            }
+
+            const filtered = allianceMembers.filter(member =>
+                member.company_name.toLowerCase().includes(query.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                hideMemberSuggestions();
+                return;
+            }
+
+            let suggestionBox = document.getElementById('memberSuggestions');
+            if (!suggestionBox) {
+                suggestionBox = document.createElement('div');
+                suggestionBox.id = 'memberSuggestions';
+                document.querySelector('.input-wrapper').appendChild(suggestionBox);
+            }
+
+            suggestionBox.innerHTML = filtered.slice(0, 20).map(member => `
+                <div class="member-suggestion" data-user-id="${member.user_id}" data-company="${escapeHtml(member.company_name)}">
+                    ${escapeHtml(member.company_name)}
+                </div>
+            `).join('');
+
+            suggestionBox.querySelectorAll('.member-suggestion').forEach(item => {
+                item.addEventListener('click', () => {
+                    insertMention(item.dataset.userId, item.dataset.company, atIndex);
+                    hideMemberSuggestions();
+                });
+            });
+        }
+
+        function hideMemberSuggestions() {
+            const suggestionBox = document.getElementById('memberSuggestions');
+            if (suggestionBox) {
+                suggestionBox.remove();
+            }
+        }
+
+        function insertMention(userId, companyName, atIndex) {
+            const text = messageInput.value;
+            const beforeAt = text.substring(0, atIndex);
+            const afterTypedNameIndex = text.lastIndexOf('@') + 1 + text.substring(text.lastIndexOf('@') + 1).length;
+            
+            const newText = beforeAt + `[${userId}] ` + text.substring(afterTypedNameIndex);
+            messageInput.value = newText;
+            
+            messageInput.dispatchEvent(new Event('input'));
+            messageInput.focus();
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                showFeedback('Message cannot be empty', 'error');
+                return;
+            }
+
+            if (message.length > 1000) {
+                showFeedback('Message too long', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/send-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                charCount.textContent = '0 / 1000 characters';
+                showFeedback('Message sent!', 'success');
+                autoScroll = true;
+
+                setTimeout(loadMessages, 500);
+            } catch (error) {
+                showFeedback(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showFeedback(message, type) {
+            feedback.innerHTML = `<div class="${type}-message">${message}</div>`;
+            setTimeout(() => {
+                feedback.innerHTML = '';
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        setInterval(loadMessages, 25000);
+
+        fetchAllianceMembers();
+
+        try {
+            const ws = new WebSocket(`ws://${window.location.host}`);
+            ws.onmessage = (event) => {
+                const { type, data } = JSON.parse(event.data);
+                if (type === 'chat_update' || type === 'message_sent') {
+                    loadMessages();
+                }
+            };
+        } catch (e) {
+            console.log('WebSocket not available');
+        }
+    </script>
+</body>
+</html>
