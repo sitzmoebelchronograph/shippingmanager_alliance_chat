@@ -26,7 +26,7 @@ This tool provides a standalone web-based chat interface that connects directly 
 - Node.js 14.0 or higher
 - npm (Node Package Manager)
 - Modern web browser
-- Active Shipping Manager account with alliance membership
+- [Active Shipping Manager account with alliance membership on Steam](https://store.steampowered.com/app/2445660/Shipping_Manager)
 
 ## Installation
 
