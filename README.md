@@ -207,14 +207,53 @@ Access settings via the ⚙️ button in the header:
 
 ***
 
+## Certificate Authority (CA) Installation
+
+The application automatically generates a Certificate Authority (CA) and signs the server certificate with it. This eliminates browser security warnings once the CA is installed.
+
+### Automatic Installation (Windows)
+
+On first startup, the application will:
+1. Generate a new CA certificate (valid for 10 years)
+2. Display a Windows UAC dialog requesting administrator privileges
+3. Install the CA certificate into Windows Trust Store (Root Certification Authorities)
+4. Generate a server certificate signed by the CA
+
+**After installing the CA certificate, all browsers (Chrome, Edge, Firefox) will trust the HTTPS connection without warnings.**
+
+### Manual Installation (if automatic installation fails)
+
+If the UAC dialog is cancelled or fails:
+1. Open Command Prompt as Administrator (Right-click → "Run as Administrator")
+2. Run: `certutil -addstore -f "Root" "C:\path\to\project\ca-cert.pem"`
+
+### Removing the CA Certificate
+
+To remove the CA certificate later:
+1. Open Command Prompt as Administrator
+2. Run: `certutil -delstore Root "Shipping Manager Chat CA"`
+
+### macOS Installation
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ca-cert.pem
+```
+
+### Linux Installation
+```bash
+sudo cp ca-cert.pem /usr/local/share/ca-certificates/shipping-manager-chat-ca.crt
+sudo update-ca-certificates
+```
+
+***
+
 ## Network Access
 
-The application uses HTTPS with self-signed certificates that include all your local network IP addresses. This allows you to access the application from any device on your local network:
+The application uses HTTPS with CA-signed certificates that include all your local network IP addresses. This allows you to access the application from any device on your local network:
 
-1. Start the server with `node run.js`
+1. Start the server with `node run.js` and install the CA certificate (one-time setup)
 2. Note the network URLs displayed in the console (e.g., `https://192.168.1.100:12345`)
 3. On another device, navigate to that URL
-4. Accept the self-signed certificate warning
+4. **No certificate warnings** after CA installation!
 5. The app is now accessible across your local network
 
 ***
