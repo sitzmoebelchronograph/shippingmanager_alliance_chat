@@ -219,25 +219,6 @@ The application uses HTTPS with self-signed certificates that include all your l
 
 ***
 
-## Demo Mode
-
-A fully functional demo is available at `/example.html` with dummy data. Perfect for:
-- Testing features without API calls
-- Creating screenshots and videos
-- Demonstrating the tool to others
-
-**Demo Recording:**
-Generate a demo video and GIF automatically:
-```bash
-python record-demo.py
-```
-
-This creates:
-- `demo_video.mp4` - Full quality video at 5 FPS
-- `demo.gif` - Optimized GIF at 50% resolution
-
-***
-
 ## Security Notice
 
 **Your Session Cookie is extracted automatically and dynamically!** The manual step of saving the cookie in a `.env` file is no longer required, significantly **improving local security** by preventing the sensitive value from being permanently stored in a file.
