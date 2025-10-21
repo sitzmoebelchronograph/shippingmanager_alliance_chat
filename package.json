@@ -1,4 +1,14 @@
 {
+  "name": "shipping-manager-messenger",
+  "version": "0.0.3",
+  "description": "Standalone web interface for Shipping Manager chat and game management",
+  "main": "app.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "node run.js"
+  },
   "dependencies": {
     "axios": "^1.12.2",
     "cors": "^2.8.5",
@@ -7,6 +17,7 @@
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
     "request": "^2.88.2",
+    "selfsigned": "^3.0.1",
     "validator": "^13.15.15",
     "ws": "^8.18.3"
   }

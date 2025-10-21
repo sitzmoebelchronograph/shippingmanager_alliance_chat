@@ -28,6 +28,26 @@ const userCache = new Map();
 let allPrivateChats = [];
 let userChatsForSelection = [];
 
+// Settings state
+let settings = {
+  fuelThreshold: 400,
+  co2Threshold: 7,
+  maintenanceThreshold: 10 // 10% or 20%
+};
+
+// Load settings from localStorage
+function loadSettings() {
+  const saved = localStorage.getItem('shippingManagerSettings');
+  if (saved) {
+    settings = { ...settings, ...JSON.parse(saved) };
+  }
+}
+
+// Save settings to localStorage
+function saveSettings() {
+  localStorage.setItem('shippingManagerSettings', JSON.stringify(settings));
+}
+
 // --- Utility Functions ---
 
 function escapeHtml(text) {
@@ -43,15 +63,107 @@ function escapeHtml(text) {
 
 function showFeedback(message, type) {
   const globalFeedback = document.getElementById('globalFeedback');
-  globalFeedback.innerHTML = `<div class="global-feedback-message ${type}">${message}</div>`;
-  globalFeedback.classList.add('show');
 
-  setTimeout(() => {
-    globalFeedback.classList.remove('show');
+  // Check if a price alert is currently active
+  const hasPriceAlert = globalFeedback.querySelector('#priceAlertMessage');
+
+  if (hasPriceAlert) {
+    // If price alert is active, show feedback below it temporarily
+    const feedbackDiv = document.createElement('div');
+    feedbackDiv.className = `global-feedback-message ${type}`;
+    feedbackDiv.innerHTML = message;
+    feedbackDiv.style.marginTop = '10px';
+    globalFeedback.appendChild(feedbackDiv);
+
     setTimeout(() => {
-      globalFeedback.innerHTML = '';
-    }, 300);
-  }, 6000);
+      if (feedbackDiv.parentNode) {
+        feedbackDiv.remove();
+      }
+    }, 6000);
+  } else {
+    // Normal feedback behavior
+    globalFeedback.innerHTML = `<div class="global-feedback-message ${type}">${message}</div>`;
+    globalFeedback.classList.add('show');
+
+    setTimeout(() => {
+      globalFeedback.classList.remove('show');
+      setTimeout(() => {
+        globalFeedback.innerHTML = '';
+      }, 300);
+    }, 6000);
+  }
+}
+
+// Price alert with 29-minute timeout and "Got it" button
+let priceAlertTimeout = null;
+
+function showPriceAlert(message, type = 'warning') {
+  const globalFeedback = document.getElementById('globalFeedback');
+
+  // Clear any existing alert timeout
+  if (priceAlertTimeout) {
+    clearTimeout(priceAlertTimeout);
+  }
+
+  globalFeedback.innerHTML = `
+    <div class="global-feedback-message ${type}" id="priceAlertMessage" style="
+      transform: scale(0) rotate(0deg);
+      opacity: 0;
+    ">
+      ${message}
+      <button
+        id="dismissPriceAlertBtn"
+        style="margin-left: 15px; padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; cursor: pointer; font-weight: 600;"
+      >
+        Got it
+      </button>
+    </div>
+  `;
+
+  // Show container
+  globalFeedback.style.display = 'block';
+
+  // Force reflow to ensure initial state is applied
+  const messageEl = document.getElementById('priceAlertMessage');
+  messageEl.offsetHeight;
+
+  // Trigger animation with Web Animations API
+  messageEl.animate([
+    { transform: 'scale(0) rotate(0deg)', opacity: 0 },
+    { transform: 'scale(0.5) rotate(180deg)', opacity: 1, offset: 0.6 },
+    { transform: 'scale(1) rotate(360deg)', opacity: 1 }
+  ], {
+    duration: 800,
+    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    fill: 'forwards'
+  });
+
+  // Add click event to dismiss button
+  const dismissBtn = document.getElementById('dismissPriceAlertBtn');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent event bubbling
+      dismissPriceAlert();
+    });
+  }
+
+  // Auto-dismiss after 29 minutes (1,740,000 ms)
+  priceAlertTimeout = setTimeout(() => {
+    globalFeedback.style.display = 'none';
+    globalFeedback.innerHTML = '';
+  }, 1740000);
+}
+
+function dismissPriceAlert() {
+  const globalFeedback = document.getElementById('globalFeedback');
+
+  if (priceAlertTimeout) {
+    clearTimeout(priceAlertTimeout);
+    priceAlertTimeout = null;
+  }
+
+  globalFeedback.style.display = 'none';
+  globalFeedback.innerHTML = '';
 }
 
 function showConfirmDialog(options) {
@@ -674,6 +786,138 @@ function closeContactList() {
   document.getElementById('contactListOverlay').style.display = 'none';
 }
 
+// --- Settings ---
+
+function showSettings() {
+  // Load current settings into inputs
+  document.getElementById('fuelThreshold').value = settings.fuelThreshold;
+  document.getElementById('co2Threshold').value = settings.co2Threshold;
+  document.getElementById('maintenanceThreshold').value = settings.maintenanceThreshold;
+  document.getElementById('settingsOverlay').style.display = 'flex';
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').style.display = 'none';
+}
+
+async function testBrowserNotification() {
+  const hasPermission = await requestNotificationPermission();
+
+  if (!hasPermission) {
+    showFeedback('Please enable notifications first!', 'error');
+    return;
+  }
+
+  try {
+    // Show green feedback
+    showFeedback('Test notification sent!', 'success');
+
+    // Show browser notification
+    const notification = new Notification('🔔 Test Price Alert', {
+      body: `Test Alert!\n\nFuel threshold: $${settings.fuelThreshold}/ton\nCO2 threshold: $${settings.co2Threshold}/ton`,
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⚓</text></svg>",
+      tag: 'test-alert',
+      silent: false
+    });
+
+    notification.onclick = function() {
+      window.focus();
+      notification.close();
+    };
+
+    setTimeout(() => notification.close(), 5000);
+
+    // Show price alert on page with spin animation
+    showPriceAlert(`⚠️ Test Alert<br><br>⛽ Fuel threshold: <strong>$${settings.fuelThreshold}/ton</strong><br>💨 CO2 threshold: <strong>$${settings.co2Threshold}/ton</strong>`, 'warning');
+  } catch (error) {
+    showFeedback('Failed to send notification', 'error');
+    console.error('[Test Alert] Notification error:', error);
+  }
+}
+
+// Track if we already alerted for current prices
+let lastFuelAlertPrice = null;
+let lastCO2AlertPrice = null;
+
+// Check prices and trigger alerts if below threshold
+async function checkPriceAlerts() {
+  try {
+    const response = await fetch('/api/bunker/get-prices');
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    // Get current price based on UTC time (same logic as updateBunkerStatus)
+    const now = new Date();
+    const utcHours = now.getUTCHours();
+    const utcMinutes = now.getUTCMinutes();
+    const currentTimeSlot = `${String(utcHours).padStart(2, '0')}:${utcMinutes < 30 ? '00' : '30'}`;
+
+    const currentPriceData = data.data.prices.find(p => p.time === currentTimeSlot);
+
+    if (!currentPriceData) return; // No price data available for current time
+
+    const currentFuelPrice = currentPriceData.fuel_price;
+    const currentCO2Price = currentPriceData.co2_price;
+
+    const hasPermission = Notification.permission === "granted";
+
+    if (currentFuelPrice <= settings.fuelThreshold && lastFuelAlertPrice !== currentFuelPrice) {
+      lastFuelAlertPrice = currentFuelPrice;
+
+      if (hasPermission) {
+        const notification = new Notification('⛽ Fuel Price Alert!', {
+          body: `Fuel price dropped to $${currentFuelPrice}/ton (Your threshold: $${settings.fuelThreshold}/ton)`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
+          tag: 'fuel-alert',
+          silent: false
+        });
+
+        notification.onclick = function() {
+          window.focus();
+          notification.close();
+        };
+
+        setTimeout(() => notification.close(), 5000);
+      }
+
+      showPriceAlert(`⛽ Fuel Price Alert!<br><br>Current price: <strong>$${currentFuelPrice}/ton</strong><br>Your threshold: $${settings.fuelThreshold}/ton`, 'warning');
+    }
+
+    // Check CO2 price
+    if (currentCO2Price <= settings.co2Threshold && lastCO2AlertPrice !== currentCO2Price) {
+      lastCO2AlertPrice = currentCO2Price;
+
+      if (hasPermission) {
+        const notification = new Notification('💨 CO2 Price Alert!', {
+          body: `CO2 price dropped to $${currentCO2Price}/ton (Your threshold: $${settings.co2Threshold}/ton)`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
+          tag: 'co2-alert',
+          silent: false
+        });
+
+        notification.onclick = function() {
+          window.focus();
+          notification.close();
+        };
+
+        setTimeout(() => notification.close(), 5000);
+      }
+
+      showPriceAlert(`💨 CO2 Price Alert!<br><br>Current price: <strong>$${currentCO2Price}/ton</strong><br>Your threshold: $${settings.co2Threshold}/ton`, 'warning');
+    }
+
+    if (currentFuelPrice > settings.fuelThreshold) {
+      lastFuelAlertPrice = null;
+    }
+    if (currentCO2Price > settings.co2Threshold) {
+      lastCO2AlertPrice = null;
+    }
+  } catch (error) {
+    console.error('Error checking price alerts:', error);
+  }
+}
+
 // --- All Chats Overview ---
 
 async function showAllChats() {
@@ -770,11 +1014,8 @@ let currentCash = 0;
 let fuelPrice = 0;
 let co2Price = 0;
 
-// Price alert tracking
-let lastFuelAlertPrice = null;
-let lastCO2AlertPrice = null;
-const FUEL_ALERT_THRESHOLD = 400;
-const CO2_ALERT_THRESHOLD = 7;
+// Old threshold constants - now using settings object instead
+// (Alert tracking variables moved to top of file near settings)
 
 // Debounced bunker status update
 function debouncedUpdateBunkerStatus(delay = 800) {
@@ -826,8 +1067,8 @@ async function updateBunkerStatus() {
     // Cash display
     cashDisplay.textContent = `$${formatNumber(currentCash)}`;
 
-    // Price displays with color coding
-    if (fuelPrice <= FUEL_ALERT_THRESHOLD) {
+    // Price displays with color coding (using settings thresholds)
+    if (fuelPrice <= settings.fuelThreshold) {
       fuelPriceDisplay.textContent = `$${formatNumber(fuelPrice)}/t`;
       fuelPriceDisplay.style.color = '#4ade80'; // Green
       fuelPriceDisplay.style.fontWeight = '700';
@@ -837,7 +1078,7 @@ async function updateBunkerStatus() {
       fuelPriceDisplay.style.fontWeight = '500';
     }
 
-    if (co2Price <= CO2_ALERT_THRESHOLD) {
+    if (co2Price <= settings.co2Threshold) {
       co2PriceDisplay.textContent = `$${formatNumber(co2Price)}/t`;
       co2PriceDisplay.style.color = '#4ade80'; // Green
       co2PriceDisplay.style.fontWeight = '700';
@@ -856,79 +1097,9 @@ async function updateBunkerStatus() {
     document.getElementById('fuelBtn').title = `Buy ${formatNumber(fuelNeeded)}t fuel for $${formatNumber(fuelCost)} (Price: $${fuelPrice}/t)`;
     document.getElementById('co2Btn').title = `Buy ${formatNumber(co2Needed)}t CO2 for $${formatNumber(co2Cost)} (Price: $${co2Price}/t)`;
 
-    // Check for price alerts
-    checkPriceAlerts();
-
   } catch (error) {
     console.error('Error updating bunker status:', error);
   }
-}
-
-function checkPriceAlerts() {
-  // Check fuel price alert
-  if (fuelPrice <= FUEL_ALERT_THRESHOLD) {
-    // Show alert if this is the first time or if price dropped further
-    if (lastFuelAlertPrice === null || fuelPrice < lastFuelAlertPrice) {
-      lastFuelAlertPrice = fuelPrice;
-      showPriceAlert('⛽ Low Fuel Price Alert!', `Fuel price is now $${fuelPrice}/t - Great time to buy!`);
-      showNotification('⛽ Low Fuel Price Alert!', `Fuel price dropped to $${fuelPrice}/t`);
-    }
-  } else {
-    lastFuelAlertPrice = null; // Reset when price goes above threshold
-  }
-
-  // Check CO2 price alert
-  if (co2Price <= CO2_ALERT_THRESHOLD) {
-    // Show alert if this is the first time or if price dropped further
-    if (lastCO2AlertPrice === null || co2Price < lastCO2AlertPrice) {
-      lastCO2AlertPrice = co2Price;
-      showPriceAlert('💨 Low CO2 Price Alert!', `CO2 price is now $${co2Price}/t - Great time to buy!`);
-      showNotification('💨 Low CO2 Price Alert!', `CO2 price dropped to $${co2Price}/t`);
-    }
-  } else {
-    lastCO2AlertPrice = null; // Reset when price goes above threshold
-  }
-}
-
-function showPriceAlert(title, message) {
-  const overlay = document.createElement('div');
-  overlay.className = 'confirm-dialog-overlay';
-  overlay.style.zIndex = '5000';
-
-  const dialog = document.createElement('div');
-  dialog.className = 'confirm-dialog';
-  dialog.style.animation = 'slideDown 0.3s ease-out';
-
-  dialog.innerHTML = `
-    <div class="confirm-dialog-header" style="background: #065f46; border-bottom: 2px solid #4ade80;">
-      <h3 style="color: #86efac;">${escapeHtml(title)}</h3>
-    </div>
-    <div class="confirm-dialog-body">
-      <p style="font-size: 16px; color: #d1d5db;">${escapeHtml(message)}</p>
-    </div>
-    <div class="confirm-dialog-footer">
-      <button class="confirm-dialog-btn confirm" data-action="close">Got it!</button>
-    </div>
-  `;
-
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
-
-  const handleClick = (e) => {
-    if (e.target.dataset.action === 'close' || e.target === overlay) {
-      document.body.removeChild(overlay);
-    }
-  };
-
-  overlay.addEventListener('click', handleClick);
-  dialog.addEventListener('click', handleClick);
-
-  // Auto-close after 10 seconds
-  setTimeout(() => {
-    if (document.body.contains(overlay)) {
-      document.body.removeChild(overlay);
-    }
-  }, 10000);
 }
 
 function formatNumber(num) {
@@ -1123,15 +1294,158 @@ async function departAllVessels() {
     } else if (vesselsDeparted < vesselsInHarbor) {
       // Only some vessels departed - not enough fuel
       const vesselsRemaining = vesselsInHarbor - vesselsDeparted;
-      showFeedback(`Only ${vesselsDeparted} of ${vesselsInHarbor} vessels departed! ${vesselsRemaining} remaining. ⛽ ${formatNumber(fuelUsed)}t fuel | 💨 ${formatNumber(co2Emitted)}t CO2 | 💰 $${formatNumber(netIncome)} earned (Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})`, 'error');
+      showFeedback(`<strong>Only ${vesselsDeparted} of ${vesselsInHarbor} vessels departed!</strong><br><br>${vesselsRemaining} vessels remaining in harbor<br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'error');
     } else {
       // All vessels departed successfully
-      showFeedback(`All ${vesselsDeparted} vessels departed! ⛽ ${formatNumber(fuelUsed)}t fuel | 💨 ${formatNumber(co2Emitted)}t CO2 | 💰 $${formatNumber(netIncome)} earned (Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})`, 'success');
+      showFeedback(`<strong>All ${vesselsDeparted} vessels departed!</strong><br><br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'success');
     }
 
   } catch (error) {
     showFeedback(`Error: ${error.message}`, 'error');
     departBtn.disabled = false;
+  }
+}
+
+// --- Vessel Maintenance Functions ---
+
+let updateRepairTimeout = null;
+
+// Debounced repair count update
+function debouncedUpdateRepairCount(delay = 800) {
+  clearTimeout(updateRepairTimeout);
+  updateRepairTimeout = setTimeout(() => updateRepairCount(), delay);
+}
+
+async function updateRepairCount() {
+  try {
+    const response = await fetch('/api/vessel/get-vessels');
+    if (!response.ok) return;
+
+    const data = await response.json();
+    const vessels = data.vessels || [];
+
+    // Filter vessels that need repair (wear >= maintenance threshold)
+    const vesselsNeedingRepair = vessels.filter(v => {
+      const wear = parseInt(v.wear) || 0;
+      return wear >= settings.maintenanceThreshold;
+    });
+
+    const countBadge = document.getElementById('repairCount');
+    const repairBtn = document.getElementById('repairAllBtn');
+
+    if (vesselsNeedingRepair.length > 0) {
+      countBadge.textContent = vesselsNeedingRepair.length;
+      countBadge.style.display = 'block';
+      repairBtn.disabled = false;
+      repairBtn.title = `Repair ${vesselsNeedingRepair.length} vessel${vesselsNeedingRepair.length === 1 ? '' : 's'} with ${settings.maintenanceThreshold}%+ wear`;
+    } else {
+      countBadge.style.display = 'none';
+      repairBtn.disabled = true;
+      repairBtn.title = `No vessels with ${settings.maintenanceThreshold}%+ wear`;
+    }
+  } catch (error) {
+    console.error('Error updating repair count:', error);
+  }
+}
+
+async function repairAllVessels() {
+  const repairBtn = document.getElementById('repairAllBtn');
+  const repairCountBadge = document.getElementById('repairCount');
+  const vesselsNeedingRepair = parseInt(repairCountBadge.textContent) || 0;
+
+  if (vesselsNeedingRepair === 0) return;
+
+  // Get all vessels and filter by wear threshold
+  try {
+    const response = await fetch('/api/vessel/get-vessels');
+    if (!response.ok) throw new Error('Failed to get vessels');
+
+    const data = await response.json();
+    const vessels = data.vessels || [];
+
+    const vesselsToRepair = vessels.filter(v => {
+      const wear = parseInt(v.wear) || 0;
+      return wear >= settings.maintenanceThreshold;
+    });
+
+    if (vesselsToRepair.length === 0) {
+      showFeedback('No vessels need repair!', 'error');
+      return;
+    }
+
+    // Get repair cost estimate
+    const vesselIds = vesselsToRepair.map(v => v.id);
+
+    const costResponse = await fetch('/api/maintenance/get', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vessel_ids: JSON.stringify(vesselIds) })
+    });
+
+    if (!costResponse.ok) throw new Error('Failed to get repair cost');
+
+    const costData = await costResponse.json();
+
+    // Calculate total cost by summing up all "wear" maintenance prices
+    let totalCost = 0;
+    if (costData.data?.vessels) {
+      costData.data.vessels.forEach(vessel => {
+        const wearMaintenance = vessel.maintenance_data?.find(m => m.type === 'wear');
+        if (wearMaintenance) {
+          totalCost += wearMaintenance.price || 0;
+        }
+      });
+    }
+
+    // Check if user has enough cash
+    if (totalCost > currentCash) {
+      showFeedback(`<strong>Not enough cash!</strong><br><br>Repair cost: $${formatNumber(totalCost)}<br>Your cash: $${formatNumber(currentCash)}<br>Missing: $${formatNumber(totalCost - currentCash)}`, 'error');
+      return;
+    }
+
+    // Show confirmation dialog
+    const confirmed = await showConfirmDialog({
+      title: '🔧 Bulk Vessel Repair',
+      message: `Do you want to repair all vessels with ${settings.maintenanceThreshold}%+ wear?`,
+      confirmText: 'Repair All',
+      details: [
+        { label: 'Vessels to repair', value: `${vesselsToRepair.length}` },
+        { label: 'Wear threshold', value: `${settings.maintenanceThreshold}%` },
+        { label: 'Total Cost', value: `$${formatNumber(totalCost)}` }
+      ]
+    });
+
+    if (!confirmed) return;
+
+    repairBtn.disabled = true;
+
+    // Perform bulk repair
+    const repairResponse = await fetch('/api/maintenance/do-wear-maintenance-bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vessel_ids: JSON.stringify(vesselIds) })
+    });
+
+    if (!repairResponse.ok) throw new Error('Failed to repair vessels');
+
+    const repairData = await repairResponse.json();
+
+    if (repairData.error) {
+      showFeedback(`Error: ${repairData.error}`, 'error');
+      repairBtn.disabled = false;
+      return;
+    }
+
+    // Show success feedback
+    showFeedback(`<strong>${vesselsToRepair.length} vessels repaired!</strong><br><br>💰 Total cost: $${formatNumber(totalCost)}<br>🔧 Wear threshold: ${settings.maintenanceThreshold}%`, 'success');
+
+    // Update repair count and bunker status
+    setTimeout(() => debouncedUpdateRepairCount(800), 1000);
+    setTimeout(() => debouncedUpdateBunkerStatus(800), 1200);
+
+  } catch (error) {
+    showFeedback(`Error: ${error.message}`, 'error');
+    repairBtn.disabled = false;
   }
 }
 
@@ -1291,8 +1605,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('contactListBtn').addEventListener('click', showContactList);
   document.getElementById('closeContactListBtn').addEventListener('click', closeContactList);
 
+  // Settings
+  document.getElementById('settingsBtn').addEventListener('click', showSettings);
+  document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+  document.getElementById('testAlertBtn').addEventListener('click', testBrowserNotification);
+  document.getElementById('fuelThreshold').addEventListener('change', function() {
+    settings.fuelThreshold = parseInt(this.value);
+    saveSettings();
+  });
+  document.getElementById('co2Threshold').addEventListener('change', function() {
+    settings.co2Threshold = parseInt(this.value);
+    saveSettings();
+  });
+  document.getElementById('maintenanceThreshold').addEventListener('change', function() {
+    settings.maintenanceThreshold = parseInt(this.value);
+    saveSettings();
+    // Update repair count with new threshold
+    debouncedUpdateRepairCount(500);
+  });
+
   // Vessel management
   document.getElementById('departAllBtn').addEventListener('click', departAllVessels);
+  document.getElementById('repairAllBtn').addEventListener('click', repairAllVessels);
 
   // Bunker management
   document.getElementById('fuelBtn').addEventListener('click', buyMaxFuel);
@@ -1319,16 +1653,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Load settings from localStorage
+  loadSettings();
+
+  // Auto-request notification permission on load (if not already decided)
+  if ("Notification" in window && Notification.permission === "default") {
+    await requestNotificationPermission();
+  }
+
   // Initial load
   await fetchAllianceMembers();
   await loadMessages();
   await updateUnreadBadge();
   await updateVesselCount();
+  await updateRepairCount();
   await updateBunkerStatus();
 
-  // WebSocket initialization
+  // Check price alerts on load
+  await checkPriceAlerts();
+
+  // WebSocket initialization (use wss:// for HTTPS)
   try {
-    const ws = new WebSocket(`ws://${window.location.host}`);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}`);
     ws.onmessage = (event) => {
       const { type, data } = JSON.parse(event.data);
       if (type === 'chat_update' || type === 'message_sent') {
@@ -1336,7 +1683,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
   } catch (e) {
-    console.log('WebSocket not available');
+    // WebSocket not available
   }
 
   // Auto-refresh with randomized intervals for stealth
@@ -1344,7 +1691,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setInterval(updateUnreadBadge, 30000 + Math.random() * 5000); // 30-35s
 
+  // Check price alerts every 30 seconds
+  setInterval(checkPriceAlerts, 30000); // 30s
+
   setInterval(updateVesselCount, 60000 + Math.random() * 10000); // 60-70s
+
+  setInterval(updateRepairCount, 60000 + Math.random() * 10000); // 60-70s
 
   setInterval(updateBunkerStatus, 30000 + Math.random() * 5000); // 30-35s
 });
