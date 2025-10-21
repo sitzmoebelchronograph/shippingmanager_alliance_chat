@@ -240,7 +240,6 @@ The application uses HTTPS with self-signed certificates that include all your l
 shippingmanager_messanger/
 ├── app.js                    # Main application entry point
 ├── run.js                    # Startup wrapper (handles Steam & cookie extraction)
-├── record-demo.py            # Demo video/GIF generator
 ├── server/
 │   ├── config.js            # Centralized configuration
 │   ├── certificate.js       # HTTPS certificate generation
@@ -252,12 +251,11 @@ shippingmanager_messanger/
 │   └── get-session-from-steam-windows11.py  # Cookie extraction script
 ├── public/
 │   ├── index.html           # Main application UI
-│   ├── example.html         # Demo page with dummy data
 │   ├── css/style.css        # Styling
 │   └── js/
-│       ├── script.js        # Main application logic
-│       └── example-script.js # Demo application logic
+│       └── script.js        # Main application logic
 └── screenshots/             # Screenshots for documentation
+        └── demo.gif         # Demo Example
 ```
 
 ***
