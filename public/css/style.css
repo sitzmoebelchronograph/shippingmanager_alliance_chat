@@ -893,3 +893,252 @@ button:active {
 .setting-item input[type="number"] {
     font-size: 14px;
 }
+
+/* Mobile Styles - Below 780px */
+@media (max-width: 780px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        height: 95vh;
+        max-height: none;
+        border-radius: 8px;
+    }
+
+    /* Action Bar - All in one row, bunker buttons on second row */
+    .action-bar {
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 6px 8px;
+        align-items: center;
+    }
+
+    .action-bar > div:first-child {
+        flex: 1 1 auto;
+        order: 0;
+        font-size: 11px !important;
+        gap: 8px !important;
+        padding-left: 0 !important;
+        margin-right: 4px;
+    }
+
+    .action-bar > div:first-child > div {
+        gap: 3px !important;
+    }
+
+    .action-bar > div:first-child span {
+        font-size: 11px !important;
+    }
+
+    .action-btn {
+        height: 26px;
+        font-size: 15px;
+        padding: 2px 6px;
+        min-width: auto;
+    }
+
+    .action-btn.bunker-btn {
+        flex: 0 0 calc(50% - 2px);
+        order: 1;
+        height: 30px;
+        font-size: 13px;
+    }
+
+    .bunker-btn span {
+        font-size: 10px;
+    }
+
+    .action-btn:not(.bunker-btn) {
+        order: 0;
+        flex: 0 0 auto;
+    }
+
+    /* Header - Keep title left-aligned */
+    .header {
+        padding: 10px;
+        gap: 8px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+    }
+
+    .header h1 {
+        font-size: 18px;
+        text-align: left;
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .tab-buttons {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .tab-btn {
+        font-size: 13px;
+        padding: 6px 12px;
+    }
+
+    .header-right {
+        grid-column: 2;
+        grid-row: 1;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        justify-self: end;
+    }
+
+    .header-right button {
+        order: 2;
+        width: auto;
+    }
+
+    .header-right .status {
+        order: 1;
+    }
+
+    /* Chat area adjustments */
+    .chat-container, .messenger-container, .game-container, .settings-container, .contacts-container {
+        padding: 10px;
+    }
+
+    .chat-feed, .messenger-chat-feed {
+        font-size: 13px;
+    }
+
+    .message {
+        padding: 8px;
+    }
+
+    .message-header {
+        font-size: 12px;
+    }
+
+    .message-text {
+        font-size: 13px;
+    }
+
+    /* Input section */
+    .input-section {
+        padding: 10px;
+    }
+
+    #messageInput {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .char-count {
+        font-size: 11px;
+    }
+
+    /* Messenger list */
+    .messenger-list {
+        font-size: 13px;
+    }
+
+    .messenger-item {
+        padding: 10px;
+    }
+
+    .messenger-item-header {
+        font-size: 13px;
+    }
+
+    .messenger-item-preview {
+        font-size: 12px;
+    }
+
+    /* Game stats */
+    .game-stats {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 12px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+    }
+
+    .stat-value {
+        font-size: 18px;
+    }
+
+    /* Buttons */
+    .send-btn, .back-btn, .new-message-btn {
+        font-size: 13px;
+        padding: 8px 16px;
+    }
+
+    /* Contact list */
+    .contact-item {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    /* Settings */
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .setting-item label {
+        font-size: 13px;
+    }
+
+    .setting-item input[type="number"],
+    .setting-item select {
+        width: 100%;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95%;
+        max-width: none;
+        padding: 15px;
+    }
+
+    .modal-header h2 {
+        font-size: 16px;
+    }
+
+    .modal-body {
+        font-size: 13px;
+    }
+
+    /* Dialog */
+    .confirm-dialog {
+        width: 90%;
+        max-width: none;
+        padding: 15px;
+    }
+
+    .confirm-dialog h3 {
+        font-size: 16px;
+    }
+
+    .confirm-dialog-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .confirm-dialog-btn {
+        width: 100%;
+    }
+
+    /* Badge positioning */
+    .badge {
+        font-size: 10px;
+        min-width: 16px;
+        height: 16px;
+        line-height: 16px;
+    }
+}
