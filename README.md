@@ -1,240 +1,161 @@
-# Shipping Manager Alliance Chat Tool
+# Shipping Manager - Messenger
 
 ## Problem Statement
 
-When playing [Shipping Manager](http://shippingmanager.cc/) on Steam, the in-game alliance chat suffers from a critical page reload bug. Typing certain characters causes the entire game page to refresh, making communication with alliance members nearly impossible. Messages get lost mid-typing, disrupting coordination and team play.
+When playing [Shipping Manager](http://shippingmanager.cc/) on Steam, the in-game chat suffers from a critical page reload bug. Typing certain characters causes the entire game page to refresh, making communication with alliance members nearly impossible. Messages get lost mid-typing, disrupting coordination and team play.
 
-This tool provides a standalone web-based chat interface that connects directly to the Shipping Manager API, allowing you to chat with your alliance members without experiencing the game's input bugs.
+This tool provides a comprehensive standalone web interface that connects directly to the Shipping Manager API, offering alliance chat, private messaging, game management features, and more - all without the game's input bugs.
 
 ## Features
 
-- **Real-time Alliance Chat**: WebSocket-based live chat updates
+### Alliance Chat
+- **Real-time Alliance Chat**: WebSocket-based live chat updates with randomized intervals (25-27s) for stealth
 - **Member Mentions**: Use `@` to mention alliance members with autocomplete
 - **Message History**: View complete chat feed with timestamps
+- **Feed Events**: See alliance member joins and route completions
 - **No Page Reloads**: Type freely without triggering game bugs
-- **Auto-refresh**: Chat updates every 25 seconds automatically
 - **Character Counter**: Track message length (1000 char limit)
 - **Multi-line Support**: Use Shift+Enter for line breaks
+- **No Alliance Support**: Gracefully handles users not in an alliance
 
-## Screenshot
+### Private Messaging
+- **Private Conversations**: Send and receive private messages to/from other players
+- **Message Inbox**: View all private conversations with unread count badge
+- **Chat Selection**: Choose between multiple conversations with the same user (different subjects)
+- **New Messages**: Start new conversations with custom subjects
+- **Contact List**: Access all your contacts and alliance members
+  - Separate sections for regular contacts and alliance contacts
+  - Alphabetically sorted lists
+  - Quick "Send Message" buttons
 
-![Example](./screenshot1.png)
+### Game Management
+- **Cash Display**: Real-time cash balance with auto-updates
+- **Fuel Management**:
+  - Current fuel level and capacity display
+  - One-click max fuel purchase with price confirmation
+  - Price per ton display (turns green when ≤ $400/t)
+  - Price alerts when fuel drops below threshold
+- **CO2 Management**:
+  - Current CO2 quota and capacity display
+  - One-click max CO2 purchase with price confirmation
+  - Price per ton display (turns green when ≤ $7/t)
+  - Price alerts when CO2 drops below threshold
+- **Vessel Management**:
+  - Real-time count of vessels in harbor
+  - One-click "Depart All" with detailed feedback
+  - Shows fuel/CO2 consumption and earnings per departure
+
+### Advanced Features
+- **Smart Purchase Dialogs**: Detailed confirmation dialogs showing amount, price per ton, and total cost
+- **Browser Notifications**: Desktop notifications for new messages and price alerts
+- **Debounced API Calls**: Rate-limited requests to avoid detection (800-1000ms delays)
+- **Randomized Intervals**: Variable polling times to appear more human-like
+- **Extended Feedback**: Success/error messages display for 6 seconds
+- **Responsive Design**: Modern dark theme with glassmorphism effects
+
+***
+
+## Legal Disclaimer & Risk Notice
+
+**WARNING: USE OF THIS TOOL IS AT YOUR OWN RISK!**
+
+This tool implements automated procedures to extract session cookies from the local Steam client cache and interacts directly with the game's API (`shippingmanager.cc`).
+
+1.  **Violation of ToS:** These techniques **most likely** violate the Terms of Service (ToS) of both **Steam** and **Shipping Manager**.
+2.  **Potential Consequences:** Use of this tool may lead to the **temporary suspension** or **permanent ban** of your Steam or game account.
+3.  **No Liability:** The developers of this tool **assume no liability** for any damages or consequences resulting from its use. **Every user is solely responsible for complying with the respective terms of service.**
+
+***
 
 ## Requirements
 
 ### All Platforms
-- Node.js 14.0 or higher
-- npm (Node Package Manager)
-- Modern web browser
-- [Active Shipping Manager account with alliance membership on Steam](https://store.steampowered.com/app/2445660/Shipping_Manager)
+- **Node.js** 14.0 or higher
+- **npm** (Node Package Manager)
+- **Python** 3.7+ (with `pip`)
+- **Modern web browser** (Chrome/Chromium recommended for Selenium screenshots)
+- Active Shipping Manager account on Steam (alliance membership optional)
 
-## Installation
+### Windows (Required for Automated Cookie Extraction)
+- **`pywin32`** and **`cryptography`** Python packages (installed in Step 2)
+- **`selenium`** Python package (optional, for screenshot generation)
+
+***
+
+## Installation & Setup
 
 ### Step 1: Clone or Download
+Clone the repository and navigate into the directory:
 ```bash
-git clone https://github.com/yourusername/shipping-manager-chat.git
+git clone [https://github.com/yourusername/shipping-manager-chat.git](https://github.com/yourusername/shipping-manager-chat.git)
 cd shipping-manager-chat
 ```
 
-Or download and extract the ZIP file.
-
-### Step 2: Install Dependencies
+### Step 2: Install Dependencies (Node.js & Python)
+Install all necessary Node.js packages and the Windows-specific Python libraries for DPAPI decryption:
 ```bash
-npm install express ws axios dotenv helmet validator express-rate-limit
+# Install Node.js packages
+npm install
+
+# Install Python packages for Windows decryption
+pip install pywin32 cryptography
+
+# Optional: Install Selenium for screenshot generation
+pip install selenium
 ```
 
-### Step 3: Configure Session Cookie
+### Step 3: Automated Startup (No Manual Cookie Required!) 🚀
 
-Since Shipping Manager runs in Steam's built-in browser, you need a network traffic interceptor to capture the session cookie.
+This tool uses an automated process to securely extract your current, encrypted Session Cookie directly from the Steam client cache.
 
-#### Windows - Using Fiddler
+#### ❗ Important Note on Initial Login State
 
-1. Download and install [Fiddler Classic](https://www.telerik.com/download/fiddler)
-2. Start Fiddler
-3. In Fiddler, go to Tools → Options → HTTPS
-4. Enable "Decrypt HTTPS traffic"
-5. Start Shipping Manager in Steam
-6. In Fiddler, look for requests to `shippingmanager.cc`
-7. Click on a request and go to the "Inspectors" tab
-8. In the "Headers" section, find `Cookie: shipping_manager_session=...`
-9. Copy the cookie value (everything after `shipping_manager_session=`)
+The session cookie is **only generated and stored in the Steam cache** if you have **previously logged into the Steam client successfully** and **started the game `Shipping Manager` at least once**.
 
-#### Linux - Using mitmproxy
+As long as the token remains valid (typically several weeks to months), you **do not need to repeat the Steam login process**, even if you restart or exit the Steam client.
 
-1. Install mitmproxy:
-   - Debian/Ubuntu: sudo apt install mitmproxy
-   - Arch: sudo pacman -S mitmproxy
-   - Fedora: sudo dnf install mitmproxy
+#### Process Logic
 
-2. Start mitmproxy:
-   - Run: mitmproxy --set confdir=~/.mitmproxy
+The `run.js` wrapper script intelligently controls the startup process:
 
-3. Configure Steam to use proxy:
-   - Steam → Settings → Web Browser
-   - Set HTTP Proxy to `127.0.0.1:8080`
+1.  **Stop:** The process attempts to terminate the Steam client to release the database lock.
+2.  **Extract:** The cookie is retrieved from the unlocked database.
+3.  **Start/Restart:**
+    * If Steam was **already running** before the start, it will be **restarted** after cookie extraction.
+    * If Steam was **not running** before the start, it will be **launched** after cookie extraction.
 
-4. Start Shipping Manager in Steam
-5. In mitmproxy, look for requests to `shippingmanager.cc`
-6. Press Enter on the request to view details
-7. Press `q` to go to request headers
-8. Find the `Cookie` header with `shipping_manager_session`
-9. Copy the cookie value
-
-#### macOS - Using Charles Proxy
-
-1. Download and install [Charles Proxy](https://www.charlesproxy.com/download/)
-2. Start Charles
-3. Go to Proxy → SSL Proxying Settings
-4. Add `shippingmanager.cc` to the locations
-5. Install Charles Root Certificate (Help → SSL Proxying → Install Charles Root Certificate)
-6. Start Shipping Manager in Steam
-7. In Charles, find requests to `shippingmanager.cc`
-8. Right-click the request → View Request
-9. Go to the "Headers" tab
-10. Copy the `shipping_manager_session` cookie value
-
-#### Alternative: Using Wireshark (All Platforms)
-
-1. Download and install [Wireshark](https://www.wireshark.org/download.html)
-2. Start capture on your network interface
-3. Filter: http.host == "shippingmanager.cc"
-4. Start Shipping Manager in Steam
-5. Find HTTP requests to the API
-6. Expand "Hypertext Transfer Protocol" → "Cookie"
-7. Copy the `shipping_manager_session` value
-
-**Note**: For HTTPS decryption in Wireshark, you'll need to configure SSLKEYLOGFILE environment variable.
-
-
-### Step 4 - Create a `.env` file in the project root:
-```env
-SHIPPING_MANAGER_COOKIE=your_cookie_value_here
-```
-
-**Note**: The cookie expires periodically. You'll need to update it when you get authentication errors.
-
-### Step 4: Run the Application
-
-#### Windows
-```cmd
-node app.js
-```
-
-#### Linux/macOS
+**Start Command:**
+Use the wrapper script `run.js` to manage the entire process:
 ```bash
-node app.js
+# This command executes run.js, which:
+# 1. Kills Steam (if running).
+# 2. Extracts the Session Cookie using the Python script.
+# 3. Starts the app.js server with the fresh cookie in process.env.
+# 4. Restarts Steam (if necessary, or launches it if not running).
+node run.js
 ```
 
-The server will start on `http://localhost:12345`
+The server will be started at `http://localhost:12345`. Open this URL in your browser.
 
-## Usage
-
-1. **Start the Server**: Run `node allychat.js`
-2. **Open Browser**: Navigate to `http://localhost:12345`
-3. **Wait for Connection**: The app will load your alliance data
-4. **Start Chatting**: Type messages and hit Enter to send
-5. **Mention Members**: Type `@` to see member suggestions
-6. **Multi-line Messages**: Use Shift+Enter for line breaks
-
-## WebSocket Features
-
-The tool uses WebSocket for real-time updates:
-- Automatic chat refresh when new messages arrive
-- Connection status indicator
-- Instant message delivery notifications
-
-## File Structure
-```
-shipping-manager-chat/
-├── public
-|     └── index.html     # Main server application
-├── app.js               # Web interface (served from root)
-├── .env                 # Session cookie configuration
-├── package.json         # Node.js dependencies
-└── README.md            # This file
-```
-
-## Security Features
-
-- Rate limiting to prevent spam
-- Input sanitization and validation
-- XSS protection via HTML escaping
-- Helmet.js for security headers
-- Message length limits (1000 chars)
-
-## Troubleshooting
-
-### Authentication Failed
-- Your session cookie has expired
-- Get a new cookie from the game and update `.env`
-
-### Port 12345 Already in Use
-```javascript
-// In allychat.js, change:
-const PORT = 12345;
-// To any available port:
-const PORT = 8080;
-```
-
-### Cannot Load Alliance
-- Ensure you're a member of an alliance in the game
-- Check your session cookie is valid
-- Verify network connectivity to shippingmanager.cc
-
-### Messages Not Sending
-- Check browser console for errors
-- Ensure message is under 1000 characters
-- Verify server is running without errors
-
-### WebSocket Connection Failed
-- Check firewall settings
-- Ensure both HTTP and WS protocols are allowed
-- Try disabling browser extensions
+***
 
 ## Configuration
 
-Edit these values in `allychat.js`:
+The core configuration is located in `app.js`:
+
 ```javascript
 const PORT = 12345;                              // Server port
-const SHIPPING_MANAGER_API = 'https://shippingmanager.cc/api';  // API endpoint
+const SHIPPING_MANAGER_API = '[https://shippingmanager.cc/api](https://shippingmanager.cc/api)';  // API endpoint
+// SESSION_COOKIE is now set automatically via process.env by run.js.
 ```
 
-## Rate Limits
-
-- General requests: 100 per 15 minutes
-- Message sending: 5 per minute
-
-## Known Limitations
-
-- Requires manual cookie updates when session expires
-- Cannot receive notifications when browser tab is inactive
-- Limited to text chat (no images/files)
-- Must keep server running locally
-
-## Development
-
-### Adding Features
-The codebase is modular and easy to extend:
-- API calls are centralized in `apiCall()` function
-- WebSocket broadcasting via `broadcast()` function
-- Rate limiting middleware can be adjusted
-
-### Debug Mode
-Enable detailed logging:
-```javascript
-console.log('Debug:', data);  // Add throughout code
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Test thoroughly with your alliance
-4. Submit a pull request
+***
 
 ## Security Notice
 
-**Never share your session cookie publicly!** The cookie provides full access to your Shipping Manager account. Keep your `.env` file private and add it to `.gitignore`.
+**Your Session Cookie is extracted automatically and dynamically!** The manual step of saving the cookie in a `.env` file is no longer required, significantly **improving local security** by preventing the sensitive value from being permanently stored in a file.
+
+**Never share the decrypted cookie publicly!** The cookie provides full, persistent access to your Shipping Manager account.
 
 ## License
 
@@ -243,4 +164,31 @@ MIT License - Use at your own risk
 ## Disclaimer
 
 This tool is not affiliated with Shipping Manager or Steam. It's a community-created workaround for the known chat bug.
-**Important**: This tool will become obsolete once the developers fix the page reload bug. Check for game updates regularly. The tool is intended as a temporary solution to maintain alliance communication.
+
+***
+
+## Screenshots
+
+### Main View - Alliance Chat
+![Main View](./screenshots/01-main-view.png)
+
+### Success Feedback Message
+![Success Feedback](./screenshots/02-success-feedback.png)
+
+### Fuel Purchase Dialog
+![Fuel Purchase](./screenshots/03-fuel-purchase-dialog.png)
+
+### CO2 Purchase Dialog
+![CO2 Purchase](./screenshots/04-co2-purchase-dialog.png)
+
+### Contact List
+![Contact List](./screenshots/05-contact-list.png)
+
+### All Private Conversations
+![All Chats](./screenshots/06-all-chats-overview.png)
+
+### Private Chat Conversation
+![Private Chat](./screenshots/07-private-chat.png)
+
+### Action Bar Details
+![Action Bar](./screenshots/09-action-bar-detail.png)

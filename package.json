@@ -1,45 +1,13 @@
 {
-  "name": "shipping-manager-alliance-chat",
-  "version": "0.0.1",
-  "description": "Standalone alliance chat tool for Shipping Manager to bypass the page reload bug",
-  "main": "allychat.js",
-  "scripts": {
-    "start": "node allychat.js",
-    "dev": "nodemon allychat.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "shipping-manager",
-    "steam",
-    "alliance",
-    "chat",
-    "websocket",
-    "workaround"
-  ],
-  "author": "John Doe",
-  "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "ws": "^8.16.0",
-    "axios": "^1.6.5",
-    "dotenv": "^16.3.1",
-    "helmet": "^7.1.0",
-    "validator": "^13.11.0",
-    "express-rate-limit": "^7.1.5"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
-  "engines": {
-    "node": ">=14.0.0",
-    "npm": ">=6.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/shipping-manager-alliance-chat.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/shipping-manager-alliance-chat/issues"
-  },
-  "homepage": "https://github.com/yourusername/shipping-manager-alliance-chat#readme"
+    "axios": "^1.12.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "request": "^2.88.2",
+    "validator": "^13.15.15",
+    "ws": "^8.18.3"
+  }
 }
