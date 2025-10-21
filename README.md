@@ -297,5 +297,3 @@ This tool is not affiliated with Shipping Manager or Steam. It's a community-cre
 ## Demo
 
 ![Demo](screenshots/demo.gif)
-
-A fully functional demo is available at `https://localhost:12345/example.html` after starting the server.
