@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipping Manager - Messenger (Example)</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="globalFeedback"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>⚓ Shipping Manager - Messenger</h1>
+            <div class="header-right">
+                <button id="notificationBtn">🔔 Enable Notifications</button>
+                <div class="status">
+                    <div class="status-dot"></div>
+                    <span>Connected</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <div style="display: flex; align-items: center; gap: 20px; margin-right: auto; padding-left: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #4ade80; font-weight: 600; font-size: 16px;">💰</span>
+                    <span id="cashDisplay" style="color: #4ade80; font-weight: 600; font-size: 14px;">$1,234,567</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 16px;">⛽</span>
+                    <span id="fuelPriceDisplay" style="font-weight: 700; font-size: 14px; color: #4ade80;">$385/t</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 16px;">💨</span>
+                    <span id="co2PriceDisplay" style="font-weight: 700; font-size: 14px; color: #4ade80;">$6.5/t</span>
+                </div>
+            </div>
+            <button id="fuelBtn" class="action-btn bunker-btn" title="Buy max fuel">
+                ⛽ <span id="fuelDisplay">3,250t/5,750t</span>
+            </button>
+            <button id="co2Btn" class="action-btn bunker-btn" title="Buy max CO2">
+                💨 <span id="co2Display">42,000t/55,000t</span>
+            </button>
+            <button id="departAllBtn" class="action-btn" title="Depart all 5 vessels from harbor">
+                🚢
+                <span id="vesselCount" class="action-badge">5</span>
+            </button>
+            <button id="allChatsBtn" class="action-btn" title="View all private messages">
+                📬
+                <span id="unreadBadge" class="action-badge" style="background: #ef4444;">3</span>
+            </button>
+            <button id="contactListBtn" class="action-btn" title="View contact list">
+                👥
+            </button>
+        </div>
+
+        <div class="chat-feed" id="chatFeed">
+            <!-- Alliance Chat Messages -->
+            <div class="message">
+                <div class="message-header">
+                    <span class="company-name">Example Shipping Co.</span>
+                    <span class="timestamp">Thu, 01 Jan 1970 04:20:00 GMT</span>
+                </div>
+                <div class="message-text">Hey everyone! Just bought 5 new container ships. Looking forward to expanding our fleet! 🚢</div>
+            </div>
+
+            <div class="message">
+                <div class="message-header">
+                    <span class="company-name">Maritime Transport Ltd.</span>
+                    <span class="timestamp">Thu, 01 Jan 1970 04:20:00 GMT</span>
+                </div>
+                <div class="message-text">Great prices on fuel today! Filled up all my tanks at $385/t. <strong class="company-name">@Example Shipping Co.</strong> you should check it out!</div>
+            </div>
+
+            <div class="message feed">
+                <div class="message-header">
+                    <span>SYSTEM: alliance_member_joined</span>
+                    <span class="timestamp">Thu, 01 Jan 1970 04:20:00 GMT</span>
+                </div>
+                <div class="message-text">Ocean Freight Services joined the alliance</div>
+            </div>
+
+            <div class="message">
+                <div class="message-header">
+                    <span class="company-name">Global Logistics Inc.</span>
+                    <span class="timestamp">Thu, 01 Jan 1970 04:20:00 GMT</span>
+                </div>
+                <div class="message-text">Does anyone know the best route from Hamburg to Shanghai? Looking to optimize my fuel consumption.</div>
+            </div>
+
+            <div class="message">
+                <div class="message-header">
+                    <span class="company-name">Pacific Shipping Lines</span>
+                    <span class="timestamp">Thu, 01 Jan 1970 04:20:00 GMT</span>
+                </div>
+                <div class="message-text">Welcome <strong class="company-name">@Ocean Freight Services</strong>! Great to have you in our alliance! 🎉</div>
+            </div>
+
+            <div class="message feed">
+                <div class="message-header">
+                    <span>SYSTEM: route_completed</span>
+                    <span class="timestamp">Thu, 01 Jan 1970 04:20:00 GMT</span>
+                </div>
+                <div class="message-text">Example Shipping Co. completed a route to Rotterdam</div>
+            </div>
+
+            <div class="message">
+                <div class="message-header">
+                    <span class="company-name">Arctic Cargo Express</span>
+                    <span class="timestamp">Thu, 01 Jan 1970 04:20:00 GMT</span>
+                </div>
+                <div class="message-text">CO2 prices are super low right now! Only $6.5/t 💨</div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-wrapper">
+                <textarea
+                    id="messageInput"
+                    placeholder="Type your message here... Use @ for mentions (Shift+Enter for new line)"
+                    maxlength="1000"
+                    autocomplete="off"
+                >Type your message here...</textarea>
+                <button id="sendMessageBtn">Send</button>
+            </div>
+            <div class="char-count" id="charCount">26 / 1000 characters</div>
+            <div id="feedback"></div>
+        </div>
+    </div>
+
+    <!-- All Chats Overlay -->
+    <div id="allChatsOverlay" class="overlay" style="display:none;">
+        <div class="messenger-window">
+            <div class="messenger-header">
+                <h2>All Private Conversations</h2>
+                <button id="closeAllChatsBtn" class="close-btn">X</button>
+            </div>
+            <div class="messenger-feed" id="allChatsList">
+                <div class="chat-selection-item">
+                    <h3>Maritime Transport Ltd. - Route Planning<span class="unread-indicator"></span></h3>
+                    <p>Yeah, I can send you my optimized route data. Give me a few...</p>
+                </div>
+                <div class="chat-selection-item">
+                    <h3>Global Logistics Inc. - Fuel Purchase</h3>
+                    <p>Thanks for the tip on fuel prices! Just saved $50k on my p...</p>
+                </div>
+                <div class="chat-selection-item">
+                    <h3>Pacific Shipping Lines - Alliance Strategy<span class="unread-indicator"></span></h3>
+                    <p>We should coordinate our routes to maximize efficiency. W...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact List Overlay -->
+    <div id="contactListOverlay" class="overlay" style="display:none;">
+        <div class="messenger-window">
+            <div class="messenger-header">
+                <h2>👥 Contact List</h2>
+                <button id="closeContactListBtn" class="close-btn">X</button>
+            </div>
+            <div class="messenger-feed" id="contactListFeed">
+                <div class="contact-section">
+                    <h3 class="contact-section-title">Contacts</h3>
+                    <div class="contact-table">
+                        <div class="contact-row">
+                            <div class="contact-name-cell">
+                                <span class="contact-name">Atlantic Freight Corp.</span><span class="contact-id"> (12345678)</span>
+                            </div>
+                            <div class="contact-button-cell">
+                                <button class="contact-send-btn">📩 Send</button>
+                            </div>
+                        </div>
+                        <div class="contact-row">
+                            <div class="contact-name-cell">
+                                <span class="contact-name">Baltic Shipping Lines</span><span class="contact-id"> (12345678)</span>
+                            </div>
+                            <div class="contact-button-cell">
+                                <button class="contact-send-btn">📩 Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-section">
+                    <h3 class="contact-section-title">Alliance Contacts</h3>
+                    <div class="contact-table">
+                        <div class="contact-row">
+                            <div class="contact-name-cell">
+                                <span class="contact-name">Arctic Cargo Express</span><span class="contact-id"> (12345678)</span>
+                            </div>
+                            <div class="contact-button-cell">
+                                <button class="contact-send-btn">📩 Send</button>
+                            </div>
+                        </div>
+                        <div class="contact-row">
+                            <div class="contact-name-cell">
+                                <span class="contact-name">Example Shipping Co.</span><span class="contact-id"> (12345678)</span>
+                            </div>
+                            <div class="contact-button-cell">
+                                <button class="contact-send-btn">📩 Send</button>
+                            </div>
+                        </div>
+                        <div class="contact-row">
+                            <div class="contact-name-cell">
+                                <span class="contact-name">Global Logistics Inc.</span><span class="contact-id"> (12345678)</span>
+                            </div>
+                            <div class="contact-button-cell">
+                                <button class="contact-send-btn">📩 Send</button>
+                            </div>
+                        </div>
+                        <div class="contact-row">
+                            <div class="contact-name-cell">
+                                <span class="contact-name">Maritime Transport Ltd.</span><span class="contact-id"> (12345678)</span>
+                            </div>
+                            <div class="contact-button-cell">
+                                <button class="contact-send-btn">📩 Send</button>
+                            </div>
+                        </div>
+                        <div class="contact-row">
+                            <div class="contact-name-cell">
+                                <span class="contact-name">Ocean Freight Services</span><span class="contact-id"> (12345678)</span>
+                            </div>
+                            <div class="contact-button-cell">
+                                <button class="contact-send-btn">📩 Send</button>
+                            </div>
+                        </div>
+                        <div class="contact-row">
+                            <div class="contact-name-cell">
+                                <span class="contact-name">Pacific Shipping Lines</span><span class="contact-id"> (12345678)</span>
+                            </div>
+                            <div class="contact-button-cell">
+                                <button class="contact-send-btn">📩 Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Private Messenger Overlay -->
+    <div id="messengerOverlay" class="overlay" style="display:none;">
+        <div class="messenger-window">
+            <div class="messenger-header">
+                <button id="backToSelectionBtn" class="close-btn" style="margin-right: 10px;">←</button>
+                <h2 id="messengerTitle">Maritime Transport Ltd. - Route Planning</h2>
+                <button id="closeMessengerBtn" class="close-btn">X</button>
+            </div>
+            <div class="messenger-feed" id="messengerFeed">
+                <div class="message-bubble other">
+                    Hey! Do you have any route optimization tips for the Hamburg-Shanghai route?
+                    <div style="font-size:10px; opacity:0.7; margin-top:5px; text-align:left;">01/01/70 04:20</div>
+                </div>
+                <div class="message-bubble own">
+                    Yeah, I can send you my optimized route data. Give me a few minutes to export it.
+                    <div style="font-size:10px; opacity:0.7; margin-top:5px; text-align:right;">01/01/70 04:20</div>
+                </div>
+                <div class="message-bubble other">
+                    Thanks! Also, did you see the fuel prices today? Super cheap at $385/t!
+                    <div style="font-size:10px; opacity:0.7; margin-top:5px; text-align:left;">01/01/70 04:20</div>
+                </div>
+                <div class="message-bubble own">
+                    Yes! Just filled up all my tanks. Saved about $50k compared to yesterday 💰
+                    <div style="font-size:10px; opacity:0.7; margin-top:5px; text-align:right;">01/01/70 04:20</div>
+                </div>
+            </div>
+            <div class="messenger-input" style="flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 10px;">
+                    <textarea
+                        id="messengerInput"
+                        placeholder="Type message..."
+                        maxlength="1000"
+                        autocomplete="off"
+                    >Great! Let me know when you have the data ready.</textarea>
+                    <button id="sendPrivateMessageBtn" class="send-btn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Dialog for Fuel/CO2 Purchase -->
+    <div id="confirmDialogContainer"></div>
+
+    <!-- Feedback/Alert Examples -->
+    <script>
+        // Show example global feedback on load
+        setTimeout(() => {
+            const globalFeedback = document.getElementById('globalFeedback');
+            globalFeedback.innerHTML = '<div class="global-feedback-message success">All 5 vessels departed! ⛽ 1,250t fuel | 💨 850t CO2 | 💰 $125,000 earned (Income: $150,000 - Fee: $25,000)</div>';
+            globalFeedback.classList.add('show');
+
+            setTimeout(() => {
+                globalFeedback.classList.remove('show');
+            }, 6000);
+        }, 1000);
+
+        // Fuel Purchase Dialog
+        document.getElementById('fuelBtn').addEventListener('click', () => {
+            showConfirmDialog({
+                title: '⛽ Purchase Fuel',
+                message: 'Do you want to purchase fuel to fill your tank?',
+                confirmText: 'Buy Fuel',
+                details: [
+                    { label: 'Amount needed', value: '2,500t' },
+                    { label: 'Price per ton', value: '$385/t' },
+                    { label: 'Total Cost', value: '$962,500' }
+                ]
+            });
+        });
+
+        // CO2 Purchase Dialog
+        document.getElementById('co2Btn').addEventListener('click', () => {
+            showConfirmDialog({
+                title: '💨 Purchase CO2 Quota',
+                message: 'Do you want to purchase CO2 quota to fill your storage?',
+                confirmText: 'Buy CO2',
+                details: [
+                    { label: 'Amount needed', value: '13,000t' },
+                    { label: 'Price per ton', value: '$6.5/t' },
+                    { label: 'Total Cost', value: '$84,500' }
+                ]
+            });
+        });
+
+        // Depart All Vessels
+        document.getElementById('departAllBtn').addEventListener('click', () => {
+            const globalFeedback = document.getElementById('globalFeedback');
+            globalFeedback.innerHTML = '<div class="global-feedback-message success">All 5 vessels departed! ⛽ 1,250t fuel | 💨 850t CO2 | 💰 $125,000 earned (Income: $150,000 - Fee: $25,000)</div>';
+            globalFeedback.classList.add('show');
+
+            setTimeout(() => {
+                globalFeedback.classList.remove('show');
+            }, 6000);
+        });
+
+        // Show Confirm Dialog Function
+        function showConfirmDialog(options) {
+            const overlay = document.createElement('div');
+            overlay.className = 'confirm-dialog-overlay';
+
+            const dialog = document.createElement('div');
+            dialog.className = 'confirm-dialog';
+
+            const detailsHtml = options.details ? `
+                <div class="confirm-dialog-details">
+                    ${options.details.map(detail => `
+                        <div class="confirm-dialog-detail-row">
+                            <span class="label">${detail.label}</span>
+                            <span class="value">${detail.value}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '';
+
+            dialog.innerHTML = `
+                <div class="confirm-dialog-header">
+                    <h3>${options.title || 'Confirm'}</h3>
+                </div>
+                <div class="confirm-dialog-body">
+                    <p>${options.message}</p>
+                    ${detailsHtml}
+                </div>
+                <div class="confirm-dialog-footer">
+                    <button class="confirm-dialog-btn cancel" data-action="cancel">Cancel</button>
+                    <button class="confirm-dialog-btn confirm" data-action="confirm">${options.confirmText || 'Confirm'}</button>
+                </div>
+            `;
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            const handleClick = (e) => {
+                const action = e.target.dataset.action;
+                if (action === 'confirm' || action === 'cancel') {
+                    document.body.removeChild(overlay);
+                }
+            };
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    document.body.removeChild(overlay);
+                }
+            });
+
+            dialog.addEventListener('click', handleClick);
+        }
+
+        // Open overlays on button click
+        document.getElementById('allChatsBtn').addEventListener('click', () => {
+            document.getElementById('allChatsOverlay').style.display = 'flex';
+        });
+        document.getElementById('closeAllChatsBtn').addEventListener('click', () => {
+            document.getElementById('allChatsOverlay').style.display = 'none';
+        });
+
+        document.getElementById('contactListBtn').addEventListener('click', () => {
+            document.getElementById('contactListOverlay').style.display = 'flex';
+        });
+        document.getElementById('closeContactListBtn').addEventListener('click', () => {
+            document.getElementById('contactListOverlay').style.display = 'none';
+        });
+
+        // Example: Open messenger when clicking a chat
+        document.querySelectorAll('.chat-selection-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.getElementById('allChatsOverlay').style.display = 'none';
+                document.getElementById('messengerOverlay').style.display = 'flex';
+            });
+        });
+
+        document.getElementById('closeMessengerBtn').addEventListener('click', () => {
+            document.getElementById('messengerOverlay').style.display = 'none';
+        });
+        document.getElementById('backToSelectionBtn').addEventListener('click', () => {
+            document.getElementById('messengerOverlay').style.display = 'none';
+            document.getElementById('allChatsOverlay').style.display = 'flex';
+        });
+    </script>
+</body>
+</html>
