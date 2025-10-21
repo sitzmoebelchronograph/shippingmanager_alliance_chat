@@ -894,6 +894,23 @@ button:active {
     font-size: 14px;
 }
 
+/* Dialog buttons stack earlier to avoid overflow */
+@media (max-width: 800px) {
+    .confirm-dialog-footer {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .confirm-dialog-btn {
+        width: 100%;
+    }
+
+    .confirm-dialog {
+        width: 95%;
+        max-width: none;
+    }
+}
+
 /* Mobile Styles - Below 780px */
 @media (max-width: 780px) {
     body {
@@ -1030,6 +1047,13 @@ button:active {
     #messageInput {
         font-size: 14px;
         padding: 8px;
+        min-height: 60px;
+        height: auto;
+    }
+
+    textarea {
+        min-height: 60px;
+        height: auto;
     }
 
     .char-count {
@@ -1140,5 +1164,44 @@ button:active {
         min-width: 16px;
         height: 16px;
         line-height: 16px;
+    }
+}
+
+/* Extra small screens - Below 415px */
+@media (max-width: 415px) {
+    /* Action Bar - Keep info + icons together, bunker buttons separate */
+    .action-bar {
+        gap: 3px;
+    }
+
+    .action-bar > div:first-child {
+        flex: 1 1 auto;
+        order: 0;
+        font-size: 10px !important;
+        gap: 6px !important;
+        margin-right: 3px;
+    }
+
+    .action-bar > div:first-child > div {
+        gap: 2px !important;
+    }
+
+    .action-bar > div:first-child span {
+        font-size: 10px !important;
+    }
+
+    /* Icon buttons stay with info in same row */
+    .action-btn:not(.bunker-btn) {
+        order: 0;
+        flex: 0 0 auto;
+        font-size: 13px;
+        padding: 2px 4px;
+        height: 26px;
+    }
+
+    /* Bunker buttons get their own row (50% each) */
+    .action-btn.bunker-btn {
+        flex: 0 0 calc(50% - 2px);
+        order: 1;
     }
 }
