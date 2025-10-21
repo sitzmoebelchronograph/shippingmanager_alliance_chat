@@ -289,7 +289,7 @@ body {
     gap: 12px;
     position: relative;
     max-height: 50%;
-    overflow-y: auto;
+    overflow: visible;
 }
 
 .input-wrapper {
@@ -392,7 +392,7 @@ button:active {
     border-radius: 6px 6px 0 0;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 1001;
+    z-index: 5000;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
     margin-bottom: 5px;
 }
@@ -678,6 +678,11 @@ button:active {
     animation: slideDown 0.3s ease-out;
 }
 
+/* Use spin animation for price alerts - higher specificity */
+#globalFeedback.show.price-alert-container {
+    animation: priceAlertSpin 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+}
+
 @keyframes slideDown {
     from {
         opacity: 0;
@@ -686,6 +691,20 @@ button:active {
     to {
         opacity: 1;
         transform: translate(-50%, -50%);
+    }
+}
+
+@keyframes priceAlertSpin {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    60% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1) rotate(360deg);
+        opacity: 1;
     }
 }
 
@@ -708,6 +727,12 @@ button:active {
     background: #7f1d1d;
     color: #fecaca;
     border: 2px solid #ef4444;
+}
+
+.global-feedback-message.warning {
+    background: #92400e;
+    color: #fde68a;
+    border: 2px solid #fbbf24;
 }
 
 /* Custom Confirm Dialog */
@@ -833,4 +858,38 @@ button:active {
 
 .confirm-dialog-btn.confirm:hover {
     background: #2563eb;
+}
+
+/* Settings Styles */
+.settings-section {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.settings-section h3 {
+    color: #fff;
+    font-size: 18px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.setting-item {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: rgba(31, 41, 55, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.setting-item label {
+    color: #e0e0e0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.setting-item input[type="number"] {
+    font-size: 14px;
 }

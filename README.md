@@ -10,12 +10,14 @@ This tool provides a comprehensive standalone web interface that connects direct
 
 ### Alliance Chat
 - **Real-time Alliance Chat**: WebSocket-based live chat updates with randomized intervals (25-27s) for stealth
-- **Member Mentions**: Use `@` to mention alliance members with autocomplete
+- **Member Mentions**: Use `@` to mention alliance members with autocomplete suggestions
+- **Instant Message Display**: See your sent messages immediately in the chat feed
 - **Message History**: View complete chat feed with timestamps
 - **Feed Events**: See alliance member joins and route completions
 - **No Page Reloads**: Type freely without triggering game bugs
 - **Character Counter**: Track message length (1000 char limit)
 - **Multi-line Support**: Use Shift+Enter for line breaks
+- **Click to Chat**: Click on any company name in the chat to start a private conversation
 - **No Alliance Support**: Gracefully handles users not in an alliance
 
 ### Private Messaging
@@ -23,35 +25,68 @@ This tool provides a comprehensive standalone web interface that connects direct
 - **Message Inbox**: View all private conversations with unread count badge
 - **Chat Selection**: Choose between multiple conversations with the same user (different subjects)
 - **New Messages**: Start new conversations with custom subjects
+- **Instant Updates**: Messages appear immediately after sending
 - **Contact List**: Access all your contacts and alliance members
   - Separate sections for regular contacts and alliance contacts
   - Alphabetically sorted lists
   - Quick "Send Message" buttons
+  - Direct access to start conversations
 
 ### Game Management
-- **Cash Display**: Real-time cash balance with auto-updates
+- **Cash Display**: Real-time cash balance with auto-updates every 30 seconds
 - **Fuel Management**:
   - Current fuel level and capacity display
-  - One-click max fuel purchase with price confirmation
+  - One-click max fuel purchase with detailed confirmation dialog
   - Price per ton display (turns green when ≤ $400/t)
-  - Price alerts when fuel drops below threshold
+  - Configurable price alerts with browser notifications
+  - Smart purchase calculations
 - **CO2 Management**:
   - Current CO2 quota and capacity display
-  - One-click max CO2 purchase with price confirmation
+  - One-click max CO2 purchase with detailed confirmation dialog
   - Price per ton display (turns green when ≤ $7/t)
-  - Price alerts when CO2 drops below threshold
+  - Configurable price alerts with browser notifications
+  - Smart purchase calculations
 - **Vessel Management**:
   - Real-time count of vessels in harbor
   - One-click "Depart All" with detailed feedback
   - Shows fuel/CO2 consumption and earnings per departure
+  - Auto-refresh every 30 seconds
+- **Bulk Repair**:
+  - Automatic detection of vessels with high wear
+  - Configurable wear threshold (10% or 20%)
+  - One-click bulk repair with cost preview
+  - Real-time badge showing number of vessels needing repair
+  - Prevents repair if insufficient funds
+
+### Settings & Customization
+- **Price Alert Thresholds**:
+  - Customizable fuel price alert threshold (default: $400/ton)
+  - Customizable CO2 price alert threshold (default: $7/ton)
+  - Browser notification test button
+- **Maintenance Settings**:
+  - Configurable wear threshold for automatic repair detection
+  - Options: 10% or 20% wear threshold
+- **Persistent Settings**: All preferences saved in browser localStorage
 
 ### Advanced Features
-- **Smart Purchase Dialogs**: Detailed confirmation dialogs showing amount, price per ton, and total cost
-- **Browser Notifications**: Desktop notifications for new messages and price alerts
+- **Smart Purchase Dialogs**: Detailed confirmation dialogs showing:
+  - Amount needed to fill tank/storage
+  - Current price per ton
+  - Total cost calculation
+  - Current cash balance validation
+- **Browser Notifications**: Desktop notifications for:
+  - Price alerts when fuel/CO2 drops below thresholds
+  - Animated price alert with spin effect on page
+  - Test notification button in settings
+- **HTTPS Support**:
+  - Self-signed certificates with automatic generation
+  - Network IP addresses included in certificate
+  - Accessible from all devices on local network
 - **Debounced API Calls**: Rate-limited requests to avoid detection (800-1000ms delays)
 - **Randomized Intervals**: Variable polling times to appear more human-like
-- **Extended Feedback**: Success/error messages display for 6 seconds
+- **Extended Feedback**: Success/error messages with multi-line support
 - **Responsive Design**: Modern dark theme with glassmorphism effects
+- **Demo Mode**: Fully functional demo page (`/example.html`) with dummy data
 
 ***
 
@@ -70,15 +105,15 @@ This tool implements automated procedures to extract session cookies from the lo
 ## Requirements
 
 ### All Platforms
-- **Node.js** 14.0 or higher
+- **Node.js** 22.0 or higher (required for native TLS certificate generation)
 - **npm** (Node Package Manager)
 - **Python** 3.7+ (with `pip`)
-- **Modern web browser** (Chrome/Chromium recommended for Selenium screenshots)
+- **Modern web browser** (Chrome/Chromium recommended)
 - Active Shipping Manager account on Steam (alliance membership optional)
 
 ### Windows (Required for Automated Cookie Extraction)
 - **`pywin32`** and **`cryptography`** Python packages (installed in Step 2)
-- **`selenium`** Python package (optional, for screenshot generation)
+- **`selenium`**, **`opencv-python`**, **`pillow`** (optional, for demo video/screenshot generation)
 
 ***
 
@@ -87,8 +122,8 @@ This tool implements automated procedures to extract session cookies from the lo
 ### Step 1: Clone or Download
 Clone the repository and navigate into the directory:
 ```bash
-git clone [https://github.com/yourusername/shipping-manager-chat.git](https://github.com/yourusername/shipping-manager-chat.git)
-cd shipping-manager-chat
+git clone https://github.com/yourusername/shipping-manager-messenger.git
+cd shipping-manager-messenger
 ```
 
 ### Step 2: Install Dependencies (Node.js & Python)
@@ -100,8 +135,8 @@ npm install
 # Install Python packages for Windows decryption
 pip install pywin32 cryptography
 
-# Optional: Install Selenium for screenshot generation
-pip install selenium
+# Optional: Install packages for demo recording
+pip install selenium opencv-python pillow
 ```
 
 ### Step 3: Automated Startup (No Manual Cookie Required!) 🚀
@@ -135,19 +170,71 @@ Use the wrapper script `run.js` to manage the entire process:
 node run.js
 ```
 
-The server will be started at `http://localhost:12345`. Open this URL in your browser.
+The server will be started at `https://localhost:12345`. Open this URL in your browser and accept the self-signed certificate warning.
 
 ***
 
 ## Configuration
 
-The core configuration is located in `app.js`:
+The core configuration is located in `server/config.js`:
 
 ```javascript
-const PORT = 12345;                              // Server port
-const SHIPPING_MANAGER_API = '[https://shippingmanager.cc/api](https://shippingmanager.cc/api)';  // API endpoint
-// SESSION_COOKIE is now set automatically via process.env by run.js.
+module.exports = {
+  PORT: 12345,
+  HOST: '0.0.0.0',  // Listens on all network interfaces
+  SHIPPING_MANAGER_API: 'https://shippingmanager.cc/api',
+  SESSION_COOKIE: process.env.SHIPPING_MANAGER_COOKIE,  // Auto-injected by run.js
+
+  // Rate limiting
+  RATE_LIMIT: {
+    windowMs: 15 * 60 * 1000,  // 15 minutes
+    max: 1000
+  },
+
+  // Chat auto-refresh interval
+  CHAT_REFRESH_INTERVAL: 25000  // 25 seconds
+};
 ```
+
+### Settings (In-App)
+
+Access settings via the ⚙️ button in the header:
+
+- **Fuel Alert Threshold**: Set custom price threshold for fuel alerts (default: $400/ton)
+- **CO2 Alert Threshold**: Set custom price threshold for CO2 alerts (default: $7/ton)
+- **Maintenance Threshold**: Set wear percentage for automatic repair detection (10% or 20%)
+- **Test Notifications**: Test browser notifications before enabling alerts
+
+***
+
+## Network Access
+
+The application uses HTTPS with self-signed certificates that include all your local network IP addresses. This allows you to access the application from any device on your local network:
+
+1. Start the server with `node run.js`
+2. Note the network URLs displayed in the console (e.g., `https://192.168.1.100:12345`)
+3. On another device, navigate to that URL
+4. Accept the self-signed certificate warning
+5. The app is now accessible across your local network
+
+***
+
+## Demo Mode
+
+A fully functional demo is available at `/example.html` with dummy data. Perfect for:
+- Testing features without API calls
+- Creating screenshots and videos
+- Demonstrating the tool to others
+
+**Demo Recording:**
+Generate a demo video and GIF automatically:
+```bash
+python record-demo.py
+```
+
+This creates:
+- `demo_video.mp4` - Full quality video at 5 FPS
+- `demo.gif` - Optimized GIF at 50% resolution
 
 ***
 
@@ -156,6 +243,67 @@ const SHIPPING_MANAGER_API = '[https://shippingmanager.cc/api](https://shippingm
 **Your Session Cookie is extracted automatically and dynamically!** The manual step of saving the cookie in a `.env` file is no longer required, significantly **improving local security** by preventing the sensitive value from being permanently stored in a file.
 
 **Never share the decrypted cookie publicly!** The cookie provides full, persistent access to your Shipping Manager account.
+
+**Security Features:**
+- Session cookie only stored in memory (process.env)
+- HTTPS with self-signed certificates
+- Input validation on all endpoints
+- Rate limiting on API calls
+- Helmet middleware for security headers
+
+***
+
+## Project Structure
+
+```
+shippingmanager_messanger/
+├── app.js                    # Main application entry point
+├── run.js                    # Startup wrapper (handles Steam & cookie extraction)
+├── record-demo.py            # Demo video/GIF generator
+├── server/
+│   ├── config.js            # Centralized configuration
+│   ├── certificate.js       # HTTPS certificate generation
+│   ├── middleware/          # Express middleware
+│   ├── routes/              # API routes (alliance, messenger, game)
+│   ├── utils/               # Helper functions (API calls, caching)
+│   └── websocket.js         # WebSocket server for real-time updates
+├── helper/
+│   └── get-session-from-steam-windows11.py  # Cookie extraction script
+├── public/
+│   ├── index.html           # Main application UI
+│   ├── example.html         # Demo page with dummy data
+│   ├── css/style.css        # Styling
+│   └── js/
+│       ├── script.js        # Main application logic
+│       └── example-script.js # Demo application logic
+└── screenshots/             # Screenshots for documentation
+```
+
+***
+
+## Troubleshooting
+
+### Certificate Warnings
+The self-signed certificate will trigger browser warnings. This is expected and safe for local network use. Click "Advanced" → "Proceed to localhost" (or similar).
+
+### Steam Not Restarting
+If Steam doesn't restart automatically, check:
+- Steam installation path matches default (`C:\Program Files (x86)\Steam\steam.exe`)
+- You have permissions to start Steam
+
+### Session Cookie Expired
+If you get authentication errors:
+1. Stop the server
+2. Log into Shipping Manager via Steam
+3. Restart the server with `node run.js`
+
+### Network Access Issues
+If you can't access from other devices:
+1. Check your firewall allows connections on port 12345
+2. Verify you're using the correct network IP address
+3. Regenerate certificates: delete `cert.pem` and `key.pem`, then restart
+
+***
 
 ## License
 
@@ -167,28 +315,8 @@ This tool is not affiliated with Shipping Manager or Steam. It's a community-cre
 
 ***
 
-## Screenshots
+## Demo
 
-### Main View - Alliance Chat
-![Main View](./screenshots/01-main-view.png)
+![Demo](demo.gif)
 
-### Success Feedback Message
-![Success Feedback](./screenshots/02-success-feedback.png)
-
-### Fuel Purchase Dialog
-![Fuel Purchase](./screenshots/03-fuel-purchase-dialog.png)
-
-### CO2 Purchase Dialog
-![CO2 Purchase](./screenshots/04-co2-purchase-dialog.png)
-
-### Contact List
-![Contact List](./screenshots/05-contact-list.png)
-
-### All Private Conversations
-![All Chats](./screenshots/06-all-chats-overview.png)
-
-### Private Chat Conversation
-![Private Chat](./screenshots/07-private-chat.png)
-
-### Action Bar Details
-![Action Bar](./screenshots/09-action-bar-detail.png)
+A fully functional demo is available at `https://localhost:12345/example.html` after starting the server.
