@@ -1,6 +1,7 @@
 // utils/api.js - API Helper Functions
 
 const axios = require('axios');
+const https = require('https');
 const config = require('../config');
 
 // State management
@@ -9,8 +10,18 @@ let USER_ID = null;
 let USER_COMPANY_NAME = null;
 const userNameCache = new Map();
 
+// Create HTTPS agent with Keep-Alive for connection reuse
+const httpsAgent = new https.Agent({
+  keepAlive: true,                // Enable Keep-Alive
+  keepAliveMsecs: 30000,          // Keep connections alive for 30 seconds
+  maxSockets: 10,                 // Max 10 simultaneous connections (good for anti-detection)
+  maxFreeSockets: 5,              // Max 5 idle sockets
+  timeout: 30000,                 // Socket timeout 30s
+  scheduling: 'lifo'              // Use most recently used socket first
+});
+
 /**
- * Make API calls with authentication
+ * Make API calls with authentication and Keep-Alive
  */
 async function apiCall(endpoint, method = 'POST', body = {}) {
   try {
@@ -24,7 +35,9 @@ async function apiCall(endpoint, method = 'POST', body = {}) {
         'User-Agent': 'Mozilla/5.0',
         'Origin': 'https://shippingmanager.cc',
         'Cookie': `shipping_manager_session=${config.SESSION_COOKIE}`
-      }
+      },
+      httpsAgent: httpsAgent,      // Use Keep-Alive agent
+      timeout: 30000                // Request timeout 30s
     });
     return response.data;
   } catch (error) {

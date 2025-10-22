@@ -22,6 +22,20 @@ router.get('/vessel/get-vessels', async (req, res) => {
 });
 
 /**
+ * GET /api/user/get-settings
+ * Get user settings (includes anchor_points)
+ */
+router.get('/user/get-settings', async (req, res) => {
+  try {
+    const data = await apiCall('/user/get-user-settings', 'GET', {});
+    res.json(data);
+  } catch (error) {
+    console.error('Error getting user settings:', error);
+    res.status(500).json({ error: 'Failed to retrieve user settings' });
+  }
+});
+
+/**
  * GET /api/bunker/get-prices
  * Get bunker prices (fuel and CO2)
  */
@@ -160,6 +174,46 @@ router.post('/marketing/activate-campaign', express.json(), async (req, res) => 
   } catch (error) {
     console.error('Error activating campaign:', error);
     res.status(500).json({ error: 'Failed to activate campaign' });
+  }
+});
+
+/**
+ * GET /api/vessel/get-all-acquirable
+ * Get all vessels available for purchase
+ */
+router.get('/vessel/get-all-acquirable', async (req, res) => {
+  try {
+    const data = await apiCall('/vessel/get-all-acquirable-vessels', 'POST', {});
+    res.json(data);
+  } catch (error) {
+    console.error('Error getting acquirable vessels:', error);
+    res.status(500).json({ error: 'Failed to retrieve acquirable vessels' });
+  }
+});
+
+/**
+ * POST /api/vessel/purchase-vessel
+ * Purchase a vessel
+ */
+router.post('/vessel/purchase-vessel', express.json(), async (req, res) => {
+  const { vessel_id, name, antifouling_model } = req.body;
+
+  if (!vessel_id || !name) {
+    return res.status(400).json({ error: 'Missing required fields: vessel_id, name' });
+  }
+
+  try {
+    const data = await apiCall('/vessel/purchase-vessel', 'POST', {
+      vessel_id,
+      name,
+      adjust_speed: '4_blade_propeller',
+      antifouling_model: antifouling_model || null,
+      enhanced_deck_beams: 0
+    });
+    res.json(data);
+  } catch (error) {
+    console.error('Error purchasing vessel:', error);
+    res.status(500).json({ error: 'Failed to purchase vessel' });
   }
 });
 

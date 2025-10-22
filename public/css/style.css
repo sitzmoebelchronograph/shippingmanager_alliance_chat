@@ -168,9 +168,6 @@ body {
     padding: 20px;
     border-radius: 10px 10px 0 0;
     border-bottom: 2px solid #404040;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 .header h1 {
@@ -195,6 +192,7 @@ body {
     display: flex;
     gap: 12px;
     align-items: center;
+    margin-left: 20px;
 }
 
 .status {
@@ -221,11 +219,16 @@ body {
     background: #4b5563;
     color: white;
     border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
+    padding: 3px 8px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     transition: background 0.2s;
+    opacity: 0.75;
+    line-height: 1.3;
+    text-align: center;
+    min-width: 70px;
+    max-width: 80px;
 }
 
 #notificationBtn:hover {
@@ -498,16 +501,16 @@ button:active {
 
 .messenger-header {
     background: #2a2a2a;
-    padding: 15px 20px;
+    padding: 10px 15px;
     border-radius: 10px 10px 0 0;
-    border-bottom: 2px solid #404040;
+    border-bottom: 1px solid #404040;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .messenger-header h2 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     margin: 0;
     color: #60a5fa;
@@ -779,6 +782,12 @@ button:active {
     border: 2px solid #fbbf24;
 }
 
+.global-feedback-message.info {
+    background: #065f46;
+    color: #86efac;
+    border: 2px solid #4ade80;
+}
+
 /* Custom Confirm Dialog */
 .confirm-dialog-overlay {
     position: fixed;
@@ -808,6 +817,10 @@ button:active {
     padding: 20px;
     border-radius: 8px 8px 0 0;
     border-bottom: 2px solid #404040;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
 }
 
 .confirm-dialog-header h3 {
@@ -815,10 +828,18 @@ button:active {
     font-size: 20px;
     color: #60a5fa;
     font-weight: 600;
+    flex: 1;
+}
+
+.confirm-dialog-buttons {
+    display: flex;
+    gap: 10px;
 }
 
 .confirm-dialog-body {
     padding: 25px;
+    max-height: 70vh;
+    overflow-y: auto;
 }
 
 .confirm-dialog-body p {
@@ -846,11 +867,11 @@ button:active {
 
 .confirm-dialog-detail-row:last-child {
     border-bottom: none;
-    padding-top: 12px;
-    margin-top: 8px;
-    border-top: 2px solid #60a5fa;
-    font-weight: 600;
-    font-size: 16px;
+    padding-top: 8px;
+    margin-top: 0;
+    border-top: none;
+    font-weight: normal;
+    font-size: 13px;
 }
 
 .confirm-dialog-detail-row .label {
@@ -862,8 +883,38 @@ button:active {
     font-weight: 500;
 }
 
-.confirm-dialog-detail-row:last-child .value {
+/* Make "Total Cost" row prominent (second-to-last row) */
+.confirm-dialog-detail-row:nth-last-child(2) {
+    border-bottom: none;
+    padding-top: 12px;
+    margin-top: 8px;
+    border-top: 2px solid #60a5fa;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.confirm-dialog-detail-row:nth-last-child(2) .value {
+    color: #ffffff;
+}
+
+/* Total Cost - color based on affordability */
+.confirm-dialog-detail-row:nth-last-child(2).affordable .value {
     color: #4ade80;
+}
+
+.confirm-dialog-detail-row:nth-last-child(2).too-expensive .value {
+    color: #ef4444;
+}
+
+/* Make "Available Cash" less prominent */
+.confirm-dialog-detail-row:last-child .label {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.confirm-dialog-detail-row:last-child .value {
+    color: #9ca3af;
+    font-size: 12px;
 }
 
 .confirm-dialog-footer {
@@ -938,6 +989,215 @@ button:active {
     font-size: 14px;
 }
 
+/* === Vessel Catalog Styles === */
+.vessel-filter-btn {
+    padding: 8px 16px;
+    background: rgba(31, 41, 55, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vessel-filter-btn:hover {
+    background: rgba(31, 41, 55, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.vessel-filter-btn.active {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+}
+
+.bulk-buy-btn {
+    padding: 8px 20px;
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    border-radius: 6px;
+    color: #4ade80;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bulk-buy-btn:hover {
+    background: rgba(34, 197, 94, 0.3);
+    transform: translateY(-1px);
+}
+
+.vessel-header-controls {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.vessel-header-controls button {
+    padding: 4px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    flex: 0 1 auto;
+    min-width: fit-content;
+}
+
+
+.vessel-catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    padding: 0;
+}
+
+.vessel-card {
+    background: rgba(31, 41, 55, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.vessel-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.vessel-card.pending-vessel:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.vessel-card.pending-vessel .vessel-content {
+    padding: 16px 16px 8px 16px;
+}
+
+.vessel-card.selected {
+    border-color: rgba(34, 197, 94, 0.5);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.vessel-image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    background: rgba(17, 24, 39, 0.8);
+}
+
+.vessel-content {
+    padding: 16px;
+}
+
+.vessel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 12px;
+}
+
+.vessel-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e0e0e0;
+    margin: 0;
+}
+
+.vessel-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: #4ade80;
+}
+
+.vessel-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.vessel-spec {
+    color: #9ca3af;
+}
+
+.vessel-spec strong {
+    color: #e0e0e0;
+}
+
+.vessel-actions {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 10px;
+    margin-top: 12px;
+    align-items: center;
+}
+
+.vessel-quantity-input {
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    background: rgba(17, 24, 39, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.vessel-action-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
+.vessel-select-btn,
+.vessel-buy-btn {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vessel-select-btn {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+}
+
+.vessel-select-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+.vessel-select-btn.selected {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.4);
+    color: #4ade80;
+}
+
+.vessel-buy-btn {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #4ade80;
+}
+
+.vessel-buy-btn:hover {
+    background: rgba(34, 197, 94, 0.2);
+    transform: translateY(-1px);
+}
+
 /* Dialog buttons stack earlier to avoid overflow */
 @media (max-width: 800px) {
     .confirm-dialog-footer {
@@ -997,50 +1257,55 @@ button:active {
         justify-content: space-between;
     }
 
-    /* Header - Keep title left-aligned */
+    /* Header - 2-row mobile layout */
     .header {
         padding: 10px;
-        gap: 8px;
-        display: grid;
-        grid-template-columns: 1fr auto;
-        grid-template-rows: auto auto;
+    }
+
+    .header-top {
+        align-items: center !important;
     }
 
     .header h1 {
-        text-align: left;
-        grid-column: 1;
-        grid-row: 1;
+        font-size: 16px;
+        gap: 6px !important;
+        margin: 0 !important;
     }
 
-    .tab-buttons {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        justify-content: flex-start;
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
-    .tab-btn {
-        font-size: 13px;
-        padding: 6px 12px;
+    .header-icon {
+        font-size: 24px;
     }
 
     .header-right {
-        grid-column: 2;
-        grid-row: 1;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        justify-self: end;
+        margin-left: 10px !important;
     }
 
     .header-right button {
-        order: 2;
-        width: auto;
+        font-size: 8px !important;
+        padding: 2px 6px !important;
+        white-space: normal !important;
+        opacity: 0.7 !important;
+        border-radius: 6px !important;
+        line-height: 1.2 !important;
+        min-width: 50px !important;
+        max-width: 60px !important;
     }
 
-    .header-right .status {
-        order: 1;
+    .header-info-displays {
+        flex-wrap: wrap !important;
+        padding-left: 0 !important;
+        gap: 6px !important;
+        margin-top: 8px !important;
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+    .header-info-displays > div {
+        font-size: 11px !important;
+    }
+
+    .header-info-displays span {
+        font-size: 11px !important;
     }
 
     /* Chat area adjustments */
@@ -1167,6 +1432,14 @@ button:active {
     .confirm-dialog {
         width: 90%;
         max-width: none;
+        margin: 0 5%;
+    }
+
+    .confirm-dialog-header {
+        padding: 15px;
+    }
+
+    .confirm-dialog-body {
         padding: 15px;
     }
 
@@ -1190,6 +1463,11 @@ button:active {
         height: 16px;
         line-height: 16px;
     }
+
+    /* Vessel catalog - 1 column on mobile */
+    .vessel-catalog-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Extra small screens - Below 415px */
@@ -1208,5 +1486,23 @@ button:active {
 
     .action-buttons-group .action-btn {
         padding: 1px 3px;
+    }
+}
+
+/* Disable hover effects on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    button:hover,
+    .action-btn:hover,
+    .vessel-filter-btn:hover,
+    .bulk-buy-btn:hover,
+    .vessel-card:hover,
+    .vessel-select-btn:hover,
+    .vessel-buy-btn:hover,
+    .confirm-dialog-btn:hover,
+    .close-btn:hover,
+    .company-name:hover {
+        background: inherit !important;
+        transform: none !important;
+        box-shadow: none !important;
     }
 }

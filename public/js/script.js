@@ -38,6 +38,12 @@ let settings = {
 // Campaigns tracking
 let lastCampaignsCount = null;
 
+// Vessel catalog state
+let allAcquirableVessels = [];
+let currentVesselFilter = 'container';
+let selectedEngineType = null;
+let selectedVessels = [];
+
 // Load settings from localStorage
 function loadSettings() {
   const saved = localStorage.getItem('shippingManagerSettings');
@@ -54,6 +60,7 @@ function saveSettings() {
 // --- Utility Functions ---
 
 function escapeHtml(text) {
+  if (!text) return '';
   const map = {
     '&': '&amp;',
     '<': '&lt;',
@@ -61,7 +68,7 @@ function escapeHtml(text) {
     '"': '&quot;',
     "'": '&#039;'
   };
-  return text.replace(/[&<>"']/g, m => map[m]);
+  return String(text).replace(/[&<>"']/g, m => map[m]);
 }
 
 function showFeedback(message, type) {
@@ -184,26 +191,47 @@ function showConfirmDialog(options) {
 
     const detailsHtml = options.details ? `
       <div class="confirm-dialog-details">
-        ${options.details.map(detail => `
-          <div class="confirm-dialog-detail-row">
-            <span class="label">${escapeHtml(detail.label)}</span>
-            <span class="value">${escapeHtml(detail.value)}</span>
-          </div>
-        `).join('')}
+        ${options.details.map((detail, index) => {
+          const isSecondToLastRow = index === options.details.length - 2;
+
+          let rowClass = '';
+          // Apply color class to Total Cost (second-to-last row) based on affordability
+          if (isSecondToLastRow && detail.label === 'Total Cost') {
+            const totalCostMatch = detail.value.match(/[\d,]+/);
+            const availableCashMatch = options.details[options.details.length - 1].value.match(/[\d,]+/);
+
+            if (totalCostMatch && availableCashMatch) {
+              const totalCost = parseInt(totalCostMatch[0].replace(/,/g, ''));
+              const availableCash = parseInt(availableCashMatch[0].replace(/,/g, ''));
+              rowClass = availableCash >= totalCost ? ' affordable' : ' too-expensive';
+            }
+          }
+
+          return `
+            <div class="confirm-dialog-detail-row${rowClass}">
+              <span class="label">${escapeHtml(detail.label)}</span>
+              <span class="value">${escapeHtml(detail.value)}</span>
+            </div>
+          `;
+        }).join('')}
       </div>
     ` : '';
+
+    const cancelButtonHtml = options.cancelText !== ''
+      ? `<button class="confirm-dialog-btn cancel" data-action="cancel">${escapeHtml(options.cancelText || 'Cancel')}</button>`
+      : '';
 
     dialog.innerHTML = `
       <div class="confirm-dialog-header">
         <h3>${escapeHtml(options.title || 'Confirm')}</h3>
+        <div class="confirm-dialog-buttons">
+          ${cancelButtonHtml}
+          <button class="confirm-dialog-btn confirm" data-action="confirm">${escapeHtml(options.confirmText || 'Confirm')}</button>
+        </div>
       </div>
       <div class="confirm-dialog-body">
-        <p>${escapeHtml(options.message)}</p>
+        ${options.message ? `<p>${options.message}</p>` : ''}
         ${detailsHtml}
-      </div>
-      <div class="confirm-dialog-footer">
-        <button class="confirm-dialog-btn cancel" data-action="cancel">Cancel</button>
-        <button class="confirm-dialog-btn confirm" data-action="confirm">${escapeHtml(options.confirmText || 'Confirm')}</button>
       </div>
     `;
 
@@ -1075,81 +1103,6 @@ async function testBrowserNotification() {
 let lastFuelAlertPrice = null;
 let lastCO2AlertPrice = null;
 
-// Check prices and trigger alerts if below threshold
-async function checkPriceAlerts() {
-  try {
-    console.log('[Price Alert] Checking prices...');
-    const response = await fetch('/api/bunker/get-prices');
-    if (!response.ok) {
-      console.error('[Price Alert] API response not OK:', response.status);
-      return;
-    }
-
-    const data = await response.json();
-    console.log('[Price Alert] Got price data:', data);
-
-    // Get current price based on UTC time (same logic as updateBunkerStatus)
-    const now = new Date();
-    const utcHours = now.getUTCHours();
-    const utcMinutes = now.getUTCMinutes();
-    const currentTimeSlot = `${String(utcHours).padStart(2, '0')}:${utcMinutes < 30 ? '00' : '30'}`;
-
-    const currentPriceData = data.data.prices.find(p => p.time === currentTimeSlot);
-
-    if (!currentPriceData) return; // No price data available for current time
-
-    const currentFuelPrice = currentPriceData.fuel_price;
-    const currentCO2Price = currentPriceData.co2_price;
-
-    const hasPermission = Notification.permission === "granted";
-    console.log('[Price Alert] Current fuel:', currentFuelPrice, 'Threshold:', settings.fuelThreshold, 'Last alert:', lastFuelAlertPrice);
-    console.log('[Price Alert] Current CO2:', currentCO2Price, 'Threshold:', settings.co2Threshold, 'Last alert:', lastCO2AlertPrice);
-
-    if (currentFuelPrice <= settings.fuelThreshold && lastFuelAlertPrice !== currentFuelPrice) {
-      lastFuelAlertPrice = currentFuelPrice;
-      console.log('[Price Alert] FUEL ALERT TRIGGERED!', currentFuelPrice);
-
-      if (hasPermission) {
-        await showNotification('⛽ Fuel Price Alert!', {
-          body: `Fuel price dropped to $${currentFuelPrice}/ton (Your threshold: $${settings.fuelThreshold}/ton)`,
-          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
-          tag: 'fuel-alert',
-          silent: false
-        });
-      }
-
-      showPriceAlert(`⛽ Fuel Price Alert!<br><br>Current price: <strong>$${currentFuelPrice}/ton</strong><br>Your threshold: $${settings.fuelThreshold}/ton`, 'warning');
-    }
-
-    // Check CO2 price
-    if (currentCO2Price <= settings.co2Threshold && lastCO2AlertPrice !== currentCO2Price) {
-      lastCO2AlertPrice = currentCO2Price;
-      console.log('[Price Alert] CO2 ALERT TRIGGERED!', currentCO2Price);
-
-      if (hasPermission) {
-        await showNotification('💨 CO2 Price Alert!', {
-          body: `CO2 price dropped to $${currentCO2Price}/ton (Your threshold: $${settings.co2Threshold}/ton)`,
-          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
-          tag: 'co2-alert',
-          silent: false
-        });
-      }
-
-      showPriceAlert(`💨 CO2 Price Alert!<br><br>Current price: <strong>$${currentCO2Price}/ton</strong><br>Your threshold: $${settings.co2Threshold}/ton`, 'warning');
-    }
-
-    if (currentFuelPrice > settings.fuelThreshold) {
-      lastFuelAlertPrice = null;
-    }
-    if (currentCO2Price > settings.co2Threshold) {
-      lastCO2AlertPrice = null;
-    }
-  } catch (error) {
-    console.error('[Price Alert] ERROR checking price alerts:', error);
-    console.error('[Price Alert] Error stack:', error.stack);
-  }
-}
-
 // --- All Chats Overview ---
 
 async function showAllChats() {
@@ -1257,6 +1210,7 @@ function debouncedUpdateBunkerStatus(delay = 800) {
 
 async function updateBunkerStatus() {
   try {
+    console.log('[Bunker] Updating bunker status & checking price alerts...');
     const response = await fetch('/api/bunker/get-prices');
     if (!response.ok) return;
 
@@ -1287,13 +1241,13 @@ async function updateBunkerStatus() {
     const fuelPriceDisplay = document.getElementById('fuelPriceDisplay');
     const co2PriceDisplay = document.getElementById('co2PriceDisplay');
 
-    fuelDisplay.textContent = `${formatNumber(currentFuel)}t/${formatNumber(maxFuel)}t`;
+    fuelDisplay.innerHTML = `${formatNumber(Math.floor(currentFuel))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxFuel))} <b>t</b>`;
 
     // CO2 display: show absolute value with minus sign if negative
     if (currentCO2 < 0) {
-      co2Display.textContent = `-${formatNumber(Math.abs(currentCO2))}t/${formatNumber(maxCO2)}t`;
+      co2Display.innerHTML = `-${formatNumber(Math.floor(Math.abs(currentCO2)))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxCO2))} <b>t</b>`;
     } else {
-      co2Display.textContent = `${formatNumber(currentCO2)}t/${formatNumber(maxCO2)}t`;
+      co2Display.innerHTML = `${formatNumber(Math.floor(currentCO2))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxCO2))} <b>t</b>`;
     }
 
     // Cash display
@@ -1328,6 +1282,51 @@ async function updateBunkerStatus() {
 
     document.getElementById('fuelBtn').title = `Buy ${formatNumber(fuelNeeded)}t fuel for $${formatNumber(fuelCost)} (Price: $${fuelPrice}/t)`;
     document.getElementById('co2Btn').title = `Buy ${formatNumber(co2Needed)}t CO2 for $${formatNumber(co2Cost)} (Price: $${co2Price}/t)`;
+
+    // --- Price Alert Logic (integrated to avoid duplicate API calls) ---
+    const hasPermission = Notification.permission === "granted";
+
+    // Check fuel price alert
+    if (fuelPrice <= settings.fuelThreshold && lastFuelAlertPrice !== fuelPrice) {
+      lastFuelAlertPrice = fuelPrice;
+      console.log('[Price Alert] FUEL ALERT TRIGGERED!', fuelPrice);
+
+      if (hasPermission) {
+        await showNotification('⛽ Fuel Price Alert!', {
+          body: `Fuel price dropped to $${fuelPrice}/ton (Your threshold: $${settings.fuelThreshold}/ton)`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
+          tag: 'fuel-alert',
+          silent: false
+        });
+      }
+
+      showPriceAlert(`⛽ Fuel Price Alert!<br><br>Current price: <strong>$${fuelPrice}/ton</strong><br>Your threshold: $${settings.fuelThreshold}/ton`, 'warning');
+    }
+
+    // Check CO2 price alert
+    if (co2Price <= settings.co2Threshold && lastCO2AlertPrice !== co2Price) {
+      lastCO2AlertPrice = co2Price;
+      console.log('[Price Alert] CO2 ALERT TRIGGERED!', co2Price);
+
+      if (hasPermission) {
+        await showNotification('💨 CO2 Price Alert!', {
+          body: `CO2 price dropped to $${co2Price}/ton (Your threshold: $${settings.co2Threshold}/ton)`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
+          tag: 'co2-alert',
+          silent: false
+        });
+      }
+
+      showPriceAlert(`💨 CO2 Price Alert!<br><br>Current price: <strong>$${co2Price}/ton</strong><br>Your threshold: $${settings.co2Threshold}/ton`, 'warning');
+    }
+
+    // Reset alert tracking if prices go above threshold
+    if (fuelPrice > settings.fuelThreshold) {
+      lastFuelAlertPrice = null;
+    }
+    if (co2Price > settings.co2Threshold) {
+      lastCO2AlertPrice = null;
+    }
 
   } catch (error) {
     console.error('Error updating bunker status:', error);
@@ -1432,7 +1431,8 @@ async function buyMaxFuel() {
     details: [
       { label: 'Amount needed', value: `${formatNumber(fuelNeeded)}t` },
       { label: 'Price per ton', value: `$${formatNumber(fuelPrice)}/t` },
-      { label: 'Total Cost', value: `$${formatNumber(totalCost)}` }
+      { label: 'Total Cost', value: `$${formatNumber(totalCost)}` },
+      { label: 'Available Cash', value: `$${formatNumber(currentCash)}` }
     ]
   });
 
@@ -1477,7 +1477,8 @@ async function buyMaxCO2() {
     details: [
       { label: 'Amount needed', value: `${formatNumber(co2Needed)}t` },
       { label: 'Price per ton', value: `$${formatNumber(co2Price)}/t` },
-      { label: 'Total Cost', value: `$${formatNumber(totalCost)}` }
+      { label: 'Total Cost', value: `$${formatNumber(totalCost)}` },
+      { label: 'Available Cash', value: `$${formatNumber(currentCash)}` }
     ]
   });
 
@@ -1521,28 +1522,133 @@ async function updateVesselCount() {
     const data = await response.json();
     const vessels = data.vessels || [];
 
-    // Count vessels in harbor (route_end_time is null or in the past)
-    const now = Math.floor(Date.now() / 1000); // Current Unix timestamp
-    const vesselsInHarbor = vessels.filter(v => {
-      return !v.route_end_time || parseInt(v.route_end_time) < now;
-    }).length;
+    // Filter by status field:
+    // - "port": Ready to depart
+    // - "anchor": At anchor (parked after route completion)
+    // - "pending": Under construction/delivery (don't show)
+    // - "enroute": On route (don't show)
+    const readyToDepart = vessels.filter(v => v.status === 'port').length;
+    const atAnchor = vessels.filter(v => v.status === 'anchor').length;
+    const pendingVessels = vessels.filter(v => v.status === 'pending').length;
 
+    // Update Buy Vessels button badge
+    const pendingBadge = document.getElementById('pendingVesselsBadge');
+    if (pendingBadge) {
+      if (pendingVessels > 0) {
+        pendingBadge.textContent = pendingVessels;
+        pendingBadge.style.display = 'block';
+      } else {
+        pendingBadge.style.display = 'none';
+      }
+    }
+
+    // Update Pending filter button
+    const pendingBtn = document.getElementById('filterPendingBtn');
+    const pendingCountSpan = document.getElementById('pendingCount');
+    if (pendingBtn && pendingCountSpan) {
+      if (pendingVessels > 0) {
+        pendingCountSpan.textContent = pendingVessels;
+        pendingBtn.style.display = 'block';
+      } else {
+        pendingBtn.style.display = 'none';
+      }
+    }
+
+    // Update Depart All button
     const countBadge = document.getElementById('vesselCount');
     const departBtn = document.getElementById('departAllBtn');
 
-    if (vesselsInHarbor > 0) {
-      countBadge.textContent = vesselsInHarbor;
+    if (readyToDepart > 0) {
+      countBadge.textContent = readyToDepart;
       countBadge.style.display = 'block';
       departBtn.disabled = false;
-      departBtn.title = `Depart all ${vesselsInHarbor} vessel${vesselsInHarbor === 1 ? '' : 's'} from harbor`;
+      departBtn.title = `Depart all ${readyToDepart} vessel${readyToDepart === 1 ? '' : 's'} from harbor`;
     } else {
       countBadge.style.display = 'none';
       departBtn.disabled = true;
-      departBtn.title = 'No vessels in harbor';
+      departBtn.title = 'No vessels ready to depart';
+    }
+
+    // Update Anchor button
+    const anchorBadge = document.getElementById('anchorCount');
+    const anchorBtn = document.getElementById('anchorBtn');
+
+    if (atAnchor > 0) {
+      anchorBadge.textContent = atAnchor;
+      anchorBadge.style.display = 'block';
+      anchorBtn.disabled = false;
+      anchorBtn.title = `${atAnchor} vessel${atAnchor === 1 ? '' : 's'} at anchor`;
+    } else {
+      anchorBadge.style.display = 'none';
+      anchorBtn.disabled = true;
+      anchorBtn.title = 'No vessels at anchor';
+    }
+
+    // Get user settings for max anchor points and stock info
+    const settingsResponse = await fetch('/api/user/get-settings');
+    if (settingsResponse.ok) {
+      const settingsData = await settingsResponse.json();
+      const maxAnchorPoints = settingsData.data?.settings?.anchor_points || 0;
+      const stockValue = settingsData.user?.stock_value || 0;
+      const stockTrend = settingsData.user?.stock_trend || '';
+
+      // Available capacity = max anchor points - total vessels (including pending, enroute, etc.)
+      const totalVessels = vessels.length;
+      const availableCapacity = maxAnchorPoints - totalVessels;
+
+      // Update anchor slots display
+      const anchorSlotsDisplay = document.getElementById('anchorSlotsDisplay');
+      if (anchorSlotsDisplay) {
+        anchorSlotsDisplay.textContent = `${availableCapacity}/${maxAnchorPoints}`;
+      }
+
+      // Update stock display (only if IPO is active)
+      const stockDisplay = document.getElementById('stockDisplay');
+      const stockTrendElement = document.getElementById('stockTrend');
+      const ipo = settingsData.user?.ipo || 0;
+
+      if (stockDisplay && stockTrendElement) {
+        const stockContainer = stockDisplay.parentElement;
+
+        if (ipo === 1) {
+          // IPO active - show stock info
+          stockContainer.style.display = 'flex';
+          stockDisplay.textContent = stockValue.toFixed(2);
+
+          // Set trend arrow and color
+          if (stockTrend === 'up') {
+            stockTrendElement.textContent = '↑';
+            stockTrendElement.style.color = '#4ade80';
+          } else if (stockTrend === 'down') {
+            stockTrendElement.textContent = '↓';
+            stockTrendElement.style.color = '#ef4444';
+          } else {
+            stockTrendElement.textContent = '';
+          }
+        } else {
+          // IPO not active - hide stock display
+          stockContainer.style.display = 'none';
+        }
+      }
     }
   } catch (error) {
     console.error('Error updating vessel count:', error);
   }
+}
+
+async function showAnchorInfo() {
+  const anchorBadge = document.getElementById('anchorCount');
+  const vesselsAtAnchor = parseInt(anchorBadge.textContent) || 0;
+
+  await showConfirmDialog({
+    title: '⚓ Vessels at Anchor',
+    message: `You have ${vesselsAtAnchor} vessel${vesselsAtAnchor === 1 ? '' : 's'} at anchor.\n\nPlease plan routes for your vessels in the game. Once you assign routes, the vessel count will update automatically.`,
+    confirmText: 'Got it',
+    cancelText: '' // Hide cancel button by setting empty text
+  });
+
+  // Refresh vessel count after user closes dialog
+  debouncedUpdateVesselCount(500);
 }
 
 async function departAllVessels() {
@@ -1585,11 +1691,11 @@ async function departAllVessels() {
     currentCO2 -= co2Emitted;
 
     document.getElementById('cashDisplay').textContent = `$${formatNumber(currentCash)}`;
-    document.getElementById('fuelDisplay').textContent = `${formatNumber(currentFuel)}t/${formatNumber(maxFuel)}t`;
+    document.getElementById('fuelDisplay').innerHTML = `${formatNumber(Math.floor(currentFuel))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxFuel))} <b>t</b>`;
     if (currentCO2 < 0) {
-      document.getElementById('co2Display').textContent = `-${formatNumber(Math.abs(currentCO2))}t/${formatNumber(maxCO2)}t`;
+      document.getElementById('co2Display').innerHTML = `-${formatNumber(Math.floor(Math.abs(currentCO2)))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxCO2))} <b>t</b>`;
     } else {
-      document.getElementById('co2Display').textContent = `${formatNumber(currentCO2)}t/${formatNumber(maxCO2)}t`;
+      document.getElementById('co2Display').innerHTML = `${formatNumber(Math.floor(currentCO2))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxCO2))} <b>t</b>`;
     }
 
     // Update vessel count and refresh from server to ensure accuracy
@@ -1720,7 +1826,8 @@ async function repairAllVessels() {
       details: [
         { label: 'Vessels to repair', value: `${vesselsToRepair.length}` },
         { label: 'Wear threshold', value: `${settings.maintenanceThreshold}%` },
-        { label: 'Total Cost', value: `$${formatNumber(totalCost)}` }
+        { label: 'Total Cost', value: `$${formatNumber(totalCost)}` },
+        { label: 'Available Cash', value: `$${formatNumber(currentCash)}` }
       ]
     });
 
@@ -2012,6 +2119,554 @@ async function showNotification(title, options) {
   }
 }
 
+// --- Vessel Catalog ---
+
+async function loadAcquirableVessels() {
+  try {
+    const response = await fetch('/api/vessel/get-all-acquirable');
+    if (!response.ok) throw new Error('Failed to load vessels');
+
+    const data = await response.json();
+    allAcquirableVessels = data.data.vessels_for_sale || [];
+    displayVessels();
+  } catch (error) {
+    console.error('Error loading vessels:', error);
+    document.getElementById('vesselCatalogFeed').innerHTML = `
+      <div style="text-align: center; color: #ef4444; padding: 40px;">
+        Failed to load vessels. Please try again.
+      </div>
+    `;
+  }
+}
+
+function showPendingVessels(pendingVessels) {
+  const feed = document.getElementById('vesselCatalogFeed');
+
+  // Deactivate all filter buttons and activate pending button
+  document.getElementById('filterContainerBtn').classList.remove('active');
+  document.getElementById('filterTankerBtn').classList.remove('active');
+  document.getElementById('filterEngineBtn').classList.remove('active');
+  document.getElementById('filterPendingBtn').classList.add('active');
+
+  // Hide bulk buy button
+  const bulkBtn = document.getElementById('bulkBuyBtn');
+  if (bulkBtn) bulkBtn.style.display = 'none';
+
+  if (pendingVessels.length === 0) {
+    feed.innerHTML = `
+      <div style="text-align: center; color: #9ca3af; padding: 40px;">
+        No pending vessels
+      </div>
+    `;
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'vessel-catalog-grid';
+
+  pendingVessels.forEach(vessel => {
+    const imageUrl = `https://shippingmanager.cc/images/acquirevessels/${vessel.type}`;
+
+    // Get capacity value - handle both object and number
+    let capacityValue = 0;
+    if (typeof vessel.capacity_max === 'object' && vessel.capacity_max !== null) {
+      // For containers: sum of dry + refrigerated, for tankers: crude_oil or fuel
+      if (vessel.capacity_type === 'container') {
+        capacityValue = (vessel.capacity_max.dry || 0) + (vessel.capacity_max.refrigerated || 0);
+      } else {
+        capacityValue = vessel.capacity_max.crude_oil || vessel.capacity_max.fuel || 0;
+      }
+    } else {
+      capacityValue = vessel.capacity_max || 0;
+    }
+
+    // Calculate time remaining from time_arrival (seconds until ready)
+    let timeDisplay = '';
+    const remaining = vessel.time_arrival || 0;
+
+    if (remaining > 0) {
+      const days = Math.floor(remaining / 86400);
+      const hours = Math.floor((remaining % 86400) / 3600);
+      const minutes = Math.floor((remaining % 3600) / 60);
+      if (days > 0) {
+        timeDisplay = `${days}d ${hours}h`;
+      } else if (hours > 0) {
+        timeDisplay = `${hours}h ${minutes}m`;
+      } else {
+        timeDisplay = `${minutes}m`;
+      }
+    } else {
+      timeDisplay = 'Ready';
+    }
+
+    const card = document.createElement('div');
+    card.className = 'vessel-card pending-vessel';
+    card.innerHTML = `
+      <div style="position: relative;">
+        <img src="${imageUrl}" alt="${vessel.name}" class="vessel-image" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23374151%22 width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 font-size=%2224%22>⛴️</text></svg>'">
+        <div style="position: absolute; top: 8px; left: 8px; background: rgba(249, 115, 22, 0.9); color: white; padding: 4px 8px; border-radius: 4px; font-size: 13px; font-weight: 600;">⏱️ ${timeDisplay}</div>
+        <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(16, 185, 129, 0.9); color: white; padding: 4px 8px; border-radius: 4px; font-size: 13px; font-weight: 600;">$${formatNumber(vessel.price || 0)}</div>
+      </div>
+      <div class="vessel-content">
+        <div class="vessel-header">
+          <h3 class="vessel-name">${vessel.name}</h3>
+        </div>
+        <div class="vessel-specs">
+          <div class="vessel-spec"><strong>Type:</strong> ${vessel.type_name || vessel.type}</div>
+          <div class="vessel-spec"><strong>Year:</strong> ${vessel.year || 'N/A'}</div>
+          <div class="vessel-spec"><strong>Capacity:</strong> ${formatNumber(capacityValue)} ${vessel.capacity_type === 'container' ? 'TEU' : 'BBL'}</div>
+          <div class="vessel-spec"><strong>Speed:</strong> ${vessel.max_speed || 0} kn</div>
+          <div class="vessel-spec"><strong>Range:</strong> ${formatNumber(vessel.range || 0)} nm</div>
+          <div class="vessel-spec"><strong>Engine:</strong> ${vessel.engine_type || 'N/A'} (${formatNumber(vessel.kw || 0)} kW)</div>
+          <div class="vessel-spec"><strong>Length:</strong> ${vessel.length || 0} m</div>
+          <div class="vessel-spec"><strong>Fuel Cap.:</strong> ${formatNumber(vessel.fuel_capacity || 0)} t</div>
+          <div class="vessel-spec"><strong>Service:</strong> ${vessel.hours_between_service || 0}h</div>
+          <div class="vessel-spec"><strong>Port:</strong> ${(vessel.current_port_code || '').replace(/_/g, ' ')}</div>
+          ${vessel.gearless || vessel.antifouling ? '<div class="vessel-spec" style="grid-column: 1 / -1; border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 8px; padding-top: 8px;"></div>' : ''}
+          ${vessel.gearless ? '<div class="vessel-spec" style="grid-column: 1 / -1; color: #4ade80;"><strong>⚙️ Gearless:</strong> own cranes</div>' : ''}
+          ${vessel.antifouling ? `<div class="vessel-spec" style="grid-column: 1 / -1; color: #a78bfa;"><strong>🛡️ Antifouling:</strong> ${vessel.antifouling}</div>` : ''}
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  feed.innerHTML = '';
+  feed.appendChild(grid);
+}
+
+function displayVessels() {
+  const feed = document.getElementById('vesselCatalogFeed');
+
+  let filtered;
+
+  // If engine filter is active, show ALL vessels with that engine (ignore container/tanker filter)
+  if (selectedEngineType) {
+    filtered = allAcquirableVessels.filter(v => v.engine_type === selectedEngineType);
+  } else {
+    // Otherwise, filter by container/tanker type
+    filtered = allAcquirableVessels.filter(v => v.capacity_type === currentVesselFilter);
+  }
+
+  if (filtered.length === 0) {
+    const filterText = selectedEngineType
+      ? `No vessels with engine type "${selectedEngineType}"`
+      : `No ${currentVesselFilter} vessels available`;
+    feed.innerHTML = `
+      <div style="text-align: center; color: #9ca3af; padding: 40px;">
+        ${filterText}
+      </div>
+    `;
+    return;
+  }
+
+  // Sort by price ascending
+  filtered.sort((a, b) => a.price - b.price);
+
+  const grid = document.createElement('div');
+  grid.className = 'vessel-catalog-grid';
+
+  filtered.forEach(vessel => {
+    const selectedItem = selectedVessels.find(v => v.vessel.id === vessel.id);
+    const isSelected = !!selectedItem;
+    const imageUrl = `https://shippingmanager.cc/images/acquirevessels/${vessel.type}`;
+
+    const card = document.createElement('div');
+    card.className = `vessel-card${isSelected ? ' selected' : ''}`;
+    card.innerHTML = `
+      <img src="${imageUrl}" alt="${vessel.name}" class="vessel-image" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23374151%22 width=%22400%22 height=%22300%22/><text x=%2250%%22 y=%2250%%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 font-size=%2224%22>⛴️</text></svg>'">
+      <div class="vessel-content">
+        <div class="vessel-header">
+          <h3 class="vessel-name">${vessel.name}</h3>
+          <div class="vessel-price">$${formatNumber(vessel.price)}</div>
+        </div>
+        <div class="vessel-specs">
+          <div class="vessel-spec"><strong>Type:</strong> ${vessel.type_name}</div>
+          <div class="vessel-spec"><strong>Year:</strong> ${vessel.year}</div>
+          <div class="vessel-spec"><strong>Capacity:</strong> ${formatNumber(vessel.capacity_max)} ${vessel.capacity_type === 'container' ? 'TEU' : 'BBL'}</div>
+          <div class="vessel-spec"><strong>Speed:</strong> ${vessel.max_speed} kn</div>
+          <div class="vessel-spec"><strong>Range:</strong> ${formatNumber(vessel.range)} nm</div>
+          <div class="vessel-spec"><strong>Engine:</strong> ${vessel.engine_type} (${formatNumber(vessel.kw)} kW)</div>
+          <div class="vessel-spec"><strong>Length:</strong> ${vessel.length} m</div>
+          <div class="vessel-spec"><strong>Fuel Cap.:</strong> ${formatNumber(vessel.fuel_capacity)} t</div>
+          <div class="vessel-spec"><strong>Service:</strong> ${vessel.hours_between_service}h</div>
+          <div class="vessel-spec"><strong>Port:</strong> ${vessel.current_port_code.replace(/_/g, ' ')}</div>
+          ${vessel.gearless || vessel.antifouling ? '<div class="vessel-spec" style="grid-column: 1 / -1; border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 8px; padding-top: 8px;"></div>' : ''}
+          ${vessel.gearless ? '<div class="vessel-spec" style="grid-column: 1 / -1; color: #4ade80;"><strong>⚙️ Gearless:</strong> own cranes</div>' : ''}
+          ${vessel.antifouling ? `<div class="vessel-spec" style="grid-column: 1 / -1; color: #a78bfa;"><strong>🛡️ Antifouling:</strong> ${vessel.antifouling}</div>` : ''}
+        </div>
+        <div class="vessel-actions">
+          <input type="number" class="vessel-quantity-input" data-vessel-id="${vessel.id}" value="${isSelected ? selectedItem.quantity : 1}" min="1" max="99" />
+          <div class="vessel-action-buttons">
+            <button class="vessel-select-btn${isSelected ? ' selected' : ''}" data-vessel-id="${vessel.id}">
+              ${isSelected ? `✓ Selected (${selectedItem.quantity}x)` : 'Select'}
+            </button>
+            <button class="vessel-buy-btn" data-vessel-id="${vessel.id}">
+              Buy Now
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    card.querySelector('.vessel-select-btn').addEventListener('click', () => {
+      const quantityInput = card.querySelector('.vessel-quantity-input');
+      const quantity = parseInt(quantityInput.value) || 1;
+      toggleVesselSelection(vessel, quantity);
+    });
+    card.querySelector('.vessel-buy-btn').addEventListener('click', () => {
+      const quantityInput = card.querySelector('.vessel-quantity-input');
+      const quantity = parseInt(quantityInput.value) || 1;
+      purchaseSingleVessel(vessel, quantity);
+    });
+
+    grid.appendChild(card);
+  });
+
+  feed.innerHTML = '';
+  feed.appendChild(grid);
+}
+
+function showEngineFilterOverlay() {
+  const overlay = document.getElementById('engineFilterOverlay');
+  const listContainer = document.getElementById('engineFilterList');
+
+  // Get all unique engine types from ALL vessels (not filtered by type)
+  const engineTypes = [...new Set(allAcquirableVessels.map(v => v.engine_type))].sort();
+
+  // Build engine list with 2-column grid
+  let html = '<div style="max-width: 800px; margin: 0 auto;">';
+
+  // Add "All Engines" option (full width)
+  html += `
+    <div class="chat-selection-item" data-engine="" style="cursor: pointer; padding: 15px; background: ${!selectedEngineType ? 'rgba(16, 185, 129, 0.2)' : 'rgba(31, 41, 55, 0.4)'}; border: 1px solid ${!selectedEngineType ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; transition: all 0.2s; margin-bottom: 10px;">
+      <div style="font-weight: 600; color: #e0e0e0;">All Engines</div>
+      <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Show all vessels</div>
+    </div>
+  `;
+
+  // Grid for engine types (2 columns)
+  html += '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">';
+
+  // Add each engine type
+  engineTypes.forEach((engineType, index) => {
+    const count = allAcquirableVessels.filter(v => v.engine_type === engineType).length;
+    const isSelected = selectedEngineType === engineType;
+    const isLastAndOdd = (index === engineTypes.length - 1) && (engineTypes.length % 2 !== 0);
+
+    html += `
+      <div class="chat-selection-item" data-engine="${engineType}" style="cursor: pointer; padding: 15px; background: ${isSelected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(31, 41, 55, 0.4)'}; border: 1px solid ${isSelected ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; transition: all 0.2s;${isLastAndOdd ? ' grid-column: 1 / -1; max-width: 50%; margin: 0 auto;' : ''}">
+        <div style="font-weight: 600; color: #e0e0e0;">⚙️ ${engineType}</div>
+        <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">${count} vessel${count === 1 ? '' : 's'} available</div>
+      </div>
+    `;
+  });
+
+  html += '</div></div>';
+  listContainer.innerHTML = html;
+
+  // Add click handlers
+  listContainer.querySelectorAll('.chat-selection-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const engineType = item.getAttribute('data-engine');
+      selectedEngineType = engineType || null;
+
+      // Update button states: remove active from container/tanker, add to engine
+      if (selectedEngineType) {
+        document.getElementById('filterContainerBtn').classList.remove('active');
+        document.getElementById('filterTankerBtn').classList.remove('active');
+        document.getElementById('filterEngineBtn').classList.add('active');
+      } else {
+        document.getElementById('filterEngineBtn').classList.remove('active');
+        // Restore previous filter
+        if (currentVesselFilter === 'container') {
+          document.getElementById('filterContainerBtn').classList.add('active');
+        } else {
+          document.getElementById('filterTankerBtn').classList.add('active');
+        }
+      }
+
+      overlay.style.display = 'none';
+      displayVessels();
+    });
+
+    item.addEventListener('mouseenter', function() {
+      if (this.getAttribute('data-engine') !== selectedEngineType) {
+        this.style.background = 'rgba(31, 41, 55, 0.6)';
+      }
+    });
+
+    item.addEventListener('mouseleave', function() {
+      const engineType = this.getAttribute('data-engine');
+      const isSelected = (!engineType && !selectedEngineType) || (engineType === selectedEngineType);
+      this.style.background = isSelected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(31, 41, 55, 0.4)';
+    });
+  });
+
+  overlay.style.display = 'flex';
+}
+
+function closeEngineFilterOverlay() {
+  document.getElementById('engineFilterOverlay').style.display = 'none';
+}
+
+function toggleVesselSelection(vessel, quantity) {
+  const index = selectedVessels.findIndex(v => v.vessel.id === vessel.id);
+
+  if (index > -1) {
+    // Already selected, remove it
+    selectedVessels.splice(index, 1);
+  } else {
+    // Add with quantity
+    selectedVessels.push({ vessel, quantity });
+  }
+
+  // Update count to show total vessels
+  const totalCount = selectedVessels.reduce((sum, item) => sum + item.quantity, 0);
+  const selectedCountEl = document.getElementById('selectedCount');
+  const bulkBuyBtn = document.getElementById('bulkBuyBtn');
+
+  if (selectedCountEl) selectedCountEl.textContent = totalCount;
+  if (bulkBuyBtn) bulkBuyBtn.style.display = selectedVessels.length > 0 ? 'block' : 'none';
+
+  displayVessels();
+}
+
+async function purchaseSingleVessel(vessel, quantity = 1) {
+  const totalCost = vessel.price * quantity;
+
+  // Build list of vessels to purchase
+  const vesselDetails = [];
+  for (let i = 0; i < quantity; i++) {
+    vesselDetails.push({
+      label: `${i + 1}. ${vessel.name}`,
+      value: `$${formatNumber(vessel.price)}`
+    });
+  }
+  vesselDetails.push({
+    label: '────────────────────────',
+    value: '────────────'
+  });
+  vesselDetails.push({
+    label: 'Total Cost',
+    value: `$${formatNumber(totalCost)}`
+  });
+  vesselDetails.push({
+    label: 'Cash Available',
+    value: `$${formatNumber(currentCash)}`
+  });
+
+  const confirmed = await showConfirmDialog({
+    title: `Purchase ${quantity > 1 ? `${quantity} Vessels` : 'Vessel'}`,
+    message: quantity > 1 ? 'Purchasing multiple vessels with 1.5s delay between each:' : null,
+    details: vesselDetails,
+    confirmText: 'Buy',
+    cancelText: 'Cancel'
+  });
+
+  if (!confirmed) return;
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < quantity; i++) {
+    try {
+      const response = await fetch('/api/vessel/purchase-vessel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vessel_id: vessel.id,
+          name: vessel.name,
+          antifouling_model: vessel.antifouling
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        failCount++;
+        if (data.error === 'vessel_limit_reached') {
+          showFeedback(`❌ Vessel limit reached! Purchased ${successCount} vessel(s), cannot buy more.`, 'error');
+          break;
+        } else if (data.error === 'not_enough_cash') {
+          showFeedback(`❌ Not enough cash! Purchased ${successCount} vessel(s), ran out of money.`, 'error');
+          break;
+        } else {
+          showFeedback(`❌ Error: ${data.error} - Purchased ${successCount} so far`, 'error');
+        }
+      } else {
+        successCount++;
+        // Update cash display
+        if (data.user && data.user.cash !== undefined) {
+          currentCash = data.user.cash;
+          document.getElementById('cashDisplay').textContent = `$${formatNumber(currentCash)}`;
+        }
+      }
+
+      // Delay between purchases if buying multiple
+      if (i < quantity - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    } catch (error) {
+      failCount++;
+      console.error('Error purchasing vessel:', error);
+      showFeedback(`❌ Network error purchasing ${vessel.name}`, 'error');
+    }
+  }
+
+  // Show final feedback only if no specific error was shown
+  if (successCount > 0 && failCount === 0) {
+    showFeedback(`✓ Successfully purchased ${successCount}x ${vessel.name}!`, 'success');
+  }
+
+  // Update vessel counts (including pending badge)
+  if (successCount > 0) {
+    await updateVesselCount();
+  }
+
+  // Remove from selected if it was selected
+  selectedVessels = selectedVessels.filter(v => v.vessel.id !== vessel.id);
+  const totalCount = selectedVessels.reduce((sum, item) => sum + item.quantity, 0);
+  const selectedCountEl = document.getElementById('selectedCount');
+  const bulkBuyBtn = document.getElementById('bulkBuyBtn');
+
+  if (selectedCountEl) selectedCountEl.textContent = totalCount;
+  if (bulkBuyBtn) bulkBuyBtn.style.display = selectedVessels.length > 0 ? 'block' : 'none';
+
+  // Reload vessels
+  await loadAcquirableVessels();
+}
+
+async function purchaseBulk() {
+  if (selectedVessels.length === 0) return;
+
+  // Build list of vessels to purchase and calculate total cost
+  const vesselDetails = [];
+  let totalCost = 0;
+  let itemNumber = 1;
+
+  selectedVessels.forEach(item => {
+    for (let i = 0; i < item.quantity; i++) {
+      vesselDetails.push({
+        label: `${itemNumber}. ${item.vessel.name}`,
+        value: `$${formatNumber(item.vessel.price)}`
+      });
+      totalCost += item.vessel.price;
+      itemNumber++;
+    }
+  });
+
+  vesselDetails.push({
+    label: '────────────────────────',
+    value: '────────────'
+  });
+  vesselDetails.push({
+    label: 'Total Cost',
+    value: `$${formatNumber(totalCost)}`
+  });
+  vesselDetails.push({
+    label: 'Cash Available',
+    value: `$${formatNumber(currentCash)}`
+  });
+
+  const totalVesselCount = selectedVessels.reduce((sum, item) => sum + item.quantity, 0);
+
+  const confirmed = await showConfirmDialog({
+    title: `Bulk Purchase (${totalVesselCount} Vessels)`,
+    message: 'Purchasing vessels sequentially with 1.5s delay between each:',
+    details: vesselDetails,
+    confirmText: 'Buy All',
+    cancelText: 'Cancel'
+  });
+
+  if (!confirmed) return;
+
+  const bulkBuyBtn = document.getElementById('bulkBuyBtn');
+  bulkBuyBtn.disabled = true;
+  bulkBuyBtn.textContent = 'Purchasing...';
+
+  let successCount = 0;
+  let failCount = 0;
+
+  // Purchase each vessel with its quantity
+  for (let i = 0; i < selectedVessels.length; i++) {
+    const item = selectedVessels[i];
+
+    for (let q = 0; q < item.quantity; q++) {
+      try {
+        const response = await fetch('/api/vessel/purchase-vessel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vessel_id: item.vessel.id,
+            name: item.vessel.name,
+            antifouling_model: item.vessel.antifouling
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          failCount++;
+          console.error(`Failed to purchase ${item.vessel.name}:`, data.error);
+
+          // Show specific error message
+          if (data.error === 'vessel_limit_reached') {
+            showFeedback(`❌ Vessel limit reached! Purchased ${successCount} vessel(s), could not buy more.`, 'error');
+            // Stop purchasing
+            i = selectedVessels.length;
+            break;
+          } else if (data.error === 'not_enough_cash') {
+            showFeedback(`❌ Not enough cash! Purchased ${successCount} vessel(s), ran out of money.`, 'error');
+            // Stop purchasing
+            i = selectedVessels.length;
+            break;
+          } else {
+            showFeedback(`❌ Error: ${data.error} - Purchased ${successCount} so far`, 'error');
+          }
+        } else {
+          successCount++;
+          if (data.user && data.user.cash !== undefined) {
+            currentCash = data.user.cash;
+            document.getElementById('cashDisplay').textContent = `$${formatNumber(currentCash)}`;
+          }
+        }
+      } catch (error) {
+        failCount++;
+        console.error(`Error purchasing ${item.vessel.name}:`, error);
+        showFeedback(`❌ Network error purchasing ${item.vessel.name}`, 'error');
+      }
+
+      // Wait 1.5 seconds before next purchase
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+  }
+
+  if (bulkBuyBtn) {
+    bulkBuyBtn.disabled = false;
+    bulkBuyBtn.textContent = `💰 Bulk Buy (0)`;
+    bulkBuyBtn.style.display = 'none';
+  }
+
+  selectedVessels = [];
+  const selectedCountEl = document.getElementById('selectedCount');
+  if (selectedCountEl) selectedCountEl.textContent = '0';
+
+  // Only show success message if no specific error was already shown
+  if (successCount > 0 && failCount === 0) {
+    showFeedback(`✓ Successfully purchased all ${successCount} vessel(s)!`, 'success');
+  } else if (successCount === 0 && failCount > 0) {
+    // Error message already shown above, don't duplicate
+  }
+
+  // Update vessel counts (including pending badge)
+  if (successCount > 0) {
+    await updateVesselCount();
+  }
+
+  await loadAcquirableVessels();
+}
+
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -2069,6 +2724,50 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('campaignsBtn').addEventListener('click', showCampaignsOverlay);
   document.getElementById('closeCampaignsBtn').addEventListener('click', closeCampaignsOverlay);
   document.getElementById('testAlertBtn').addEventListener('click', testBrowserNotification);
+
+  // Vessel catalog
+  document.getElementById('buyVesselsBtn').addEventListener('click', async () => {
+    document.getElementById('buyVesselsOverlay').style.display = 'flex';
+    await loadAcquirableVessels();
+  });
+
+  // Pending filter button
+  document.getElementById('filterPendingBtn').addEventListener('click', async () => {
+    // Get pending vessels
+    const response = await fetch('/api/vessel/get-vessels');
+    if (response.ok) {
+      const data = await response.json();
+      const pendingVessels = (data.vessels || []).filter(v => v.status === 'pending');
+      showPendingVessels(pendingVessels);
+    }
+  });
+  document.getElementById('closeBuyVesselsBtn').addEventListener('click', () => {
+    document.getElementById('buyVesselsOverlay').style.display = 'none';
+  });
+  document.getElementById('filterContainerBtn').addEventListener('click', () => {
+    currentVesselFilter = 'container';
+    selectedEngineType = null; // Reset engine filter when switching type
+    document.getElementById('filterContainerBtn').classList.add('active');
+    document.getElementById('filterTankerBtn').classList.remove('active');
+    document.getElementById('filterEngineBtn').classList.remove('active');
+    document.getElementById('filterPendingBtn').classList.remove('active');
+    displayVessels();
+  });
+  document.getElementById('filterTankerBtn').addEventListener('click', () => {
+    currentVesselFilter = 'tanker';
+    selectedEngineType = null; // Reset engine filter when switching type
+    document.getElementById('filterTankerBtn').classList.add('active');
+    document.getElementById('filterContainerBtn').classList.remove('active');
+    document.getElementById('filterEngineBtn').classList.remove('active');
+    document.getElementById('filterPendingBtn').classList.remove('active');
+    displayVessels();
+  });
+  document.getElementById('filterEngineBtn').addEventListener('click', () => {
+    showEngineFilterOverlay();
+  });
+  document.getElementById('closeEngineFilterBtn').addEventListener('click', closeEngineFilterOverlay);
+  document.getElementById('bulkBuyBtn').addEventListener('click', purchaseBulk);
+
   document.getElementById('fuelThreshold').addEventListener('change', function() {
     settings.fuelThreshold = parseInt(this.value);
     saveSettings();
@@ -2086,6 +2785,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Vessel management
   document.getElementById('departAllBtn').addEventListener('click', departAllVessels);
+  document.getElementById('anchorBtn').addEventListener('click', showAnchorInfo);
   document.getElementById('repairAllBtn').addEventListener('click', repairAllVessels);
 
   // Bunker management
@@ -2143,9 +2843,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   await updateCampaignsStatus();
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  // Check price alerts on load
-  await checkPriceAlerts();
-
   // WebSocket initialization (use wss:// for HTTPS)
   try {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -2164,9 +2861,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(loadMessages, 25000 + Math.random() * 2000); // 25-27s
 
   setInterval(updateUnreadBadge, 30000 + Math.random() * 5000); // 30-35s
-
-  // Check price alerts every 30 seconds
-  setInterval(checkPriceAlerts, 30000); // 30s
 
   setInterval(updateVesselCount, 60000 + Math.random() * 10000); // 60-70s
 
