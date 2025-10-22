@@ -34,6 +34,16 @@ This tool provides a comprehensive standalone web interface that connects direct
 
 ### Game Management
 - **Cash Display**: Real-time cash balance with auto-updates every 30 seconds
+- **Stock Display**:
+  - Real-time stock value and trend indicator (only visible if IPO active)
+  - Green up arrow (↑) for rising stock prices
+  - Red down arrow (↓) for falling stock prices
+  - Auto-updates every 30 seconds
+- **Anchor Slots Display**:
+  - Shows available/max vessel capacity (e.g., "7/101")
+  - Available = max anchor points - total vessels owned
+  - Helps plan vessel purchases without hitting limits
+  - Auto-updates every 30 seconds
 - **Fuel Management**:
   - Current fuel level and capacity display
   - One-click max fuel purchase with detailed confirmation dialog
@@ -47,7 +57,8 @@ This tool provides a comprehensive standalone web interface that connects direct
   - Configurable price alerts with browser notifications
   - Smart purchase calculations
 - **Vessel Management**:
-  - Real-time count of vessels in harbor
+  - Real-time count of vessels ready to depart
+  - Separate badge for vessels at anchor
   - One-click "Depart All" with detailed feedback
   - Shows fuel/CO2 consumption and earnings per departure
   - Auto-refresh every 30 seconds
@@ -57,6 +68,37 @@ This tool provides a comprehensive standalone web interface that connects direct
   - One-click bulk repair with cost preview
   - Real-time badge showing number of vessels needing repair
   - Prevents repair if insufficient funds
+- **Marketing Campaigns**:
+  - View all available marketing campaigns
+  - Real-time campaign status (active/inactive)
+  - One-click campaign activation
+  - Badge shows number of available campaigns
+  - Detailed campaign information display
+- **Vessel Purchase Catalog**:
+  - Browse all available vessels for purchase
+  - Filter by vessel type (Container/Tanker) or engine type
+  - Engine type filter shows all matching vessels regardless of container/tanker type
+  - Sorted by price (cheapest first)
+  - Detailed vessel specifications:
+    - Type, Year, Capacity, Speed, Range
+    - Engine type and power (e.g., "mih_x1 (60,000 kW)")
+    - Length, Fuel capacity
+    - Service interval, Current port
+    - Special features (Gearless, Antifouling)
+  - High-quality vessel images
+  - Quantity selection (1-99 vessels per purchase)
+  - Individual vessel purchase with confirmation
+  - Select multiple vessels for bulk purchase
+  - Comprehensive purchase confirmation dialogs
+- **Bulk Vessel Purchasing**:
+  - Select multiple vessels with different quantities
+  - Visual selection indicator shows quantity (e.g., "✓ Selected (10x)")
+  - Badge shows total vessel count in selection
+  - Sequential purchase with 1.5s delay between each
+  - Detailed purchase summary showing all vessels and costs
+  - Automatic stop on vessel limit or insufficient funds
+  - Clear error messages with purchased count
+  - Auto-refresh vessel list after purchases
 
 ### Settings & Customization
 - **Price Alert Thresholds**:
@@ -74,6 +116,9 @@ This tool provides a comprehensive standalone web interface that connects direct
   - Current price per ton
   - Total cost calculation
   - Current cash balance validation
+  - Line-by-line vessel list for bulk purchases
+  - Visual separator and summary section
+  - Cancel/Confirm buttons in header for quick access
 - **Browser Notifications**: Desktop and mobile notifications for:
   - Price alerts when fuel/CO2 drops below thresholds
   - Animated price alert with spin effect on page
@@ -89,8 +134,7 @@ This tool provides a comprehensive standalone web interface that connects direct
 - **Debounced API Calls**: Rate-limited requests to avoid detection (800-1000ms delays)
 - **Randomized Intervals**: Variable polling times to appear more human-like
 - **Extended Feedback**: Success/error messages with multi-line support
-- **Responsive Design**: Modern dark theme with glassmorphism effects
-- **Demo Mode**: Fully functional demo page (`/example.html`) with dummy data
+- **Responsive Design**: Modern dark theme with glassmorphism effects, optimized for desktop and mobile
 
 ***
 
@@ -310,7 +354,10 @@ shippingmanager_messanger/
 │   ├── config.js            # Centralized configuration
 │   ├── certificate.js       # HTTPS certificate generation with CA
 │   ├── middleware/          # Express middleware
-│   ├── routes/              # API routes (alliance, messenger, game)
+│   ├── routes/              # API routes:
+│   │   ├── alliance.js      # Alliance chat endpoints
+│   │   ├── messenger.js     # Private messaging endpoints
+│   │   └── game.js          # Game management (vessels, fuel, CO2, campaigns)
 │   ├── utils/               # Helper functions (API calls, caching)
 │   └── websocket.js         # WebSocket server for real-time updates
 ├── helper/
@@ -322,7 +369,6 @@ shippingmanager_messanger/
 │   └── js/
 │       └── script.js        # Main application logic
 └── screenshots/             # Screenshots for documentation
-        └── demo.gif         # Demo Example
 ```
 
 ***
@@ -358,6 +404,18 @@ If you can't access from other devices:
 1. Check your firewall allows connections on port 12345
 2. Verify you're using the correct network IP address
 3. Regenerate certificates: delete `cert.pem`, `key.pem`, `ca-cert.pem`, and `ca-key.pem`, then restart
+
+### Vessel Purchase Issues
+If vessel purchases fail:
+- **Vessel Limit Reached**: The game has a maximum number of vessels you can own. The app will show exactly how many vessels were purchased before hitting the limit.
+- **Insufficient Cash**: Make sure you have enough cash for the total purchase. The confirmation dialog shows both total cost and available cash.
+- **Already Purchased**: If you try to purchase the same vessel again, it may not be available anymore. The vessel list auto-refreshes after successful purchases.
+- **Network Errors**: Check your internet connection and that the game API is accessible.
+
+All vessel purchase errors include detailed messages showing:
+- Specific error reason (limit/cash/network)
+- Number of vessels successfully purchased
+- Clear next steps
 
 ***
 
