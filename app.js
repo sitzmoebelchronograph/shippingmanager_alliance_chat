@@ -22,6 +22,16 @@ const app = express();
 // Setup middleware
 setupMiddleware(app);
 
+// Serve CA certificate for download
+app.get('/ca-cert.pem', (req, res) => {
+  res.download('./ca-cert.pem', 'ShippingManager-CA.pem', (err) => {
+    if (err) {
+      console.error('Error downloading CA certificate:', err);
+      res.status(404).send('CA certificate not found');
+    }
+  });
+});
+
 // Setup routes
 app.use('/api', allianceRoutes);
 app.use('/api', messengerRoutes);

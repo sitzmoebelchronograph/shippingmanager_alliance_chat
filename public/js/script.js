@@ -35,6 +35,9 @@ let settings = {
   maintenanceThreshold: 10 // 10% or 20%
 };
 
+// Campaigns tracking
+let lastCampaignsCount = null;
+
 // Load settings from localStorage
 function loadSettings() {
   const saved = localStorage.getItem('shippingManagerSettings');
@@ -98,7 +101,13 @@ function showFeedback(message, type) {
 let priceAlertTimeout = null;
 
 function showPriceAlert(message, type = 'warning') {
+  console.log('[showPriceAlert] Called with type:', type, 'message:', message.substring(0, 50) + '...');
   const globalFeedback = document.getElementById('globalFeedback');
+
+  if (!globalFeedback) {
+    console.error('[showPriceAlert] globalFeedback element not found!');
+    return;
+  }
 
   // Clear any existing alert timeout
   if (priceAlertTimeout) {
@@ -106,14 +115,13 @@ function showPriceAlert(message, type = 'warning') {
   }
 
   globalFeedback.innerHTML = `
-    <div class="global-feedback-message ${type}" id="priceAlertMessage" style="
-      transform: scale(0) rotate(0deg);
-      opacity: 0;
-    ">
-      ${message}
+    <div class="global-feedback-message ${type}" id="priceAlertMessage" style="transform: scale(0) rotate(0deg); opacity: 0;">
+      <div style="width: 100%;">${message}</div>
       <button
         id="dismissPriceAlertBtn"
-        style="margin-left: 15px; padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; cursor: pointer; font-weight: 600;"
+        style="display: block; margin: 0 auto; padding: 8px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; cursor: pointer; font-weight: 600; transition: all 0.2s;"
+        onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.2)'"
       >
         Got it
       </button>
@@ -800,6 +808,236 @@ function closeSettings() {
   document.getElementById('settingsOverlay').style.display = 'none';
 }
 
+function renderStars(percentage) {
+  // Each star represents 20%
+  const fullStars = Math.floor(percentage / 20);
+  const remainder = percentage % 20;
+  const partialPercent = (remainder / 20) * 100; // How much of the next star to fill
+  const emptyStars = 5 - fullStars - (remainder > 0 ? 1 : 0);
+
+  let stars = '';
+
+  // Full stars (gold filled)
+  for (let i = 0; i < fullStars; i++) {
+    stars += '<span style="color: #fbbf24;">⭐</span>';
+  }
+
+  // Partial star (if any) - use gradient
+  if (remainder > 0) {
+    stars += `
+      <span style="
+        background: linear-gradient(to right, #fbbf24 0%, #fbbf24 ${partialPercent}%, rgba(156, 163, 175, 0.2) ${partialPercent}%, rgba(156, 163, 175, 0.2) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      ">⭐</span>
+    `;
+  }
+
+  // Empty stars (transparent/gray)
+  for (let i = 0; i < emptyStars; i++) {
+    stars += '<span style="color: rgba(156, 163, 175, 0.2);">⭐</span>';
+  }
+
+  return stars;
+}
+
+async function showCampaignsOverlay() {
+  try {
+    const response = await fetch('/api/marketing/get-campaigns');
+    if (!response.ok) throw new Error('Failed to fetch campaigns');
+
+    const data = await response.json();
+    const allCampaigns = data.data.marketing_campaigns || [];
+    const activeCampaigns = data.data.active_campaigns || [];
+    const activeTypes = new Set(activeCampaigns.map(c => c.option_name));
+    const totalReputation = data.user.reputation || 0; // Get actual reputation from API
+
+    const contentDiv = document.getElementById('campaignsContent');
+    const requiredTypes = ['reputation', 'awareness', 'green'];
+
+    let html = '';
+
+    // Show 5-star reputation indicator
+    html += `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="font-size: 14px; color: #9ca3af; margin-bottom: 10px;">
+          Company Reputation
+        </div>
+        <div style="font-size: 32px; margin-bottom: 8px; line-height: 1;">
+          ${renderStars(totalReputation)}
+        </div>
+        <div style="font-size: 18px; color: #10b981; font-weight: 600;">
+          ${totalReputation}%
+        </div>
+      </div>
+    `;
+
+    // Show active campaigns first
+    if (activeCampaigns.length > 0) {
+      html += `
+        <div style="margin-bottom: 30px;">
+          <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #10b981;">
+            ✅ Active Campaigns
+          </h3>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+      `;
+
+      activeCampaigns.forEach(campaign => {
+        const typeName = campaign.option_name.charAt(0).toUpperCase() + campaign.option_name.slice(1);
+        const typeIcon = campaign.option_name === 'reputation' ? '⭐' : campaign.option_name === 'awareness' ? '📢' : '🌱';
+        const efficiency = `${campaign.increase}%`;
+        const duration = campaign.duration;
+
+        // Calculate remaining time
+        const now = Math.floor(Date.now() / 1000);
+        const timeLeft = campaign.end_time - now;
+        const hoursLeft = Math.floor(timeLeft / 3600);
+        const minutesLeft = Math.floor((timeLeft % 3600) / 60);
+        const timeLeftStr = `${hoursLeft}h ${minutesLeft}m`;
+
+        html += `
+          <div style="padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <div style="color: #10b981; font-size: 14px; font-weight: 600;">
+                ${typeIcon} ${typeName}
+              </div>
+              <div style="color: #10b981; font-size: 12px; font-weight: 600;">
+                ${timeLeftStr} remaining
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: #9ca3af; font-size: 12px;">
+              <span>Duration: ${duration}h</span>
+              <span>Efficiency: ${efficiency}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+    }
+
+    // Show available campaigns for inactive types
+    const inactiveTypes = requiredTypes.filter(type => !activeTypes.has(type));
+
+    if (inactiveTypes.length > 0) {
+      inactiveTypes.forEach(type => {
+        const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+        const typeIcon = type === 'reputation' ? '⭐' : type === 'awareness' ? '📢' : '🌱';
+        const typeCampaigns = allCampaigns.filter(c => c.option_name === type);
+
+        html += `
+          <div style="margin-bottom: 25px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #e0e0e0;">
+              ${typeIcon} ${typeName} Campaigns
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+        `;
+
+        typeCampaigns.forEach(campaign => {
+          const duration = campaign.campaign_duration;
+          const efficiency = `${campaign.min_efficiency}-${campaign.max_efficiency}%`;
+          const price = formatNumber(campaign.price);
+
+          html += `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px; gap: 15px;">
+              <div style="flex: 1;">
+                <div style="color: #e0e0e0; font-size: 14px; font-weight: 600; margin-bottom: 4px;">
+                  ${duration}h Duration
+                </div>
+                <div style="color: #9ca3af; font-size: 12px;">
+                  Efficiency: ${efficiency}
+                </div>
+              </div>
+              <div style="text-align: right; margin-right: 10px;">
+                <div style="color: #4ade80; font-size: 14px; font-weight: 600;">
+                  $${price}
+                </div>
+              </div>
+              <button
+                onclick="buyCampaign(${campaign.id}, '${typeName}', ${duration}, ${campaign.price})"
+                style="
+                  padding: 8px 16px;
+                  background: rgba(16, 185, 129, 0.2);
+                  border: 1px solid rgba(16, 185, 129, 0.4);
+                  border-radius: 6px;
+                  color: #10b981;
+                  cursor: pointer;
+                  font-weight: 600;
+                  font-size: 13px;
+                  transition: all 0.2s;
+                  white-space: nowrap;
+                "
+                onmouseover="this.style.background='rgba(16, 185, 129, 0.3)'"
+                onmouseout="this.style.background='rgba(16, 185, 129, 0.2)'"
+              >
+                Buy
+              </button>
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    contentDiv.innerHTML = html;
+    document.getElementById('campaignsOverlay').style.display = 'flex';
+  } catch (error) {
+    console.error('Error showing campaigns overlay:', error);
+    showFeedback('Failed to load campaigns', 'error');
+  }
+}
+
+function closeCampaignsOverlay() {
+  document.getElementById('campaignsOverlay').style.display = 'none';
+}
+
+window.buyCampaign = async function(campaignId, typeName, duration, price) {
+  const confirmed = await showConfirmDialog({
+    title: '📊 Activate Campaign',
+    message: `Do you want to activate this ${typeName} campaign?`,
+    confirmText: 'Activate',
+    details: [
+      { label: 'Type', value: typeName },
+      { label: 'Duration', value: `${duration} hours` },
+      { label: 'Cost', value: `$${formatNumber(price)}` }
+    ]
+  });
+
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch('/api/marketing/activate-campaign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: campaignId })
+    });
+
+    if (!response.ok) throw new Error('Failed to activate campaign');
+
+    const data = await response.json();
+
+    showFeedback(`✅ ${typeName} campaign activated for ${duration} hours!`, 'success');
+
+    // Close overlay and refresh campaign status
+    closeCampaignsOverlay();
+    await updateCampaignsStatus();
+    await updateBunkerStatus(); // Refresh cash display
+
+  } catch (error) {
+    console.error('Error buying campaign:', error);
+    showFeedback('Failed to activate campaign', 'error');
+  }
+}
+
 async function testBrowserNotification() {
   const hasPermission = await requestNotificationPermission();
 
@@ -809,29 +1047,27 @@ async function testBrowserNotification() {
   }
 
   try {
-    // Show green feedback
-    showFeedback('Test notification sent!', 'success');
-
-    // Show browser notification
-    const notification = new Notification('🔔 Test Price Alert', {
+    // Show browser notification using service worker
+    await showNotification('🔔 Test Price Alert', {
       body: `Test Alert!\n\nFuel threshold: $${settings.fuelThreshold}/ton\nCO2 threshold: $${settings.co2Threshold}/ton`,
       icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⚓</text></svg>",
       tag: 'test-alert',
       silent: false
     });
 
-    notification.onclick = function() {
-      window.focus();
-      notification.close();
-    };
-
-    setTimeout(() => notification.close(), 5000);
-
     // Show price alert on page with spin animation
     showPriceAlert(`⚠️ Test Alert<br><br>⛽ Fuel threshold: <strong>$${settings.fuelThreshold}/ton</strong><br>💨 CO2 threshold: <strong>$${settings.co2Threshold}/ton</strong>`, 'warning');
   } catch (error) {
-    showFeedback('Failed to send notification', 'error');
     console.error('[Test Alert] Notification error:', error);
+    console.error('[Test Alert] Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      notificationPermission: Notification.permission,
+      isSecureContext: window.isSecureContext,
+      protocol: window.location.protocol
+    });
+    showPriceAlert(`❌ Failed to send notification<br><br><strong>Error:</strong> ${error.message}<br><br><strong>Permission:</strong> ${Notification.permission}<br><strong>Secure:</strong> ${window.isSecureContext ? 'Yes' : 'No'}<br><strong>Protocol:</strong> ${window.location.protocol}`, 'error');
   }
 }
 
@@ -842,10 +1078,15 @@ let lastCO2AlertPrice = null;
 // Check prices and trigger alerts if below threshold
 async function checkPriceAlerts() {
   try {
+    console.log('[Price Alert] Checking prices...');
     const response = await fetch('/api/bunker/get-prices');
-    if (!response.ok) return;
+    if (!response.ok) {
+      console.error('[Price Alert] API response not OK:', response.status);
+      return;
+    }
 
     const data = await response.json();
+    console.log('[Price Alert] Got price data:', data);
 
     // Get current price based on UTC time (same logic as updateBunkerStatus)
     const now = new Date();
@@ -861,24 +1102,20 @@ async function checkPriceAlerts() {
     const currentCO2Price = currentPriceData.co2_price;
 
     const hasPermission = Notification.permission === "granted";
+    console.log('[Price Alert] Current fuel:', currentFuelPrice, 'Threshold:', settings.fuelThreshold, 'Last alert:', lastFuelAlertPrice);
+    console.log('[Price Alert] Current CO2:', currentCO2Price, 'Threshold:', settings.co2Threshold, 'Last alert:', lastCO2AlertPrice);
 
     if (currentFuelPrice <= settings.fuelThreshold && lastFuelAlertPrice !== currentFuelPrice) {
       lastFuelAlertPrice = currentFuelPrice;
+      console.log('[Price Alert] FUEL ALERT TRIGGERED!', currentFuelPrice);
 
       if (hasPermission) {
-        const notification = new Notification('⛽ Fuel Price Alert!', {
+        await showNotification('⛽ Fuel Price Alert!', {
           body: `Fuel price dropped to $${currentFuelPrice}/ton (Your threshold: $${settings.fuelThreshold}/ton)`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
           tag: 'fuel-alert',
           silent: false
         });
-
-        notification.onclick = function() {
-          window.focus();
-          notification.close();
-        };
-
-        setTimeout(() => notification.close(), 5000);
       }
 
       showPriceAlert(`⛽ Fuel Price Alert!<br><br>Current price: <strong>$${currentFuelPrice}/ton</strong><br>Your threshold: $${settings.fuelThreshold}/ton`, 'warning');
@@ -887,21 +1124,15 @@ async function checkPriceAlerts() {
     // Check CO2 price
     if (currentCO2Price <= settings.co2Threshold && lastCO2AlertPrice !== currentCO2Price) {
       lastCO2AlertPrice = currentCO2Price;
+      console.log('[Price Alert] CO2 ALERT TRIGGERED!', currentCO2Price);
 
       if (hasPermission) {
-        const notification = new Notification('💨 CO2 Price Alert!', {
+        await showNotification('💨 CO2 Price Alert!', {
           body: `CO2 price dropped to $${currentCO2Price}/ton (Your threshold: $${settings.co2Threshold}/ton)`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
           tag: 'co2-alert',
           silent: false
         });
-
-        notification.onclick = function() {
-          window.focus();
-          notification.close();
-        };
-
-        setTimeout(() => notification.close(), 5000);
       }
 
       showPriceAlert(`💨 CO2 Price Alert!<br><br>Current price: <strong>$${currentCO2Price}/ton</strong><br>Your threshold: $${settings.co2Threshold}/ton`, 'warning');
@@ -914,7 +1145,8 @@ async function checkPriceAlerts() {
       lastCO2AlertPrice = null;
     }
   } catch (error) {
-    console.error('Error checking price alerts:', error);
+    console.error('[Price Alert] ERROR checking price alerts:', error);
+    console.error('[Price Alert] Error stack:', error.stack);
   }
 }
 
@@ -1099,6 +1331,83 @@ async function updateBunkerStatus() {
 
   } catch (error) {
     console.error('Error updating bunker status:', error);
+  }
+}
+
+async function updateCampaignsStatus() {
+  try {
+    const response = await fetch('/api/marketing/get-campaigns');
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    // Determine which campaign types are active
+    const activeCampaigns = data.data.active_campaigns || [];
+    const activeTypes = new Set(activeCampaigns.map(c => c.option_name));
+
+    // Count active campaign types (reputation, awareness, green)
+    const requiredTypes = ['reputation', 'awareness', 'green'];
+    const activeCount = requiredTypes.filter(type => activeTypes.has(type)).length;
+
+    // Update badge
+    const badge = document.getElementById('campaignsCount');
+    const button = document.getElementById('campaignsBtn');
+
+    if (activeCount === 3) {
+      // All active - hide badge
+      badge.style.display = 'none';
+    } else {
+      // Show red badge with count
+      badge.textContent = activeCount;
+      badge.style.display = 'block';
+      badge.style.background = '#ef4444'; // Red
+    }
+
+    // Build tooltip text
+    const statusList = requiredTypes.map(type => {
+      const isActive = activeTypes.has(type);
+      const icon = isActive ? '✓' : '✗';
+      const name = type.charAt(0).toUpperCase() + type.slice(1);
+      return `${icon} ${name}`;
+    }).join('\n');
+
+    button.title = `Marketing Campaigns (${activeCount}/3 active)\n${statusList}`;
+
+    // Check if count changed or initial load
+    if (lastCampaignsCount === null) {
+      // First load - only notify if not all 3 active
+      if (activeCount !== 3) {
+        showPriceAlert(`⚠️ Only ${activeCount}/3 marketing campaigns are active!`, 'warning');
+
+        // Browser notification
+        if (Notification.permission === 'granted') {
+          await showNotification('Marketing Campaigns Alert', {
+            body: `Only ${activeCount}/3 campaign types are active`,
+            icon: '/favicon.ico'
+          });
+        }
+      }
+    } else if (lastCampaignsCount !== activeCount) {
+      // Count changed - always notify
+      if (activeCount === 3) {
+        showFeedback('✅ All 3 marketing campaigns are now active!', 'success');
+      } else {
+        showPriceAlert(`⚠️ Marketing campaigns changed: ${activeCount}/3 active`, 'warning');
+
+        // Browser notification
+        if (Notification.permission === 'granted') {
+          await showNotification('Marketing Campaigns Alert', {
+            body: `Campaign count changed: ${activeCount}/3 types are active`,
+            icon: '/favicon.ico'
+          });
+        }
+      }
+    }
+
+    lastCampaignsCount = activeCount;
+
+  } catch (error) {
+    console.error('Error updating campaigns status:', error);
   }
 }
 
@@ -1290,14 +1599,14 @@ async function departAllVessels() {
 
     // Show appropriate feedback based on results
     if (vesselsDeparted === 0) {
-      showFeedback('No vessels could depart! Check fuel availability.', 'error');
+      showPriceAlert('🚢 No vessels could depart! Check fuel availability.', 'error');
     } else if (vesselsDeparted < vesselsInHarbor) {
       // Only some vessels departed - not enough fuel
       const vesselsRemaining = vesselsInHarbor - vesselsDeparted;
-      showFeedback(`<strong>Only ${vesselsDeparted} of ${vesselsInHarbor} vessels departed!</strong><br><br>${vesselsRemaining} vessels remaining in harbor<br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'error');
+      showPriceAlert(`<strong>🚢 Only ${vesselsDeparted} of ${vesselsInHarbor} vessels departed!</strong><br><br>${vesselsRemaining} vessels remaining in harbor<br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'error');
     } else {
       // All vessels departed successfully
-      showFeedback(`<strong>All ${vesselsDeparted} vessels departed!</strong><br><br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'success');
+      showPriceAlert(`<strong>🚢 All ${vesselsDeparted} vessel${vesselsDeparted === 1 ? '' : 's'} departed!</strong><br><br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'success');
     }
 
   } catch (error) {
@@ -1523,21 +1832,15 @@ async function requestNotificationPermission() {
   return false;
 }
 
-function showNotification(title, message) {
+async function showChatNotification(title, message) {
   if (Notification.permission === "granted" && document.hidden) {
-    const notification = new Notification(title, {
+    await showNotification(title, {
       body: message,
       icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⚓</text></svg>",
       tag: "shipping-manager-chat",
-      silent: false
+      silent: false,
+      data: { action: 'focus-chat' }
     });
-
-    notification.onclick = function() {
-      window.focus();
-      notification.close();
-      chatFeed.scrollTop = chatFeed.scrollHeight;
-    };
-    setTimeout(() => notification.close(), 5000);
   }
 }
 
@@ -1545,12 +1848,12 @@ function handleNotifications(newMessages) {
   if (document.hidden) {
     newMessages.forEach(msg => {
       if (msg.type === 'chat') {
-        showNotification(
+        showChatNotification(
           `💬 ${msg.company}`,
           msg.message.substring(0, 100) + (msg.message.length > 100 ? '...' : '')
         );
       } else if (msg.type === 'feed') {
-        showNotification(
+        showChatNotification(
           '📢 Alliance Event',
           `${msg.feedType}: ${msg.company}`
         );
@@ -1559,9 +1862,164 @@ function handleNotifications(newMessages) {
   }
 }
 
+// --- Custom Tooltip System ---
+function initCustomTooltips() {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'custom-tooltip';
+  document.body.appendChild(tooltip);
+
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('[title]');
+    if (target && target.hasAttribute('title')) {
+      const title = target.getAttribute('title');
+      if (!title) return;
+
+      // Remove title temporarily to prevent browser tooltip
+      target.setAttribute('data-title', title);
+      target.removeAttribute('title');
+
+      tooltip.textContent = title;
+      tooltip.classList.add('show');
+
+      const moveTooltip = (event) => {
+        const x = event.clientX;
+        const y = event.clientY;
+        const tooltipRect = tooltip.getBoundingClientRect();
+
+        // Calculate position with viewport boundaries
+        let left = x + 10;
+        let top = y + 10;
+
+        // Keep within right edge
+        if (left + tooltipRect.width > window.innerWidth) {
+          left = window.innerWidth - tooltipRect.width - 10;
+        }
+
+        // Keep within bottom edge
+        if (top + tooltipRect.height > window.innerHeight) {
+          top = y - tooltipRect.height - 10;
+        }
+
+        // Keep within left edge
+        if (left < 10) {
+          left = 10;
+        }
+
+        // Keep within top edge
+        if (top < 10) {
+          top = 10;
+        }
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+      };
+
+      moveTooltip(e);
+      target.addEventListener('mousemove', moveTooltip);
+
+      const hideTooltip = () => {
+        tooltip.classList.remove('show');
+        target.removeEventListener('mousemove', moveTooltip);
+        target.removeEventListener('mouseout', hideTooltip);
+
+        // Restore original title
+        if (target.hasAttribute('data-title')) {
+          target.setAttribute('title', target.getAttribute('data-title'));
+          target.removeAttribute('data-title');
+        }
+      };
+
+      target.addEventListener('mouseout', hideTooltip);
+    }
+  });
+}
+
+// --- Service Worker Registration ---
+let swRegistration = null;
+
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      swRegistration = await navigator.serviceWorker.register('/sw.js');
+      console.log('[Service Worker] Registered successfully:', swRegistration);
+
+      // Wait for service worker to become active
+      if (swRegistration.installing) {
+        console.log('[Service Worker] Waiting for activation...');
+        await new Promise((resolve) => {
+          swRegistration.installing.addEventListener('statechange', (e) => {
+            if (e.target.state === 'activated') {
+              console.log('[Service Worker] Activated!');
+              resolve();
+            }
+          });
+        });
+      } else if (swRegistration.waiting) {
+        console.log('[Service Worker] Waiting worker found, activating...');
+        swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } else if (swRegistration.active) {
+        console.log('[Service Worker] Already active');
+      }
+
+      return swRegistration;
+    } catch (error) {
+      console.error('[Service Worker] Registration failed:', error);
+      return null;
+    }
+  }
+  return null;
+}
+
+// Helper function to show notifications (works on both desktop and mobile)
+async function showNotification(title, options) {
+  if (Notification.permission !== 'granted') {
+    return false;
+  }
+
+  // Enhance options for mobile devices
+  const enhancedOptions = {
+    ...options,
+    vibrate: [200, 100, 200], // Vibration pattern for Android
+    requireInteraction: false, // Don't force user interaction (auto-close after timeout)
+    badge: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⚓</text></svg>"
+  };
+
+  try {
+    // Try direct notification first (works best on desktop)
+    try {
+      const notification = new Notification(title, enhancedOptions);
+      notification.onclick = function() {
+        window.focus();
+        notification.close();
+      };
+      if (options.autoClose !== false) {
+        setTimeout(() => notification.close(), 5000);
+      }
+      return true;
+    } catch (directError) {
+      // Direct notification failed (mobile Chrome), try service worker
+      if (swRegistration && swRegistration.active) {
+        await swRegistration.showNotification(title, enhancedOptions);
+        return true;
+      } else {
+        throw new Error('Service Worker not ready. Please reload the page.');
+      }
+    }
+  } catch (error) {
+    // Show error on screen instead of console
+    showPriceAlert(`❌ Notification Error<br><br>${error.message}`, 'error');
+    throw error;
+  }
+}
+
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Register service worker first (for mobile notifications)
+  await registerServiceWorker();
+
+  // Initialize custom tooltips
+  initCustomTooltips();
   // Alliance chat event listeners
   sendMessageBtn.addEventListener('click', sendMessage);
   messageInput.addEventListener('input', handleMessageInput);
@@ -1608,6 +2066,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Settings
   document.getElementById('settingsBtn').addEventListener('click', showSettings);
   document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+  document.getElementById('campaignsBtn').addEventListener('click', showCampaignsOverlay);
+  document.getElementById('closeCampaignsBtn').addEventListener('click', closeCampaignsOverlay);
   document.getElementById('testAlertBtn').addEventListener('click', testBrowserNotification);
   document.getElementById('fuelThreshold').addEventListener('change', function() {
     settings.fuelThreshold = parseInt(this.value);
@@ -1661,13 +2121,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     await requestNotificationPermission();
   }
 
-  // Initial load
+  // Initial load - with delays to prevent socket hang up
   await fetchAllianceMembers();
+  await new Promise(resolve => setTimeout(resolve, 500));
+
   await loadMessages();
+  await new Promise(resolve => setTimeout(resolve, 500));
+
   await updateUnreadBadge();
+  await new Promise(resolve => setTimeout(resolve, 500));
+
   await updateVesselCount();
+  await new Promise(resolve => setTimeout(resolve, 500));
+
   await updateRepairCount();
+  await new Promise(resolve => setTimeout(resolve, 500));
+
   await updateBunkerStatus();
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  await updateCampaignsStatus();
+  await new Promise(resolve => setTimeout(resolve, 500));
 
   // Check price alerts on load
   await checkPriceAlerts();
@@ -1699,4 +2173,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(updateRepairCount, 60000 + Math.random() * 10000); // 60-70s
 
   setInterval(updateBunkerStatus, 30000 + Math.random() * 5000); // 30-35s
+
+  setInterval(updateCampaignsStatus, 60000 + Math.random() * 10000); // 60-70s
 });
