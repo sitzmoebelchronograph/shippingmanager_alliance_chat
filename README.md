@@ -74,14 +74,18 @@ This tool provides a comprehensive standalone web interface that connects direct
   - Current price per ton
   - Total cost calculation
   - Current cash balance validation
-- **Browser Notifications**: Desktop notifications for:
+- **Browser Notifications**: Desktop and mobile notifications for:
   - Price alerts when fuel/CO2 drops below thresholds
   - Animated price alert with spin effect on page
   - Test notification button in settings
+  - **Mobile Support**: Works on Android/iOS with Service Worker
+  - **Vibration Alerts**: Mobile devices vibrate on notifications
+  - System notifications visible in device notification tray
 - **HTTPS Support**:
   - Self-signed certificates with automatic generation
   - Network IP addresses included in certificate
   - Accessible from all devices on local network
+  - CA certificate download in settings for mobile devices
 - **Debounced API Calls**: Rate-limited requests to avoid detection (800-1000ms delays)
 - **Randomized Intervals**: Variable polling times to appear more human-like
 - **Extended Feedback**: Success/error messages with multi-line support
@@ -204,6 +208,7 @@ Access settings via the ⚙️ button in the header:
 - **CO2 Alert Threshold**: Set custom price threshold for CO2 alerts (default: $7/ton)
 - **Maintenance Threshold**: Set wear percentage for automatic repair detection (10% or 20%)
 - **Test Notifications**: Test browser notifications before enabling alerts
+- **CA Certificate Download**: Download and install CA certificate for mobile devices (required for notifications on mobile)
 
 ***
 
@@ -211,7 +216,7 @@ Access settings via the ⚙️ button in the header:
 
 The application automatically generates a Certificate Authority (CA) and signs the server certificate with it. This eliminates browser security warnings once the CA is installed.
 
-### Automatic Installation (Windows)
+### Automatic Installation (Windows Desktop)
 
 On first startup, the application will:
 1. Generate a new CA certificate (valid for 10 years)
@@ -227,11 +232,33 @@ If the UAC dialog is cancelled or fails:
 1. Open Command Prompt as Administrator (Right-click → "Run as Administrator")
 2. Run: `certutil -addstore -f "Root" "C:\path\to\project\ca-cert.pem"`
 
+### Mobile Device Installation (Android/iOS)
+
+**Required for browser notifications to work on mobile devices!**
+
+1. Open the application in your mobile browser
+2. Go to Settings (⚙️ button)
+3. Scroll down to "🔒 Certificate Installation"
+4. Tap "📥 Download CA Certificate"
+5. Install the certificate:
+   - **Android**: Settings → Security → Install Certificate → Select the downloaded file
+   - **iOS**: Settings → Profile Downloaded → Install → Follow prompts
+
+**Note**: Without the CA certificate installed, mobile browsers will not allow Service Worker registration, which is required for system notifications.
+
 ### Removing the CA Certificate
 
-To remove the CA certificate later:
+**Windows:**
 1. Open Command Prompt as Administrator
 2. Run: `certutil -delstore Root "Shipping Manager Chat CA"`
+
+**Android:**
+1. Settings → Security → Trusted Credentials → User
+2. Find "Shipping Manager Chat CA" → Remove
+
+**iOS:**
+1. Settings → General → VPN & Device Management
+2. Find "Shipping Manager Chat CA" → Remove Profile
 
 ### macOS Installation
 ```bash
@@ -281,7 +308,7 @@ shippingmanager_messanger/
 ├── run.js                    # Startup wrapper (handles Steam & cookie extraction)
 ├── server/
 │   ├── config.js            # Centralized configuration
-│   ├── certificate.js       # HTTPS certificate generation
+│   ├── certificate.js       # HTTPS certificate generation with CA
 │   ├── middleware/          # Express middleware
 │   ├── routes/              # API routes (alliance, messenger, game)
 │   ├── utils/               # Helper functions (API calls, caching)
@@ -290,6 +317,7 @@ shippingmanager_messanger/
 │   └── get-session-from-steam-windows11.py  # Cookie extraction script
 ├── public/
 │   ├── index.html           # Main application UI
+│   ├── sw.js                # Service Worker for mobile notifications
 │   ├── css/style.css        # Styling
 │   └── js/
 │       └── script.js        # Main application logic
@@ -303,6 +331,16 @@ shippingmanager_messanger/
 
 ### Certificate Warnings
 The self-signed certificate will trigger browser warnings. This is expected and safe for local network use. Click "Advanced" → "Proceed to localhost" (or similar).
+
+### Mobile Notifications Not Working
+If browser notifications don't appear on your mobile device:
+1. **Install CA Certificate**: Go to Settings → Certificate Installation → Download CA Certificate
+2. **Enable Notifications**: Tap "🔔 Enable Notifications" button and grant permission
+3. **Reload Page**: Hard refresh the page (clear cache) after installing certificate
+4. **Check Browser Settings**: Ensure browser has notification permissions in device settings
+5. **Test Notification**: Use "Test Browser Notification" button in settings
+
+**Note**: Mobile Chrome requires CA certificate to be installed for Service Worker registration, which is necessary for notifications.
 
 ### Steam Not Restarting
 If Steam doesn't restart automatically, check:
@@ -319,7 +357,7 @@ If you get authentication errors:
 If you can't access from other devices:
 1. Check your firewall allows connections on port 12345
 2. Verify you're using the correct network IP address
-3. Regenerate certificates: delete `cert.pem` and `key.pem`, then restart
+3. Regenerate certificates: delete `cert.pem`, `key.pem`, `ca-cert.pem`, and `ca-key.pem`, then restart
 
 ***
 

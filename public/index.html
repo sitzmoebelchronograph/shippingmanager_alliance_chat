@@ -11,13 +11,12 @@
 
     <div class="container">
         <div class="header">
-            <h1>⚓ Shipping Manager - Messenger</h1>
+            <h1>
+                <span class="header-icon">⚓</span>
+                <span class="header-text">Shipping Manager - Messenger</span>
+            </h1>
             <div class="header-right">
                 <button id="notificationBtn">🔔 Enable Notifications</button>
-                <div class="status">
-                    <div class="status-dot"></div>
-                    <span>Connected</span>
-                </div>
             </div>
         </div>
 
@@ -42,24 +41,30 @@
             <button id="co2Btn" class="action-btn bunker-btn" title="Buy max CO2">
                 💨 <span id="co2Display">-/-</span>
             </button>
-            <button id="departAllBtn" class="action-btn" disabled title="Depart all vessels from harbor">
-                🚢
-                <span id="vesselCount" class="action-badge" style="display: none;">0</span>
-            </button>
-            <button id="repairAllBtn" class="action-btn" disabled title="Repair all vessels with high wear">
-                🔧
-                <span id="repairCount" class="action-badge" style="display: none;">0</span>
-            </button>
-            <button id="allChatsBtn" class="action-btn" title="View all private messages">
-                📬
-                <span id="unreadBadge" class="action-badge" style="display: none; background: #ef4444;">0</span>
-            </button>
-            <button id="contactListBtn" class="action-btn" title="View contact list">
-                👥
-            </button>
-            <button id="settingsBtn" class="action-btn" title="Settings">
-                ⚙️
-            </button>
+            <div class="action-buttons-group">
+                <button id="departAllBtn" class="action-btn" disabled title="Depart all vessels from harbor">
+                    🚢
+                    <span id="vesselCount" class="action-badge" style="display: none;">0</span>
+                </button>
+                <button id="repairAllBtn" class="action-btn" disabled title="Repair all vessels with high wear">
+                    🔧
+                    <span id="repairCount" class="action-badge" style="display: none;">0</span>
+                </button>
+                <button id="campaignsBtn" class="action-btn" title="Marketing campaigns status">
+                    📊
+                    <span id="campaignsCount" class="action-badge" style="display: none;">0</span>
+                </button>
+                <button id="allChatsBtn" class="action-btn" title="View all private messages">
+                    📬
+                    <span id="unreadBadge" class="action-badge" style="display: none; background: #ef4444;">0</span>
+                </button>
+                <button id="contactListBtn" class="action-btn" title="View contact list">
+                    👥
+                </button>
+                <button id="settingsBtn" class="action-btn" title="Settings">
+                    ⚙️
+                </button>
+            </div>
         </div>
 
         <div class="chat-feed" id="chatFeed">
@@ -146,6 +151,20 @@
         </div>
     </div>
 
+    <div id="campaignsOverlay" class="overlay" style="display:none;">
+        <div class="messenger-window">
+            <div class="messenger-header">
+                <h2>📊 Marketing Campaigns</h2>
+                <button id="closeCampaignsBtn" class="close-btn">X</button>
+            </div>
+            <div class="messenger-feed" style="padding: 20px; overflow-y: auto;">
+                <div id="campaignsContent" style="max-width: 600px; margin: 0 auto;">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="settingsOverlay" class="overlay" style="display:none;">
         <div class="messenger-window">
             <div class="messenger-header">
@@ -209,7 +228,7 @@
                     </div>
 
                     <!-- Maintenance Section -->
-                    <div>
+                    <div style="margin-bottom: 25px;">
                         <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #e0e0e0;">Maintenance</h3>
                         <p style="margin: 0 0 15px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
                             Automatically repair vessels when wear reaches this threshold
@@ -227,6 +246,47 @@
                                 <option value="20">20%</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- Certificate Section -->
+                    <div>
+                        <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #e0e0e0;">🔒 Certificate Installation</h3>
+                        <p style="margin: 0 0 15px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
+                            Install the CA certificate to remove security warnings and enable notifications on mobile devices
+                        </p>
+
+                        <div style="background: rgba(31, 41, 55, 0.5); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #e0e0e0; font-size: 14px;">💻 Desktop (Windows/Mac/Linux):</strong>
+                                <p style="margin: 5px 0 0 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
+                                    Install the certificate to remove "Not Secure" warnings in your browser
+                                </p>
+                            </div>
+                            <div>
+                                <strong style="color: #e0e0e0; font-size: 14px;">📱 Mobile (Android/iOS):</strong>
+                                <p style="margin: 5px 0 0 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
+                                    Required for browser notifications to work. Install via Settings → Security → Install Certificate
+                                </p>
+                            </div>
+                        </div>
+
+                        <a href="/ca-cert.pem" download="ShippingManager-CA.pem" style="
+                            display: block;
+                            width: 100%;
+                            padding: 12px;
+                            background: rgba(59, 130, 246, 0.2);
+                            border: 1px solid rgba(59, 130, 246, 0.4);
+                            border-radius: 6px;
+                            color: #60a5fa;
+                            text-align: center;
+                            cursor: pointer;
+                            font-weight: 600;
+                            font-size: 14px;
+                            text-decoration: none;
+                            transition: all 0.2s;
+                        " onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">
+                            📥 Download CA Certificate
+                        </a>
                     </div>
                 </div>
             </div>

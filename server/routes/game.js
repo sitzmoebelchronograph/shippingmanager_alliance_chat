@@ -129,4 +129,38 @@ router.post('/maintenance/do-wear-maintenance-bulk', express.json(), async (req,
   }
 });
 
+/**
+ * GET /api/marketing/get-campaigns
+ * Get marketing campaigns status
+ */
+router.get('/marketing/get-campaigns', async (req, res) => {
+  try {
+    const data = await apiCall('/marketing-campaign/get-marketing', 'POST', {});
+    res.json(data);
+  } catch (error) {
+    console.error('Error getting marketing campaigns:', error);
+    res.status(500).json({ error: 'Failed to retrieve marketing campaigns' });
+  }
+});
+
+/**
+ * POST /api/marketing/activate-campaign
+ * Activate a marketing campaign
+ */
+router.post('/marketing/activate-campaign', express.json(), async (req, res) => {
+  const { campaign_id } = req.body;
+
+  if (!campaign_id) {
+    return res.status(400).json({ error: 'Missing campaign_id' });
+  }
+
+  try {
+    const data = await apiCall('/marketing-campaign/activate-marketing-campaign', 'POST', { campaign_id });
+    res.json(data);
+  } catch (error) {
+    console.error('Error activating campaign:', error);
+    res.status(500).json({ error: 'Failed to activate campaign' });
+  }
+});
+
 module.exports = router;
