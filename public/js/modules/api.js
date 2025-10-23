@@ -532,3 +532,59 @@ export async function doWearMaintenanceBulk(vesselIds) {
     throw error;
   }
 }
+
+/**
+ * Departs a single vessel on its assigned route.
+ * Used by intelligent auto-depart to send only profitable vessels.
+ *
+ * @param {number} vesselId - Vessel ID to depart
+ * @param {number} speed - Speed to travel at (usually % of max_speed)
+ * @param {number} [guards=0] - Number of guards (0 or 10 based on hijacking_risk)
+ * @returns {Promise<Object>} Departure result
+ * @property {boolean} success - Whether vessel was departed successfully
+ * @throws {Error} If departure fails (no route, insufficient fuel)
+ */
+export async function departVessel(vesselId, speed, guards = 0) {
+  try {
+    const response = await fetch('/api/route/depart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_vessel_id: vesselId,
+        speed: speed,
+        guards: guards,
+        history: 0
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to depart vessel');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Fetches demand and consumed data for all assigned ports.
+ * Used by intelligent auto-depart to calculate remaining port capacity.
+ *
+ * @returns {Promise<Array<Object>>} Array of port objects with demand/consumed data
+ * @property {string} code - Port code (e.g., "BOS")
+ * @property {Object} demand - Port demand for container and tanker cargo
+ * @property {Object} consumed - Amount already delivered to port
+ * @throws {Error} If fetch fails
+ */
+export async function fetchAssignedPorts() {
+  try {
+    const response = await fetch('/api/port/get-assigned-ports');
+    if (!response.ok) throw new Error('Failed to fetch assigned ports');
+    const data = await response.json();
+    return data.data?.ports || [];
+  } catch (error) {
+    console.error('Error fetching assigned ports:', error);
+    throw error;
+  }
+}

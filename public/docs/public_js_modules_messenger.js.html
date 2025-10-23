@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>public/js/modules/messenger.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_config.html">server/config</a></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showFeedback">showFeedback</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showPriceAlert">showPriceAlert</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.repairAllVessels">repairAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">public/js/modules/messenger.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Private Messaging Module - Handles direct message conversations between players and system notifications.
+ * Provides a WhatsApp-style messaging interface with conversation selection, message threading, and system message handling.
+ *
+ * Key Features:
+ * - Multi-conversation management with subject-based threading
+ * - System notification handling (vessel hijacking, stock transactions, alliance events)
+ * - Chat selection overlay for choosing between multiple conversations with same user
+ * - Message bubble UI with sender identification
+ * - Unread badge tracking
+ * - Chat deletion with confirmation
+ * - Integration with contact list and alliance chat
+ *
+ * Conversation Flow:
+ * 1. User clicks company name (from chat/contacts)
+ * 2. System fetches all conversations with that user
+ * 3. Conversation selection overlay displays (or creates new chat)
+ * 4. Selected conversation opens with full message history
+ * 5. User can send replies or delete conversation
+ *
+ * System Messages:
+ * - Read-only notifications from game (vessel hijacked, stock trades, etc.)
+ * - Formatted with specialized templates per message type
+ * - Grouped under "Gameplay" participant
+ * - Cannot reply (input hidden for system chats)
+ *
+ * @module messenger
+ * @requires utils - HTML escaping functions
+ * @requires api - Messenger API calls
+ * @requires ui-dialogs - Confirmation dialogs
+ */
+
+import { escapeHtml } from './utils.js';
+import { fetchMessengerChats, fetchMessengerMessages, sendPrivateMessage as apiSendPrivateMessage, deleteChat as apiDeleteChat } from './api.js';
+import { showConfirmDialog } from './ui-dialogs.js';
+
+/**
+ * Current active private chat state.
+ * Tracks the currently opened conversation with all its metadata.
+ * @type {Object}
+ * @property {number|null} chatId - Chat ID from API (null for new chats)
+ * @property {string|null} subject - Conversation subject line
+ * @property {string|null} targetCompanyName - Name of other participant
+ * @property {number|null} targetUserId - User ID of other participant
+ * @property {Array} messages - Array of message objects in this conversation
+ * @property {boolean} isNewChat - True if creating new conversation
+ * @property {boolean} isSystemChat - True if this is a system notification
+ */
+let currentPrivateChat = {
+  chatId: null,
+  subject: null,
+  targetCompanyName: null,
+  targetUserId: null,
+  messages: [],
+  isNewChat: false
+};
+
+/**
+ * Array of all private chats fetched from API.
+ * Includes both user conversations and system notifications.
+ * @type {Array&lt;Object>}
+ */
+let allPrivateChats = [];
+
+/**
+ * Filtered chats for current selection overlay.
+ * Subset of allPrivateChats relevant to current target user.
+ * @type {Array&lt;Object>}
+ */
+let userChatsForSelection = [];
+
+/**
+ * Opens messenger interface for a specific user or system notifications.
+ * Fetches all conversations and displays selection overlay or system message list.
+ *
+ * Special Handling:
+ * - If targetCompanyName is "Gameplay", shows system notifications list
+ * - Otherwise shows all conversations with the specified user
+ * - Allows creating new conversation if none exist
+ *
+ * Side Effects:
+ * - Fetches all messenger chats from API
+ * - Updates allPrivateChats module variable
+ * - Shows chat selection overlay
+ *
+ * @async
+ * @param {string} targetCompanyName - Company name to message, or "Gameplay" for system notifications
+ * @param {number|null} targetUserId - User ID of target (null for system messages)
+ * @returns {Promise&lt;void>}
+ *
+ * @example
+ * // From alliance chat - user clicks @CompanyName
+ * openMessenger("Player Company", 456);
+ *
+ * // From toolbar - user clicks Gameplay notifications
+ * openMessenger("Gameplay", null);
+ */
+export async function openMessenger(targetCompanyName, targetUserId) {
+  try {
+    const data = await fetchMessengerChats();
+    allPrivateChats = data.chats;
+
+    // Check if this is for system messages
+    if (targetCompanyName === 'Gameplay') {
+      showSystemMessagesSelection(data.chats, data.own_user_id);
+      return;
+    }
+
+    const userChats = allPrivateChats.filter(chat => {
+      if (chat.system_chat) return false;
+      return chat.participants_string === targetCompanyName;
+    });
+
+    showChatSelection(targetCompanyName, targetUserId, userChats, data.own_user_id);
+
+  } catch (error) {
+    console.error('Error opening messenger:', error);
+    alert(`Error: ${error.message}`);
+  }
+}
+
+function showSystemMessagesSelection(allChats, ownUserId) {
+  const systemChats = allChats.filter(chat => chat.system_chat);
+  const sortedChats = systemChats.sort((a, b) => (b.time_last_message || 0) - (a.time_last_message || 0));
+  userChatsForSelection = sortedChats;
+
+  document.getElementById('chatSelectionTitle').textContent = 'Gameplay - 📢 System Notifications';
+  const listContainer = document.getElementById('chatSelectionList');
+
+  if (sortedChats.length === 0) {
+    listContainer.innerHTML = '&lt;div class="empty-message">No system notifications yet.&lt;/div>';
+  } else {
+    listContainer.innerHTML = sortedChats.map((chat, index) => {
+      const title = getSystemMessageTitle(chat.body, chat.values);
+      const date = new Date(chat.time_last_message * 1000);
+      const dateStr = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+      const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const unreadIndicator = chat.new ? '&lt;span class="unread-indicator">&lt;/span>' : '';
+
+      return `
+        &lt;div class="chat-selection-item" data-chat-index="${index}" style="position: relative; padding-right: 40px;">
+          &lt;div style="flex: 1;">
+            &lt;h3>${title}${unreadIndicator}&lt;/h3>
+            &lt;p>${dateStr} ${timeStr}&lt;/p>
+          &lt;/div>
+          &lt;button class="delete-chat-btn" data-chat-index="${index}" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #ef4444; padding: 4px; cursor: pointer; font-size: 20px;" onmouseover="this.style.animation='shake-trash 0.5s ease-in-out infinite'" onmouseout="this.style.animation='none'">🗑️&lt;/button>
+        &lt;/div>
+      `;
+    }).join('');
+
+    listContainer.querySelectorAll('.chat-selection-item').forEach(item => {
+      const chatItem = item.querySelector('div[style*="flex: 1"]');
+      if (chatItem) {
+        chatItem.addEventListener('click', () => {
+          const chatIndex = parseInt(item.dataset.chatIndex);
+          const selectedChat = userChatsForSelection[chatIndex];
+          document.getElementById('chatSelectionOverlay').style.display = 'none';
+          openExistingChat('Gameplay', null, selectedChat, ownUserId);
+        });
+      }
+    });
+
+    listContainer.querySelectorAll('.delete-chat-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const chatIndex = parseInt(btn.dataset.chatIndex);
+        const chatToDelete = sortedChats[chatIndex];
+        await deleteChatWithConfirmation(chatToDelete);
+        // Refresh the list
+        showSystemMessagesSelection(allChats, ownUserId);
+      });
+    });
+  }
+
+  document.getElementById('chatSelectionOverlay').style.display = 'flex';
+}
+
+function showChatSelection(targetCompanyName, targetUserId, chats, ownUserId) {
+  const sortedChats = [...chats].sort((a, b) => (b.time_last_message || 0) - (a.time_last_message || 0));
+  userChatsForSelection = sortedChats;
+
+  currentPrivateChat.targetCompanyName = targetCompanyName;
+  currentPrivateChat.targetUserId = targetUserId;
+
+  document.getElementById('chatSelectionTitle').textContent = `Conversations with ${targetCompanyName}`;
+  const listContainer = document.getElementById('chatSelectionList');
+
+  let html = `
+    &lt;div class="chat-selection-item" data-is-new="true" style="border-color: #4ade80;">
+      &lt;h3 style="color: #4ade80;">+ Start New Conversation&lt;/h3>
+      &lt;p>Create a new conversation with a custom subject&lt;/p>
+    &lt;/div>
+  `;
+
+  html += sortedChats.map((chat, index) => {
+    const lastMsg = chat.last_message ? escapeHtml(chat.last_message.substring(0, 60)) + '...' : 'No messages';
+    const subject = chat.subject || 'No subject';
+
+    return `
+      &lt;div class="chat-selection-item" data-chat-index="${index}">
+        &lt;h3>${escapeHtml(subject)}&lt;/h3>
+        &lt;p>${lastMsg}&lt;/p>
+      &lt;/div>
+    `;
+  }).join('');
+
+  listContainer.innerHTML = html;
+
+  listContainer.querySelectorAll('.chat-selection-item').forEach(item => {
+    item.addEventListener('click', async () => {
+      if (item.dataset.isNew === 'true') {
+        document.getElementById('chatSelectionOverlay').style.display = 'none';
+        openNewChat(targetCompanyName, targetUserId);
+      } else {
+        const chatIndex = parseInt(item.dataset.chatIndex);
+        const selectedChat = userChatsForSelection[chatIndex];
+        document.getElementById('chatSelectionOverlay').style.display = 'none';
+        openExistingChat(targetCompanyName, targetUserId, selectedChat, ownUserId);
+      }
+    });
+  });
+
+  document.getElementById('chatSelectionOverlay').style.display = 'flex';
+}
+
+async function openExistingChat(targetCompanyName, targetUserId, chat, ownUserId) {
+  const isSystemChat = chat.system_chat || false;
+
+  currentPrivateChat = {
+    chatId: chat.id,
+    subject: chat.subject || 'Message',
+    targetCompanyName: targetCompanyName,
+    targetUserId: targetUserId,
+    messages: [],
+    isNewChat: false,
+    isSystemChat: isSystemChat
+  };
+
+  document.getElementById('messengerOverlay').style.display = 'flex';
+
+  // Set title based on chat type
+  if (isSystemChat) {
+    document.getElementById('messengerTitle').textContent = `${targetCompanyName} - 📢 System Notification`;
+  } else {
+    document.getElementById('messengerTitle').textContent = `${targetCompanyName} - ${chat.subject || 'Chat'}`;
+  }
+
+  document.getElementById('subjectInputWrapper').style.display = 'none';
+  document.getElementById('messengerFeed').innerHTML = '&lt;div class="empty-message">Loading...&lt;/div>';
+
+  // System chats are single notifications, not conversations
+  if (isSystemChat) {
+    displaySystemMessage(chat);
+    // Hide input area for system messages
+    document.getElementById('messengerInput').style.display = 'none';
+    document.getElementById('sendPrivateMessageBtn').style.display = 'none';
+  } else {
+    await loadPrivateMessages(chat.id);
+    // Show input area for regular chats
+    document.getElementById('messengerInput').style.display = 'block';
+    document.getElementById('sendPrivateMessageBtn').style.display = 'block';
+    document.getElementById('messengerInput').focus();
+  }
+
+  if (window.debouncedUpdateUnreadBadge) {
+    setTimeout(() => window.debouncedUpdateUnreadBadge(1000), 1000);
+  }
+}
+
+/**
+ * Opens interface for creating a new conversation with a user.
+ * Displays messenger overlay with subject input and empty message feed.
+ *
+ * Side Effects:
+ * - Updates currentPrivateChat state with new chat parameters
+ * - Shows messenger overlay
+ * - Displays subject input field
+ * - Focuses subject input for user entry
+ *
+ * @param {string} targetCompanyName - Company name of message recipient
+ * @param {number} targetUserId - User ID of message recipient
+ *
+ * @example
+ * // User clicks "New Conversation" from chat selection
+ * openNewChat("Player Company", 456);
+ */
+export function openNewChat(targetCompanyName, targetUserId) {
+  currentPrivateChat = {
+    chatId: null,
+    subject: null,
+    targetCompanyName: targetCompanyName,
+    targetUserId: targetUserId,
+    messages: [],
+    isNewChat: true
+  };
+
+  document.getElementById('messengerOverlay').style.display = 'flex';
+  document.getElementById('messengerTitle').textContent = `New conversation with ${targetCompanyName}`;
+  document.getElementById('subjectInputWrapper').style.display = 'block';
+  document.getElementById('subjectInput').value = '';
+  document.getElementById('messengerFeed').innerHTML =
+    '&lt;div class="empty-message">New conversation. Enter a subject and send your first message.&lt;/div>';
+
+  document.getElementById('subjectInput').focus();
+}
+
+/**
+ * Loads and displays messages for a specific conversation.
+ * Fetches message history from API and renders in bubble format.
+ *
+ * @async
+ * @param {number} chatId - Chat ID to load messages for
+ * @returns {Promise&lt;void>}
+ */
+async function loadPrivateMessages(chatId) {
+  try {
+    const { messages, user_id: ownUserId } = await fetchMessengerMessages(chatId);
+    displayPrivateMessages(messages, ownUserId);
+  } catch (error) {
+    document.getElementById('messengerFeed').innerHTML =
+      `&lt;div class="empty-message" style="color:#ef4444;">Error loading messages: ${error.message}&lt;/div>`;
+  }
+}
+
+function displayPrivateMessages(messages, ownUserId) {
+  const feed = document.getElementById('messengerFeed');
+  feed.innerHTML = '';
+
+  if (!messages || messages.length === 0) {
+    feed.innerHTML = '&lt;div class="empty-message">No messages in this chat yet.&lt;/div>';
+    return;
+  }
+
+  messages.forEach(msg => {
+    const isOwn = msg.user_id === ownUserId;
+    const bubble = document.createElement('div');
+
+    const date = new Date(msg.created_at * 1000);
+    const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const day = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+
+    bubble.className = `message-bubble ${isOwn ? 'own' : 'other'}`;
+    bubble.innerHTML = `
+      ${escapeHtml(msg.body || '').replace(/\n/g, '&lt;br>')}
+      &lt;div style="font-size:10px; opacity:0.7; margin-top:5px; text-align:${isOwn ? 'right' : 'left'};">${day} ${time}&lt;/div>
+    `;
+
+    feed.appendChild(bubble);
+  });
+
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function getSystemMessageTitle(body, values) {
+  if (!body) return 'System Notification';
+
+  const v = values || {};
+
+  if (body === 'vessel_got_hijacked') return '⚠️ Vessel Hijacked';
+  if (body === 'user_bought_stock') return '📈 Stock Purchase';
+  if (body === 'user_sold_stock') return '📉 Stock Sale';
+  if (body.includes('alliance') &amp;&amp; body.includes('donation')) return '💰 Alliance Donation';
+  if (body.includes('accepted_to_join_alliance')) return '🤝 Alliance Joined';
+  if (body.startsWith('intro_pm_')) return '📚 Tutorial Message';
+
+  // Fallback: format the body text
+  return body.replace(/_/g, ' ').replace(/\//g, ' ');
+}
+
+function displaySystemMessage(chat) {
+  const feed = document.getElementById('messengerFeed');
+  feed.innerHTML = '';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'message-bubble system';
+  bubble.style.background = 'rgba(59, 130, 246, 0.1)';
+  bubble.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+
+  const date = new Date(chat.time_last_message * 1000);
+  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const day = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+
+  // Format the system message based on body type
+  let messageContent = formatSystemMessage(chat.body, chat.values, chat.subject);
+
+  bubble.innerHTML = `
+    ${messageContent}
+    &lt;div style="font-size:10px; opacity:0.7; margin-top:10px;">${day} ${time}&lt;/div>
+  `;
+
+  feed.appendChild(bubble);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function formatSystemMessage(body, values, subject) {
+  // Handle different system message types
+  if (!body) return '&lt;div style="color: #94a3b8;">System notification (no details)&lt;/div>';
+
+  const v = values || {};
+
+  // Vessel hijacked
+  if (body === 'vessel_got_hijacked' &amp;&amp; v.vessel_name) {
+    return `
+      &lt;div style="color: #ef4444; font-weight: bold;">⚠️ Vessel Hijacked!&lt;/div>
+      &lt;div style="margin-top: 8px;">
+        &lt;strong>Vessel:&lt;/strong> ${escapeHtml(v.vessel_name)}&lt;br>
+        &lt;strong>Location:&lt;/strong> ${escapeHtml(v.tr_danger_zone || 'Unknown')}&lt;br>
+        &lt;strong>Ransom:&lt;/strong> $${(v.requested_amount || 0).toLocaleString()}&lt;br>
+        &lt;strong>Case ID:&lt;/strong> ${v.case_id || 'N/A'}
+      &lt;/div>
+    `;
+  }
+
+  // Stock transactions
+  if (body === 'user_bought_stock' &amp;&amp; v.stockOwner) {
+    return `
+      &lt;div style="color: #4ade80;">📈 Stock Purchase&lt;/div>
+      &lt;div style="margin-top: 8px;">
+        &lt;strong>Company:&lt;/strong> ${escapeHtml(v.stockOwner)}&lt;br>
+        &lt;strong>Shares:&lt;/strong> ${(v.stockAmount || 0).toLocaleString()}&lt;br>
+        &lt;strong>Total Value:&lt;/strong> $${(v.totalAmount || 0).toLocaleString()}
+      &lt;/div>
+    `;
+  }
+
+  if (body === 'user_sold_stock' &amp;&amp; v.stockOwner) {
+    return `
+      &lt;div style="color: #fb923c;">📉 Stock Sale&lt;/div>
+      &lt;div style="margin-top: 8px;">
+        &lt;strong>Company:&lt;/strong> ${escapeHtml(v.stockOwner)}&lt;br>
+        &lt;strong>Shares:&lt;/strong> ${(v.stockAmount || 0).toLocaleString()}&lt;br>
+        &lt;strong>Total Value:&lt;/strong> $${(v.totalAmount || 0).toLocaleString()}
+      &lt;/div>
+    `;
+  }
+
+  // Alliance donation
+  if (body.includes('alliance') &amp;&amp; body.includes('donation') &amp;&amp; v.amount) {
+    return `
+      &lt;div style="color: #a78bfa;">💰 Alliance Donation&lt;/div>
+      &lt;div style="margin-top: 8px;">
+        &lt;strong>Amount:&lt;/strong> ${v.amount}&lt;br>
+        ${v.comment ? `&lt;strong>Message:&lt;/strong> "${escapeHtml(v.comment)}"` : ''}
+      &lt;/div>
+    `;
+  }
+
+  // Alliance accepted
+  if (body.includes('accepted_to_join_alliance') &amp;&amp; v.alliance_name) {
+    return `
+      &lt;div style="color: #4ade80;">🤝 Alliance Joined&lt;/div>
+      &lt;div style="margin-top: 8px;">
+        You have joined &lt;strong>${escapeHtml(v.alliance_name)}&lt;/strong>!
+      &lt;/div>
+    `;
+  }
+
+  // Tutorial/intro messages
+  if (body.startsWith('intro_pm_')) {
+    return `
+      &lt;div style="color: #60a5fa;">📚 Tutorial Message&lt;/div>
+      &lt;div style="margin-top: 8px;">
+        ${subject ? escapeHtml(subject) : body}
+      &lt;/div>
+    `;
+  }
+
+  // Fallback: show raw data
+  return `
+    &lt;div style="color: #94a3b8;">&lt;strong>Type:&lt;/strong> ${escapeHtml(body)}&lt;/div>
+    ${subject ? `&lt;div style="margin-top: 5px;">&lt;strong>Subject:&lt;/strong> ${escapeHtml(subject)}&lt;/div>` : ''}
+    ${values ? `&lt;div style="margin-top: 5px; font-size: 11px; opacity: 0.8;">&lt;strong>Data:&lt;/strong> ${escapeHtml(JSON.stringify(values, null, 2))}&lt;/div>` : ''}
+  `;
+}
+
+export function closeMessenger() {
+  document.getElementById('messengerOverlay').style.display = 'none';
+  currentPrivateChat = { chatId: null, subject: null, targetCompanyName: null, targetUserId: null, messages: [], isNewChat: false, isSystemChat: false };
+  document.getElementById('messengerFeed').innerHTML = '';
+  document.getElementById('messengerInput').value = '';
+  document.getElementById('subjectInput').value = '';
+  document.getElementById('subjectInputWrapper').style.display = 'none';
+  // Restore input area visibility
+  document.getElementById('messengerInput').style.display = 'block';
+  document.getElementById('sendPrivateMessageBtn').style.display = 'block';
+}
+
+/**
+ * Closes chat selection overlay and clears selection state.
+ */
+export function closeChatSelection() {
+  document.getElementById('chatSelectionOverlay').style.display = 'none';
+  userChatsForSelection = [];
+}
+
+/**
+ * Displays overlay showing all private conversations sorted by recent activity.
+ * Provides unified view of all chats with delete functionality per conversation.
+ *
+ * Features:
+ * - Sorted by most recent message timestamp
+ * - Shows message preview and timestamp
+ * - Displays unread indicator badge
+ * - Trash icon per chat for deletion
+ * - Clicking chat opens full conversation
+ *
+ * Side Effects:
+ * - Fetches all chats from API
+ * - Shows all chats overlay
+ * - Registers click handlers for each chat and delete button
+ *
+ * @async
+ * @returns {Promise&lt;void>}
+ *
+ * @example
+ * // User clicks mailbox icon in toolbar
+ * showAllChats();
+ */
+export async function showAllChats() {
+  try {
+    const data = await fetchMessengerChats();
+    const chats = data.chats;
+
+    const sortedChats = chats.sort((a, b) => (b.time_last_message || 0) - (a.time_last_message || 0));
+
+    const listContainer = document.getElementById('allChatsList');
+
+    if (sortedChats.length === 0) {
+      listContainer.innerHTML = '&lt;div class="empty-message">No private conversations yet.&lt;/div>';
+    } else {
+      listContainer.innerHTML = sortedChats.map((chat, index) => {
+        const isSystemChat = chat.system_chat || false;
+        const lastMsg = isSystemChat ? getSystemMessageTitle(chat.body, chat.values) : (chat.last_message ? escapeHtml(chat.last_message.substring(0, 60)) + '...' : 'No messages');
+        const subject = isSystemChat ? '📢 System Notification' : (chat.subject || 'No subject');
+        const participant = chat.participants_string || 'Unknown';
+        const unreadIndicator = chat.new ? '&lt;span class="unread-indicator">&lt;/span>' : '';
+
+        // Format timestamp
+        const date = new Date(chat.time_last_message * 1000);
+        const dateStr = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+        const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const timestamp = `${dateStr} ${timeStr}`;
+
+        return `
+          &lt;div class="chat-selection-item" data-chat-index="${index}" style="position: relative; padding-right: 40px;">
+            &lt;div style="flex: 1;">
+              &lt;h3>${escapeHtml(participant)} - ${escapeHtml(subject)}${unreadIndicator}&lt;/h3>
+              &lt;p>${lastMsg}&lt;/p>
+              &lt;p style="font-size: 11px; opacity: 0.7; margin-top: 4px;">${timestamp}&lt;/p>
+            &lt;/div>
+            &lt;button class="delete-chat-btn" data-chat-index="${index}" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #ef4444; padding: 4px; cursor: pointer; font-size: 20px;" onmouseover="this.style.animation='shake-trash 0.5s ease-in-out infinite'" onmouseout="this.style.animation='none'">🗑️&lt;/button>
+          &lt;/div>
+        `;
+      }).join('');
+
+      listContainer.querySelectorAll('.chat-selection-item').forEach(item => {
+        const chatItem = item.querySelector('div[style*="flex: 1"]');
+        if (chatItem) {
+          chatItem.addEventListener('click', () => {
+            const chatIndex = parseInt(item.dataset.chatIndex);
+            const selectedChat = sortedChats[chatIndex];
+
+            const targetUserId = selectedChat.participant_ids?.find(id => id !== data.own_user_id);
+            const targetCompanyName = selectedChat.participants_string;
+
+            document.getElementById('allChatsOverlay').style.display = 'none';
+            openExistingChat(targetCompanyName, targetUserId, selectedChat, data.own_user_id);
+          });
+        }
+      });
+
+      listContainer.querySelectorAll('.delete-chat-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const chatIndex = parseInt(btn.dataset.chatIndex);
+          const chatToDelete = sortedChats[chatIndex];
+
+          await deleteChatWithConfirmation(chatToDelete);
+        });
+      });
+    }
+
+    document.getElementById('allChatsOverlay').style.display = 'flex';
+
+  } catch (error) {
+    console.error('Error loading all chats:', error);
+    alert(`Error: ${error.message}`);
+  }
+}
+
+/**
+ * Closes the all chats overlay.
+ */
+export function closeAllChats() {
+  document.getElementById('allChatsOverlay').style.display = 'none';
+}
+
+/**
+ * Updates the unread message badge count in the UI.
+ * Shows count of unread user messages (excludes system notifications).
+ *
+ * Badge Behavior:
+ * - Visible only when unread count > 0
+ * - Hidden when no unread messages
+ * - Only counts non-system chats
+ *
+ * Side Effects:
+ * - Fetches all messenger chats from API
+ * - Updates badge visibility and count
+ *
+ * @async
+ * @returns {Promise&lt;void>}
+ */
+export async function updateUnreadBadge() {
+  try {
+    const data = await fetchMessengerChats();
+    const unreadCount = data.chats.filter(chat => !chat.system_chat &amp;&amp; chat.new).length;
+
+    const badge = document.getElementById('unreadBadge');
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error checking unread messages:', error);
+  }
+}
+
+export async function sendPrivateMessage() {
+  const messageInput = document.getElementById('messengerInput');
+  const subjectInput = document.getElementById('subjectInput');
+  const sendBtn = document.getElementById('sendPrivateMessageBtn');
+  const message = messageInput.value.trim();
+
+  if (!message || message.length > 1000) {
+    alert('Invalid message length.');
+    return;
+  }
+
+  let subject;
+  if (currentPrivateChat.isNewChat) {
+    subject = subjectInput.value.trim();
+    if (!subject || subject.length === 0) {
+      alert('Please enter a subject.');
+      subjectInput.focus();
+      return;
+    }
+  } else {
+    subject = currentPrivateChat.subject;
+  }
+
+  sendBtn.disabled = true;
+  messageInput.disabled = true;
+
+  try {
+    await apiSendPrivateMessage(currentPrivateChat.targetUserId, subject, message);
+
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+
+    if (window.debouncedUpdateUnreadBadge) {
+      window.debouncedUpdateUnreadBadge();
+    }
+    closeMessenger();
+    setTimeout(() => {
+      openMessenger(currentPrivateChat.targetCompanyName, currentPrivateChat.targetUserId);
+    }, 500);
+
+  } catch (error) {
+    alert(`Error: ${error.message}`);
+  } finally {
+    sendBtn.disabled = false;
+    messageInput.disabled = false;
+  }
+}
+
+export function getCurrentPrivateChat() {
+  return currentPrivateChat;
+}
+
+async function deleteChatWithConfirmation(chat) {
+  const participant = chat.participants_string || 'Unknown';
+  const subject = chat.subject || 'No subject';
+  const isSystemChat = chat.system_chat || false;
+
+  const confirmed = await showConfirmDialog({
+    title: '🗑️ Delete Chat',
+    message: `Do you want to delete this conversation?`,
+    details: [
+      { label: 'Participant', value: participant },
+      { label: 'Subject', value: subject }
+    ],
+    confirmText: 'Delete',
+    cancelText: 'Cancel'
+  });
+
+  if (!confirmed) return;
+
+  try {
+    await apiDeleteChat(chat.id, isSystemChat);
+    showAllChats();
+
+    if (window.debouncedUpdateUnreadBadge) {
+      window.debouncedUpdateUnreadBadge();
+    }
+  } catch (error) {
+    alert(`Error deleting chat: ${error.message}`);
+  }
+}
+
+export async function deleteCurrentChat() {
+  if (!currentPrivateChat.chatId) {
+    alert('No chat to delete');
+    return;
+  }
+
+  const confirmed = await showConfirmDialog({
+    title: '🗑️ Delete Chat',
+    message: `Do you want to delete this conversation?`,
+    details: [
+      { label: 'Participant', value: currentPrivateChat.targetCompanyName },
+      { label: 'Subject', value: currentPrivateChat.subject }
+    ],
+    confirmText: 'Delete',
+    cancelText: 'Cancel'
+  });
+
+  if (!confirmed) return;
+
+  try {
+    await apiDeleteChat(currentPrivateChat.chatId, currentPrivateChat.isSystemChat || false);
+    closeMessenger();
+
+    if (window.debouncedUpdateUnreadBadge) {
+      window.debouncedUpdateUnreadBadge();
+    }
+  } catch (error) {
+    alert(`Error deleting chat: ${error.message}`);
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

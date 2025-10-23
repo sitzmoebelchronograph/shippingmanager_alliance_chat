@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>Home - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_config.html">server/config</a></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showFeedback">showFeedback</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showPriceAlert">showPriceAlert</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.repairAllVessels">repairAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+
+    
+
+
+
+    
+
+
+    <section class="package">
+        <h3> </h3>		
+    </section>
+
+
+
+
+
+
+
+
+
+    
+
+
+
+    <section class="readme usertext">
+        <article><h1 id="shipping-manager---copilot">Shipping Manager - CoPilot</h1>
+<p>A comprehensive standalone web application for <a href="http://shippingmanager.cc/">Shipping Manager</a> that fixes the game's critical chat bug and adds powerful automation features.</p>
+<h2 id="%F0%9F%8E%AF-key-features-at-a-glance">🎯 Key Features at a Glance</h2>
+<ul>
+<li>✅ <strong>Bug-Free Chat</strong>: Alliance chat and private messaging without page reload bugs</li>
+<li>🤖 <strong>AutoPilot System</strong>: Intelligent automation for fuel/CO2 purchasing, vessel operations, and campaign management with configurable intervals</li>
+<li>📱 <strong>Mobile Support</strong>: Full HTTPS support with mobile notifications</li>
+<li>🚢 <strong>Fleet Management</strong>: Vessel purchasing, bulk repairs, automated departures, and alliance cooperation</li>
+<li>💰 <strong>Smart Purchasing</strong>: Price alerts, auto-rebuy, and detailed cost calculations</li>
+<li>🤝 <strong>Alliance Cooperation</strong>: Manage and send coop vessels to alliance members</li>
+<li>🔒 <strong>Secure</strong>: Rate-limited API calls, input validation, and anti-detection mechanisms</li>
+</ul>
+<h2 id="problem-statement">Problem Statement</h2>
+<p>When playing <a href="http://shippingmanager.cc/">Shipping Manager</a> on Steam, the in-game chat suffers from a critical page reload bug. Typing certain characters causes the entire game page to refresh, making communication with alliance members nearly impossible. Messages get lost mid-typing, disrupting coordination and team play.</p>
+<p>This tool provides a comprehensive standalone web interface that connects directly to the Shipping Manager API, offering alliance chat, private messaging, game management features, <strong>and intelligent automation</strong> - all without the game's input bugs :)</p>
+<h2 id="features">Features</h2>
+<h3 id="alliance-chat">Alliance Chat</h3>
+<ul>
+<li><strong>Real-time Alliance Chat</strong>: WebSocket-based live chat updates with randomized intervals (25-27s) for stealth</li>
+<li><strong>Member Mentions</strong>: Use <code>@</code> to mention alliance members with autocomplete suggestions</li>
+<li><strong>Instant Message Display</strong>: See your sent messages immediately in the chat feed</li>
+<li><strong>Message History</strong>: View complete chat feed with timestamps</li>
+<li><strong>Feed Events</strong>: See alliance member joins and route completions</li>
+<li><strong>No Page Reloads</strong>: Type freely without triggering game bugs</li>
+<li><strong>Character Counter</strong>: Track message length (1000 char limit)</li>
+<li><strong>Multi-line Support</strong>: Use Shift+Enter for line breaks</li>
+<li><strong>Click to Chat</strong>: Click on any company name in the chat to start a private conversation</li>
+<li><strong>No Alliance Support</strong>: Gracefully handles users not in an alliance</li>
+</ul>
+<h3 id="private-messaging">Private Messaging</h3>
+<ul>
+<li><strong>Private Conversations</strong>: Send and receive private messages to/from other players</li>
+<li><strong>Message Inbox</strong>: View all private conversations with unread count badge</li>
+<li><strong>Chat Selection</strong>: Choose between multiple conversations with the same user (different subjects)</li>
+<li><strong>New Messages</strong>: Start new conversations with custom subjects</li>
+<li><strong>Instant Updates</strong>: Messages appear immediately after sending</li>
+<li><strong>Contact List</strong>: Access all your contacts and alliance members
+<ul>
+<li>Separate sections for regular contacts and alliance contacts</li>
+<li>Alphabetically sorted lists</li>
+<li>Quick &quot;Send Message&quot; buttons</li>
+<li>Direct access to start conversations</li>
+</ul>
+</li>
+</ul>
+<h3 id="game-management">Game Management</h3>
+<ul>
+<li><strong>Points Display</strong>: Real-time premium points balance</li>
+<li><strong>CEO Level Badge</strong>: Display your current CEO level with a golden star badge</li>
+<li><strong>Cash Display</strong>: Real-time cash balance with auto-updates every 30 seconds</li>
+<li><strong>Stock Display</strong>:
+<ul>
+<li>Real-time stock value and trend indicator (only visible if IPO active)</li>
+<li>Green up arrow (↑) for rising stock prices</li>
+<li>Red down arrow (↓) for falling stock prices</li>
+<li>Auto-updates every 30 seconds</li>
+</ul>
+</li>
+<li><strong>Anchor Slots Display</strong>:
+<ul>
+<li>Shows available/max vessel capacity (e.g., &quot;7/101&quot;)</li>
+<li>Available = max anchor points - total vessels owned</li>
+<li>Helps plan vessel purchases without hitting limits</li>
+<li>Auto-updates every 30 seconds</li>
+</ul>
+</li>
+<li><strong>Fuel Management</strong>:
+<ul>
+<li>Current fuel level and capacity display</li>
+<li>One-click max fuel purchase with detailed confirmation dialog</li>
+<li>Price per ton display (turns green when ≤ $400/t)</li>
+<li>Configurable price alerts with browser notifications</li>
+<li>Smart purchase calculations</li>
+</ul>
+</li>
+<li><strong>CO2 Management</strong>:
+<ul>
+<li>Current CO2 quota and capacity display</li>
+<li>One-click max CO2 purchase with detailed confirmation dialog</li>
+<li>Price per ton display (turns green when ≤ $7/t)</li>
+<li>Configurable price alerts with browser notifications</li>
+<li>Smart purchase calculations</li>
+</ul>
+</li>
+<li><strong>Vessel Management</strong>:
+<ul>
+<li>Real-time count of vessels ready to depart</li>
+<li>Separate badge for vessels at anchor</li>
+<li><strong>Pending Vessels Badge</strong>: Track vessels under construction with countdown timers</li>
+<li><strong>Pending Vessels Filter</strong>: View all vessels being built with completion times</li>
+<li>One-click &quot;Depart All&quot; with detailed feedback</li>
+<li>Shows fuel/CO2 consumption and earnings per departure</li>
+<li>Auto-refresh every 30 seconds</li>
+</ul>
+</li>
+<li><strong>Bulk Repair</strong>:
+<ul>
+<li>Automatic detection of vessels with high wear</li>
+<li>Configurable wear threshold (10% or 20%)</li>
+<li>One-click bulk repair with cost preview</li>
+<li>Real-time badge showing number of vessels needing repair</li>
+<li>Prevents repair if insufficient funds</li>
+</ul>
+</li>
+<li><strong>Marketing Campaigns</strong>:
+<ul>
+<li>View all available marketing campaigns</li>
+<li>Real-time campaign status (active/inactive)</li>
+<li>One-click campaign activation</li>
+<li>Badge shows number of available campaigns</li>
+<li>Detailed campaign information display</li>
+</ul>
+</li>
+<li><strong>Vessel Purchase Catalog</strong>:
+<ul>
+<li>Browse all available vessels for purchase</li>
+<li>Filter by vessel type (Container/Tanker) or engine type</li>
+<li>Engine type filter shows all matching vessels regardless of container/tanker type</li>
+<li>Sorted by price (cheapest first)</li>
+<li>Detailed vessel specifications:
+<ul>
+<li>Type, Year, Capacity, Speed, Range</li>
+<li>Engine type and power (e.g., &quot;mih_x1 (60,000 kW)&quot;)</li>
+<li>Length, Fuel capacity</li>
+<li>Service interval, Current port</li>
+<li><strong>Efficiency Color Coding</strong>: CO2 and Fuel factors with visual indicators
+<ul>
+<li>🟢 Green: Factor &lt; 1.0 (efficient, below standard consumption)</li>
+<li>⚪ Gray: Factor = 1.0 (standard efficiency)</li>
+<li>🟠 Orange: Factor &gt; 1.0 (inefficient, above standard consumption)</li>
+</ul>
+</li>
+<li>Special features (Gearless, Antifouling)</li>
+<li>Width (if applicable), Perks (if available)</li>
+</ul>
+</li>
+<li>High-quality vessel images</li>
+<li>Quantity selection (1-99 vessels per purchase)</li>
+<li>Individual vessel purchase with confirmation</li>
+<li>Select multiple vessels for bulk purchase</li>
+<li>Comprehensive purchase confirmation dialogs</li>
+</ul>
+</li>
+<li><strong>Bulk Vessel Purchasing</strong>:
+<ul>
+<li>Select multiple vessels with different quantities</li>
+<li>Visual selection indicator shows quantity (e.g., &quot;✓ Selected (10x)&quot;)</li>
+<li>Badge shows total vessel count in selection</li>
+<li>Sequential purchase with 1.5s delay between each</li>
+<li>Detailed purchase summary showing all vessels and costs</li>
+<li>Automatic stop on vessel limit or insufficient funds</li>
+<li>Clear error messages with purchased count</li>
+<li>Auto-refresh vessel list after purchases</li>
+</ul>
+</li>
+</ul>
+<h3 id="alliance-cooperation-%F0%9F%A4%9D">Alliance Cooperation 🤝</h3>
+<ul>
+<li><strong>Coop Management Interface</strong>:
+<ul>
+<li>Header display shows available/cap ratio (e.g., &quot;17/68&quot;)</li>
+<li>Color-coded status: Green when all sent (0 available), Red when vessels need sending</li>
+<li>Button badge shows available count only when &gt; 0</li>
+<li>Real-time stats: available, cap, sent this season, received this season</li>
+</ul>
+</li>
+<li><strong>Member List</strong>:
+<ul>
+<li>Shows only enabled alliance members</li>
+<li>Sorted by total vessel count (highest first)</li>
+<li>Displays user ID, total vessels, and fuel amount</li>
+<li>Visual indicator (✓) for members with real purchases</li>
+<li>Border color coding: Green for purchasers, Gray for others</li>
+</ul>
+</li>
+<li><strong>Coop Actions</strong>:
+<ul>
+<li>One-click &quot;Send max&quot; button per member</li>
+<li>Placeholder functionality (ready for API implementation)</li>
+<li>Success feedback notifications</li>
+</ul>
+</li>
+</ul>
+<h3 id="autopilot---intelligent-automation-system-%F0%9F%A4%96">AutoPilot - Intelligent Automation System 🤖</h3>
+<p><strong>Smart automation features with anti-detection mechanisms and event-driven architecture:</strong></p>
+<ul>
+<li>
+<p><strong>Auto-Rebuy Fuel</strong>:</p>
+<ul>
+<li>Monitors fuel prices continuously (every 30-35 seconds)</li>
+<li>Automatically purchases fuel when price drops at/below configured threshold</li>
+<li>Configurable threshold (default: $400/ton)</li>
+<li>Can use alert threshold or custom threshold</li>
+<li>Event-driven: Triggers immediately when price drops</li>
+<li>Continues buying until bunker is full or funds depleted</li>
+<li>Pure price-based strategy (no time windows)</li>
+</ul>
+</li>
+<li>
+<p><strong>Auto-Rebuy CO2</strong>:</p>
+<ul>
+<li>Monitors CO2 prices continuously (every 30-35 seconds)</li>
+<li>Automatically purchases CO2 when price drops at/below configured threshold</li>
+<li>Configurable threshold (default: $7/ton)</li>
+<li>Can use alert threshold or custom threshold</li>
+<li>Event-driven: Triggers immediately when price drops</li>
+<li>Continues buying until bunker is full or funds depleted</li>
+<li>Pure price-based strategy (no time windows)</li>
+</ul>
+</li>
+<li>
+<p><strong>Auto-Depart All Vessels</strong>:</p>
+<ul>
+<li>Continuously monitors vessels in port</li>
+<li>Automatically departs all ready vessels when fuel is available</li>
+<li>Detects failed departures (insufficient fuel/CO2)</li>
+<li>Shows green success notification for successful departures</li>
+<li>Shows red error notification for failed departures (&quot;🤖 Auto-Depart\nNo fuel - no vessels sent&quot;)</li>
+<li>Random 1-2 minute intervals between checks</li>
+<li>Prevents API spam with intelligent timing</li>
+</ul>
+</li>
+<li>
+<p><strong>Auto Bulk Repair</strong>:</p>
+<ul>
+<li>Monitors all vessels for wear/maintenance needs</li>
+<li>Automatically repairs all vessels with wear &gt; 0%</li>
+<li>Only repairs when sufficient funds are available</li>
+<li><strong>Configurable Check Interval</strong>: Choose from 0-1h to 12-24h ranges</li>
+<li>Random check within selected time range (e.g., 2-3 hours = random check between 2-3h)</li>
+<li>Server-side execution ensures repairs happen even when browser is closed</li>
+<li>Detailed cost preview before repair</li>
+</ul>
+</li>
+<li>
+<p><strong>Auto Campaign Renewal</strong>:</p>
+<ul>
+<li>Monitors active marketing campaigns</li>
+<li>Automatically renews expired campaigns (reputation, awareness, green)</li>
+<li>Random 2-3 minute intervals between checks</li>
+<li>Prevents campaign downtime</li>
+<li>Only activates when funds are sufficient</li>
+</ul>
+</li>
+<li>
+<p><strong>Anti-Detection Features</strong>:</p>
+<ul>
+<li>Randomized check intervals (1-3 minutes for main loop)</li>
+<li>Event-driven rebuy (triggered by price updates, not polling)</li>
+<li>Rate-limited API calls with random delays</li>
+<li>Human-like behavior patterns</li>
+<li>Prevents account flagging</li>
+</ul>
+</li>
+<li>
+<p><strong>AutoPilot Notifications</strong>:</p>
+<ul>
+<li>Optional browser notifications for all automation actions</li>
+<li>Toggle in settings to enable/disable</li>
+<li>Shows fuel/CO2 purchases, departures, repairs, campaign renewals</li>
+<li>Desktop and mobile support</li>
+<li>Visual feedback in UI for all actions</li>
+</ul>
+</li>
+</ul>
+<h3 id="settings-%26-customization">Settings &amp; Customization</h3>
+<ul>
+<li><strong>Price Alert Thresholds</strong>:
+<ul>
+<li>Customizable fuel price alert threshold (default: $400/ton)</li>
+<li>Customizable CO2 price alert threshold (default: $7/ton)</li>
+<li>Browser notification test button</li>
+</ul>
+</li>
+<li><strong>AutoPilot Settings</strong>:
+<ul>
+<li>Enable/disable auto-rebuy fuel</li>
+<li>Enable/disable auto-rebuy CO2</li>
+<li>Enable/disable auto-depart all vessels</li>
+<li>Enable/disable auto bulk repair (with configurable interval: 0-1h to 12-24h)</li>
+<li>Enable/disable auto campaign renewal</li>
+<li>Enable/disable AutoPilot notifications</li>
+<li>Configurable thresholds (use alert threshold or custom value)</li>
+</ul>
+</li>
+<li><strong>Maintenance Settings</strong>:
+<ul>
+<li>Configurable wear threshold for automatic repair detection</li>
+<li>Options: 10% or 20% wear threshold</li>
+<li>Configurable auto-repair check interval (0-1h, 1-2h, 2-3h, 3-4h, 4-5h, 5-6h, 6-12h, 12-24h)</li>
+</ul>
+</li>
+<li><strong>Persistent Settings</strong>: All preferences saved in settings.json on server (survives restarts)</li>
+<li><strong>Real-Time Sync</strong>: Settings changes broadcast to all connected clients via WebSocket (multi-tab/multi-device sync)</li>
+</ul>
+<h3 id="advanced-features">Advanced Features</h3>
+<ul>
+<li><strong>Smart Purchase Dialogs</strong>: Detailed confirmation dialogs showing:
+<ul>
+<li>Amount needed to fill tank/storage</li>
+<li>Current price per ton</li>
+<li>Total cost calculation</li>
+<li>Current cash balance validation</li>
+<li>Line-by-line vessel list for bulk purchases</li>
+<li>Visual separator and summary section</li>
+<li>Cancel/Confirm buttons in header for quick access</li>
+</ul>
+</li>
+<li><strong>Browser Notifications</strong>: Desktop and mobile notifications for:
+<ul>
+<li>Price alerts when fuel/CO2 drops below thresholds</li>
+<li>Animated price alert with spin effect on page</li>
+<li>Test notification button in settings</li>
+<li><strong>Mobile Support</strong>: Works on Android/iOS with Service Worker</li>
+<li><strong>Vibration Alerts</strong>: Mobile devices vibrate on notifications</li>
+<li>System notifications visible in device notification tray</li>
+</ul>
+</li>
+<li><strong>HTTPS Support</strong>:
+<ul>
+<li>Self-signed certificates with automatic generation</li>
+<li>Network IP addresses included in certificate</li>
+<li>Accessible from all devices on local network</li>
+<li>CA certificate download in settings for mobile devices</li>
+</ul>
+</li>
+<li><strong>Debounced API Calls</strong>: Rate-limited requests to avoid detection (800-1000ms delays)</li>
+<li><strong>Randomized Intervals</strong>: Variable polling times to appear more human-like</li>
+<li><strong>Extended Feedback</strong>: Success/error messages with multi-line support</li>
+<li><strong>Responsive Design</strong>: Modern dark theme with glassmorphism effects, optimized for desktop and mobile</li>
+</ul>
+<hr>
+<h2 id="legal-disclaimer-%26-risk-notice">Legal Disclaimer &amp; Risk Notice</h2>
+<p><strong>WARNING: USE OF THIS TOOL IS AT YOUR OWN RISK!</strong></p>
+<p>This tool implements automated procedures to extract session cookies from the local Steam client cache and interacts directly with the game's API (<code>shippingmanager.cc</code>).</p>
+<ol>
+<li><strong>Violation of ToS:</strong> These techniques <strong>most likely</strong> violate the Terms of Service (ToS) of both <strong>Steam</strong> and <strong>Shipping Manager</strong>.</li>
+<li><strong>Potential Consequences:</strong> Use of this tool may lead to the <strong>temporary suspension</strong> or <strong>permanent ban</strong> of your Steam or game account.</li>
+<li><strong>No Liability:</strong> The developers of this tool <strong>assume no liability</strong> for any damages or consequences resulting from its use. <strong>Every user is solely responsible for complying with the respective terms of service.</strong></li>
+</ol>
+<hr>
+<h2 id="requirements">Requirements</h2>
+<h3 id="all-platforms">All Platforms</h3>
+<ul>
+<li><strong>Node.js</strong> 22.0 or higher (required for native TLS certificate generation)</li>
+<li><strong>npm</strong> (Node Package Manager)</li>
+<li><strong>Python</strong> 3.7+ (with <code>pip</code>)</li>
+<li><strong>Modern web browser</strong> (Chrome/Chromium recommended)</li>
+<li>Active Shipping Manager account on Steam (alliance membership optional)</li>
+</ul>
+<h3 id="windows-(required-for-automated-cookie-extraction)">Windows (Required for Automated Cookie Extraction)</h3>
+<ul>
+<li><strong><code>pywin32</code></strong> and <strong><code>cryptography</code></strong> Python packages (installed in Step 2)</li>
+<li><strong><code>selenium</code></strong>, <strong><code>opencv-python</code></strong>, <strong><code>pillow</code></strong> (optional, for demo video/screenshot generation)</li>
+</ul>
+<hr>
+<h2 id="installation-%26-setup">Installation &amp; Setup</h2>
+<h3 id="step-1%3A-clone-or-download">Step 1: Clone or Download</h3>
+<p>Clone the repository and navigate into the directory:</p>
+<pre class="prettyprint source lang-bash"><code>git clone https://github.com/yourusername/shipping-manager-messenger.git
+cd shipping-manager-messenger
+</code></pre>
+<h3 id="step-2%3A-install-dependencies-(node.js-%26-python)">Step 2: Install Dependencies (Node.js &amp; Python)</h3>
+<p>Install all necessary Node.js packages and the Windows-specific Python libraries for DPAPI decryption:</p>
+<pre class="prettyprint source lang-bash"><code># Install Node.js packages
+npm install
+
+# Install Python packages for Windows decryption
+pip install pywin32 cryptography
+
+# Optional: Install packages for demo recording
+pip install selenium opencv-python pillow
+</code></pre>
+<h3 id="step-3%3A-automated-startup-(no-manual-cookie-required!)-%F0%9F%9A%80">Step 3: Automated Startup (No Manual Cookie Required!) 🚀</h3>
+<p>This tool uses an automated process to securely extract your current, encrypted Session Cookie directly from the Steam client cache.</p>
+<h4 id="%E2%9D%97-important-note-on-initial-login-state">❗ Important Note on Initial Login State</h4>
+<p>The session cookie is <strong>only generated and stored in the Steam cache</strong> if you have <strong>previously logged into the Steam client successfully</strong> and <strong>started the game <code>Shipping Manager</code> at least once</strong>.</p>
+<p>As long as the token remains valid (typically several weeks to months), you <strong>do not need to repeat the Steam login process</strong>, even if you restart or exit the Steam client.</p>
+<h4 id="process-logic">Process Logic</h4>
+<p>The <code>run.js</code> wrapper script intelligently controls the startup process:</p>
+<ol>
+<li><strong>Stop:</strong> The process attempts to terminate the Steam client to release the database lock.</li>
+<li><strong>Extract:</strong> The cookie is retrieved from the unlocked database.</li>
+<li><strong>Start/Restart:</strong>
+<ul>
+<li>If Steam was <strong>already running</strong> before the start, it will be <strong>restarted</strong> after cookie extraction.</li>
+<li>If Steam was <strong>not running</strong> before the start, it will be <strong>launched</strong> after cookie extraction.</li>
+</ul>
+</li>
+</ol>
+<p><strong>Start Command:</strong>
+Use the wrapper script <code>run.js</code> to manage the entire process:</p>
+<pre class="prettyprint source lang-bash"><code># This command executes run.js, which:
+# 1. Kills Steam (if running).
+# 2. Extracts the Session Cookie using the Python script.
+# 3. Starts the app.js server with the fresh cookie in process.env.
+# 4. Restarts Steam (if necessary, or launches it if not running).
+node run.js
+</code></pre>
+<p>The server will be started at <code>https://localhost:12345</code>. Open this URL in your browser and accept the self-signed certificate warning.</p>
+<hr>
+<h2 id="configuration">Configuration</h2>
+<p>The core configuration is located in <code>server/config.js</code>:</p>
+<pre class="prettyprint source lang-javascript"><code>module.exports = {
+  PORT: 12345,
+  HOST: '0.0.0.0',  // Listens on all network interfaces
+  SHIPPING_MANAGER_API: 'https://shippingmanager.cc/api',
+  SESSION_COOKIE: process.env.SHIPPING_MANAGER_COOKIE,  // Auto-injected by run.js
+
+  // Rate limiting
+  RATE_LIMIT: {
+    windowMs: 15 * 60 * 1000,  // 15 minutes
+    max: 1000
+  },
+
+  // Chat auto-refresh interval
+  CHAT_REFRESH_INTERVAL: 25000  // 25 seconds
+};
+</code></pre>
+<h3 id="settings-(in-app)">Settings (In-App)</h3>
+<p>Access settings via the ⚙️ button in the header:</p>
+<ul>
+<li><strong>Fuel Alert Threshold</strong>: Set custom price threshold for fuel alerts (default: $400/ton)</li>
+<li><strong>CO2 Alert Threshold</strong>: Set custom price threshold for CO2 alerts (default: $7/ton)</li>
+<li><strong>Maintenance Threshold</strong>: Set wear percentage for automatic repair detection (10% or 20%)</li>
+<li><strong>Test Notifications</strong>: Test browser notifications before enabling alerts</li>
+<li><strong>CA Certificate Download</strong>: Download and install CA certificate for mobile devices (required for notifications on mobile)</li>
+</ul>
+<hr>
+<h2 id="certificate-authority-(ca)-installation">Certificate Authority (CA) Installation</h2>
+<p>The application automatically generates a Certificate Authority (CA) and signs the server certificate with it. This eliminates browser security warnings once the CA is installed.</p>
+<h3 id="automatic-installation-(windows-desktop)">Automatic Installation (Windows Desktop)</h3>
+<p>On first startup, the application will:</p>
+<ol>
+<li>Generate a new CA certificate (valid for 10 years)</li>
+<li>Display a Windows UAC dialog requesting administrator privileges</li>
+<li>Install the CA certificate into Windows Trust Store (Root Certification Authorities)</li>
+<li>Generate a server certificate signed by the CA</li>
+</ol>
+<p><strong>After installing the CA certificate, all browsers (Chrome, Edge, Firefox) will trust the HTTPS connection without warnings.</strong></p>
+<h3 id="manual-installation-(if-automatic-installation-fails)">Manual Installation (if automatic installation fails)</h3>
+<p>If the UAC dialog is cancelled or fails:</p>
+<ol>
+<li>Open Command Prompt as Administrator (Right-click → &quot;Run as Administrator&quot;)</li>
+<li>Run: <code>certutil -addstore -f &quot;Root&quot; &quot;C:\path\to\project\ca-cert.pem&quot;</code></li>
+</ol>
+<h3 id="mobile-device-installation-(android%2Fios)">Mobile Device Installation (Android/iOS)</h3>
+<p><strong>Required for browser notifications to work on mobile devices!</strong></p>
+<ol>
+<li>Open the application in your mobile browser</li>
+<li>Go to Settings (⚙️ button)</li>
+<li>Scroll down to &quot;🔒 Certificate Installation&quot;</li>
+<li>Tap &quot;📥 Download CA Certificate&quot;</li>
+<li>Install the certificate:
+<ul>
+<li><strong>Android</strong>: Settings → Security → Install Certificate → Select the downloaded file</li>
+<li><strong>iOS</strong>: Settings → Profile Downloaded → Install → Follow prompts</li>
+</ul>
+</li>
+</ol>
+<p><strong>Note</strong>: Without the CA certificate installed, mobile browsers will not allow Service Worker registration, which is required for system notifications.</p>
+<h3 id="removing-the-ca-certificate">Removing the CA Certificate</h3>
+<p><strong>Windows:</strong></p>
+<ol>
+<li>Open Command Prompt as Administrator</li>
+<li>Run: <code>certutil -delstore Root &quot;Shipping Manager CoPilot CA&quot;</code></li>
+</ol>
+<p><strong>Android:</strong></p>
+<ol>
+<li>Settings → Security → Trusted Credentials → User</li>
+<li>Find &quot;Shipping Manager CoPilot CA&quot; → Remove</li>
+</ol>
+<p><strong>iOS:</strong></p>
+<ol>
+<li>Settings → General → VPN &amp; Device Management</li>
+<li>Find &quot;Shipping Manager CoPilot CA&quot; → Remove Profile</li>
+</ol>
+<h3 id="macos-installation">macOS Installation</h3>
+<pre class="prettyprint source lang-bash"><code>sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ca-cert.pem
+</code></pre>
+<h3 id="linux-installation">Linux Installation</h3>
+<pre class="prettyprint source lang-bash"><code>sudo cp ca-cert.pem /usr/local/share/ca-certificates/shipping-manager-chat-ca.crt
+sudo update-ca-certificates
+</code></pre>
+<hr>
+<h2 id="network-access">Network Access</h2>
+<p>The application uses HTTPS with CA-signed certificates that include all your local network IP addresses. This allows you to access the application from any device on your local network:</p>
+<ol>
+<li>Start the server with <code>node run.js</code> and install the CA certificate (one-time setup)</li>
+<li>Note the network URLs displayed in the console (e.g., <code>https://192.168.1.100:12345</code>)</li>
+<li>On another device, navigate to that URL</li>
+<li><strong>No certificate warnings</strong> after CA installation!</li>
+<li>The app is now accessible across your local network</li>
+</ol>
+<hr>
+<h2 id="security-notice">Security Notice</h2>
+<p><strong>Your Session Cookie is extracted automatically and dynamically!</strong> The manual step of saving the cookie in a <code>.env</code> file is no longer required, significantly <strong>improving local security</strong> by preventing the sensitive value from being permanently stored in a file.</p>
+<p><strong>Never share the decrypted cookie publicly!</strong> The cookie provides full, persistent access to your Shipping Manager account.</p>
+<p><strong>Security Features:</strong></p>
+<ul>
+<li>Session cookie only stored in memory (process.env)</li>
+<li>HTTPS with self-signed certificates</li>
+<li>Input validation on all endpoints</li>
+<li>Rate limiting on API calls</li>
+<li>Helmet middleware for security headers</li>
+</ul>
+<hr>
+<h2 id="privacy-%26-data-collection">Privacy &amp; Data Collection</h2>
+<p><strong>This application collects ZERO data from users.</strong></p>
+<ul>
+<li><strong>No telemetry</strong>: The software does not send any usage data, statistics, or analytics to the developer</li>
+<li><strong>No tracking</strong>: Your gameplay data, account information, and activity remain completely private</li>
+<li><strong>Local only</strong>: All data is stored locally on your machine (settings.json, session cookies in memory)</li>
+<li><strong>No external servers</strong>: The application only communicates with shippingmanager.cc API - never with developer servers</li>
+<li><strong>Open source</strong>: You can verify the code yourself - there are no hidden data collection mechanisms</li>
+</ul>
+<p><strong>The developer has zero interest in your data.</strong> This tool was created to solve a game bug, not to collect user information.</p>
+<hr>
+<h2 id="documentation">Documentation</h2>
+<p>This project includes comprehensive JSDoc documentation for all modules and functions.</p>
+<h3 id="generate-documentation">Generate Documentation</h3>
+<pre class="prettyprint source lang-bash"><code># Generate HTML documentation
+npm run docs
+</code></pre>
+<p>The documentation is automatically:</p>
+<ul>
+<li><strong>Generated before every commit</strong> (via git pre-commit hook)</li>
+<li><strong>Served by the application</strong> at <code>https://localhost:12345/docs/index.html</code></li>
+<li><strong>Accessible via the 📖 button</strong> in the UI (next to settings ⚙️)</li>
+</ul>
+<p>The documentation includes:</p>
+<ul>
+<li>All backend modules (server routes, utilities, middleware)</li>
+<li>All frontend modules (API, automation, bunker management, chat, coop, messenger, vessel management, etc.)</li>
+<li>Function signatures, parameters, return values, and examples</li>
+</ul>
+<p><strong>View Documentation:</strong></p>
+<ol>
+<li>Start the application (<code>node run.js</code>)</li>
+<li>Click the 📖 button in the UI, or</li>
+<li>Navigate to <code>https://localhost:12345/docs/index.html</code></li>
+</ol>
+<hr>
+<h2 id="project-structure">Project Structure</h2>
+<pre class="prettyprint source"><code>shippingmanager_messanger/
+├── app.js                    # Main application entry point
+├── run.js                    # Startup wrapper (handles Steam & cookie extraction)
+├── server/
+│   ├── config.js            # Centralized configuration
+│   ├── certificate.js       # HTTPS certificate generation with CA
+│   ├── middleware/          # Express middleware
+│   ├── routes/              # API routes:
+│   │   ├── alliance.js      # Alliance chat endpoints
+│   │   ├── messenger.js     # Private messaging endpoints
+│   │   ├── game.js          # Game management (vessels, fuel, CO2, campaigns)
+│   │   ├── coop.js          # Alliance cooperation endpoints
+│   │   └── settings.js      # Settings persistence (AutoPilot configuration)
+│   ├── utils/               # Helper functions (API calls, caching)
+│   └── websocket.js         # WebSocket server for real-time updates
+├── helper/
+│   └── get-session-from-steam-windows11.py  # Cookie extraction script
+├── public/
+│   ├── index.html           # Main application UI
+│   ├── sw.js                # Service Worker for mobile notifications
+│   ├── css/style.css        # Modern dark theme with glassmorphism
+│   └── js/
+│       ├── script.js        # Main application logic & initialization
+│       └── modules/         # Modular ES6 architecture:
+│           ├── api.js               # API communication layer
+│           ├── automation.js        # AutoPilot system
+│           ├── bunker-management.js # Fuel/CO2 management
+│           ├── chat.js              # Alliance chat functionality
+│           ├── coop.js              # Alliance cooperation management
+│           ├── messenger.js         # Private messaging
+│           ├── ui-dialogs.js        # Reusable dialog components
+│           ├── utils.js             # Utility functions
+│           └── vessel-management.js # Vessel operations
+├── settings.json            # Persistent settings storage (auto-generated)
+├── eslint.config.js         # ESLint configuration for code quality
+└── screenshots/             # Screenshots for documentation
+</code></pre>
+<h3 id="architecture-highlights">Architecture Highlights</h3>
+<p><strong>Modular ES6 Frontend:</strong></p>
+<ul>
+<li>Clean separation of concerns with ES6 modules</li>
+<li>Each module handles specific domain logic (chat, vessels, automation)</li>
+<li>Shared utilities and API layer</li>
+<li>Easy to maintain and extend</li>
+</ul>
+<p><strong>Secure Backend:</strong></p>
+<ul>
+<li>Fully documented with JSDoc comments</li>
+<li>Rate-limited API endpoints</li>
+<li>Input validation on all routes</li>
+<li>WebSocket for real-time updates</li>
+<li>HTTPS with CA-signed certificates</li>
+</ul>
+<hr>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="certificate-warnings">Certificate Warnings</h3>
+<p>The self-signed certificate will trigger browser warnings. This is expected and safe for local network use. Click &quot;Advanced&quot; → &quot;Proceed to localhost&quot; (or similar).</p>
+<h3 id="mobile-notifications-not-working">Mobile Notifications Not Working</h3>
+<p>If browser notifications don't appear on your mobile device:</p>
+<ol>
+<li><strong>Install CA Certificate</strong>: Go to Settings → Certificate Installation → Download CA Certificate</li>
+<li><strong>Enable Notifications</strong>: Tap &quot;🔔 Enable Notifications&quot; button and grant permission</li>
+<li><strong>Reload Page</strong>: Hard refresh the page (clear cache) after installing certificate</li>
+<li><strong>Check Browser Settings</strong>: Ensure browser has notification permissions in device settings</li>
+<li><strong>Test Notification</strong>: Use &quot;Test Browser Notification&quot; button in settings</li>
+</ol>
+<p><strong>Note</strong>: Mobile Chrome requires CA certificate to be installed for Service Worker registration, which is necessary for notifications.</p>
+<h3 id="steam-not-restarting">Steam Not Restarting</h3>
+<p>If Steam doesn't restart automatically, check:</p>
+<ul>
+<li>Steam installation path matches default (<code>C:\Program Files (x86)\Steam\steam.exe</code>)</li>
+<li>You have permissions to start Steam</li>
+</ul>
+<h3 id="session-cookie-expired">Session Cookie Expired</h3>
+<p>If you get authentication errors:</p>
+<ol>
+<li>Stop the server</li>
+<li>Log into Shipping Manager via Steam</li>
+<li>Restart the server with <code>node run.js</code></li>
+</ol>
+<h3 id="network-access-issues">Network Access Issues</h3>
+<p>If you can't access from other devices:</p>
+<ol>
+<li>Check your firewall allows connections on port 12345</li>
+<li>Verify you're using the correct network IP address</li>
+<li>Regenerate certificates: delete <code>cert.pem</code>, <code>key.pem</code>, <code>ca-cert.pem</code>, and <code>ca-key.pem</code>, then restart</li>
+</ol>
+<h3 id="vessel-purchase-issues">Vessel Purchase Issues</h3>
+<p>If vessel purchases fail:</p>
+<ul>
+<li><strong>Vessel Limit Reached</strong>: The game has a maximum number of vessels you can own. The app will show exactly how many vessels were purchased before hitting the limit.</li>
+<li><strong>Insufficient Cash</strong>: Make sure you have enough cash for the total purchase. The confirmation dialog shows both total cost and available cash.</li>
+<li><strong>Already Purchased</strong>: If you try to purchase the same vessel again, it may not be available anymore. The vessel list auto-refreshes after successful purchases.</li>
+<li><strong>Network Errors</strong>: Check your internet connection and that the game API is accessible.</li>
+</ul>
+<p>All vessel purchase errors include detailed messages showing:</p>
+<ul>
+<li>Specific error reason (limit/cash/network)</li>
+<li>Number of vessels successfully purchased</li>
+<li>Clear next steps</li>
+</ul>
+<hr>
+<h2 id="license">License</h2>
+<p>MIT License - Use at your own risk</p>
+<h2 id="disclaimer">Disclaimer</h2>
+<p>This tool is not affiliated with Shipping Manager or Steam. It's a community-created workaround for the known chat bug.</p>
+<hr>
+<h2 id="application-preview">Application Preview</h2>
+<p><img src="screenshots/demo.gif" alt="Application Demo"></p></article>
+    </section>
+
+
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

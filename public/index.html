@@ -13,35 +13,51 @@
         <div class="header">
             <div class="header-top" style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <h1>
-                    <span class="header-icon">⚓</span>
+                    <span class="header-icon" style="position: relative; display: inline-block;">
+                        ⚓
+                        <span id="ceoLevelBadge" style="position: absolute; top: -14px; right: -3px; width: 30px; height: 30px; display: none;">
+                            <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));">
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="0.5"/>
+                            </svg>
+                            <span id="ceoLevelNumber" style="position: absolute; top: 72.5%; left: 50%; transform: translate(-50%, -50%); font-size: 12px; font-weight: 900; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">0</span>
+                        </span>
+                    </span>
                     <span class="header-text" id="pageHeaderTitle">Shipping Manager - CoPilot</span>
                 </h1>
                 <div class="header-right">
                     <button id="notificationBtn">🔔 Enable<br>Notifications</button>
                 </div>
             </div>
-            <div class="header-info-displays" style="display: flex; align-items: center; gap: 8px; padding-left: 20px; margin-top: 8px;">
-                <div style="display: flex; align-items: center; gap: 4px;">
+            <div class="header-info-displays" style="display: flex; align-items: center; gap: 6px; padding-left: 10px; margin-top: 8px;">
+                <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="color: #fbbf24; font-weight: 600; font-size: 15px;">💎</span>
+                    <span id="pointsDisplay" style="color: #fbbf24; font-weight: 600; font-size: 13px;">-</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="color: #4ade80; font-weight: 600; font-size: 15px;">💰</span>
                     <span id="cashDisplay" style="color: #4ade80; font-weight: 600; font-size: 13px;">$-</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="font-size: 15px;">📈</span>
                     <span id="stockDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">-</span>
                     <span style="font-size: 13px; color: #9ca3af;">$</span>
                     <span id="stockTrend" style="font-size: 13px;"></span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 4px;">
-                    <span style="font-size: 15px;">⚓</span>
-                    <span id="anchorSlotsDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">-/-</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="font-size: 15px;">⛽</span>
                     <span id="fuelPriceDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">$-/t</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="font-size: 15px;">💨</span>
                     <span id="co2PriceDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">$-/t</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 15px;">⚓</span>
+                    <span id="anchorSlotsDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">-/-</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 15px;">🤝</span>
+                    <span id="coopDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">-/-</span>
                 </div>
             </div>
         </div>
@@ -81,11 +97,18 @@
                     <span style="position: absolute; bottom: -6px; left: 0px; color: #10b981; font-size: 20px; font-weight: bold; line-height: 1;">+</span>
                     <span id="pendingVesselsBadge" class="action-badge" style="display: none; background: #f97316;">0</span>
                 </button>
+                <button id="coopBtn" class="action-btn" title="Alliance Cooperation">
+                    🤝
+                    <span id="coopBadge" class="action-badge" style="display: none;">-/-</span>
+                </button>
                 <button id="contactListBtn" class="action-btn" title="View contact list">
                     👥
                 </button>
                 <button id="settingsBtn" class="action-btn" title="Settings">
                     ⚙️
+                </button>
+                <button id="docsBtn" class="action-btn" title="Documentation">
+                    📖
                 </button>
             </div>
         </div>
@@ -184,6 +207,20 @@
             </div>
             <div class="messenger-feed" style="padding: 20px; overflow-y: auto;">
                 <div id="campaignsContent" style="max-width: 600px; margin: 0 auto;">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="coopOverlay" class="overlay" style="display:none;">
+        <div class="messenger-window">
+            <div class="messenger-header">
+                <h2>🤝 Alliance Cooperation</h2>
+                <button id="closeCoopBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
+            </div>
+            <div class="messenger-feed" style="padding: 20px; overflow-y: auto;">
+                <div id="coopContent" style="max-width: 800px; margin: 0 auto;">
                     <!-- Content will be populated by JavaScript -->
                 </div>
             </div>
@@ -313,8 +350,45 @@
                                     <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🚢 Auto-Depart All</span>
                                 </label>
                                 <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
-                                    Automatically depart vessels when they arrive in harbor (endless loop)
+                                    Intelligently departs vessels based on port demand and fuel prices
                                 </p>
+
+                                <!-- Nested: Intelligent Auto-Depart Settings -->
+                                <div style="margin: 12px 0 0 28px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid rgba(96, 165, 250, 0.3);">
+                                    <!-- Use Route Default Checkbox -->
+                                    <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 10px;">
+                                        <input type="checkbox" id="autoDepartUseRouteDefaults" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                        <span style="color: #d1d5db; font-size: 13px;">Use route defaults</span>
+                                    </label>
+
+                                    <!-- Min Utilization (hidden when using route defaults) -->
+                                    <div id="autoDepartCustomSettings" style="display: none;">
+                                        <div style="margin-bottom: 8px;">
+                                            <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">📦 Min Utilization (%):</label>
+                                            <select
+                                                id="minVesselUtilization"
+                                                style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;"
+                                            >
+                                                <option value="30">30%</option>
+                                                <option value="45" selected>45%</option>
+                                                <option value="60">60%</option>
+                                                <option value="75">75%</option>
+                                                <option value="90">90%</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">⚡ Vessel Speed (10-100%):</label>
+                                            <input
+                                                type="number"
+                                                id="autoVesselSpeed"
+                                                min="10"
+                                                max="100"
+                                                value="50"
+                                                style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Auto Bulk Repair -->
@@ -326,6 +400,24 @@
                                 <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
                                     Automatically repair all vessels as long as funds are available
                                 </p>
+
+                                <!-- Nested: Repair Interval -->
+                                <div style="margin: 12px 0 0 28px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid rgba(96, 165, 250, 0.3);">
+                                    <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">⏱️ Check Interval:</label>
+                                    <select id="autoRepairInterval" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                        <option value="0-1">0-1 hour</option>
+                                        <option value="1-2">1-2 hours</option>
+                                        <option value="2-3" selected>2-3 hours</option>
+                                        <option value="3-4">3-4 hours</option>
+                                        <option value="4-5">4-5 hours</option>
+                                        <option value="5-6">5-6 hours</option>
+                                        <option value="6-12">6-12 hours</option>
+                                        <option value="12-24">12-24 hours</option>
+                                    </select>
+                                    <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 11px; line-height: 1.3;">
+                                        Random check within this time range (runs on server)
+                                    </p>
+                                </div>
                             </div>
 
                             <!-- Auto Campaign Renewal -->

@@ -1,15 +1,19 @@
 {
   "fuelThreshold": 400,
   "co2Threshold": 7,
-  "maintenanceThreshold": 10,
+  "maintenanceThreshold": 20,
   "autoRebuyFuel": true,
   "autoRebuyFuelUseAlert": false,
-  "autoRebuyFuelThreshold": 550,
+  "autoRebuyFuelThreshold": 650,
   "autoRebuyCO2": true,
   "autoRebuyCO2UseAlert": false,
   "autoRebuyCO2Threshold": 10,
-  "autoDepartAll": false,
+  "autoDepartAll": true,
   "autoBulkRepair": true,
+  "autoRepairInterval": "0-1",
   "autoCampaignRenewal": true,
-  "autoPilotNotifications": true
+  "autoPilotNotifications": true,
+  "autoDepartUseRouteDefaults": true,
+  "minVesselUtilization": 45,
+  "autoVesselSpeed": 50
 }

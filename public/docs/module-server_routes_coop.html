@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>server/routes/coop - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_config.html">server/config</a></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showFeedback">showFeedback</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showPriceAlert">showPriceAlert</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.repairAllVessels">repairAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">server/routes/coop</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    
+        <div class="container-overview">
+        
+            
+                <div class="description usertext"><p>Alliance Cooperation Routes</p>
+<p>Handles cooperation/coop vessel management within alliances.
+Provides endpoints for viewing coop stats and member information.</p></div>
+            
+
+            
+                
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Alliance Cooperation Routes</p>
+<p>Handles cooperation/coop vessel management within alliances.
+Provides endpoints for viewing coop stats and member information.</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_routes_coop.js.html">server/routes/coop.js</a>, <a href="server_routes_coop.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+        
+        </div>
+    
+
+    
+
+    
+        <h3 class="subsection-title">Requires</h3>
+
+        <ul>
+            <li>module:express</li>
+        
+            <li>module:../utils/api</li>
+        </ul>
+    
+
+    
+    
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id=".GET/api/coop/data"><span class="type-signature type-signature-static">(static) </span>GET /api/coop/data<span class="signature">(req, res)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>GET /api/coop/data - Retrieves alliance cooperation data</p>
+<p>Fetches coop statistics including:</p>
+<ul>
+<li>Available coop slots (how many more vessels can be sent)</li>
+<li>Cap (maximum coop vessels per season)</li>
+<li>Sent/received this season</li>
+<li>Historical sent/received totals</li>
+<li>Member coop data (enabled status, fuel, vessels, etc.)</li>
+</ul>
+<p>Response Structure:
+{
+data: {
+coop: {
+available: number,           // Coop slots remaining
+cap: number,                 // Maximum coop vessels per season
+sent_this_season: number,    // Vessels sent this season
+received_this_season: number,// Vessels received this season
+sent_historical: number,     // Total vessels sent historically
+received_historical: number  // Total vessels received historically
+},
+members_coop: [{
+user_id: number,
+enabled: boolean,            // Whether coop is enabled for this member
+sent_this_season: number,
+sent_last_season: number,
+received_this_season: number,
+sent_historical: number,
+received_historical: number,
+total_vessels: number,
+fuel: number,
+donations_this_season: number,
+donations_historical: number,
+has_real_purchase: boolean
+}]
+}
+}</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_routes_coop.js.html">server/routes/coop.js</a>, <a href="server_routes_coop.js.html#line16">line 16</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-parameters">Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>req</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">express.Request</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Express request object</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>res</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">express.Response</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Express response object</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Sends JSON response with coop data</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;void></span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

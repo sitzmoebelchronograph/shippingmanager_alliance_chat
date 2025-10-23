@@ -44,6 +44,7 @@ const allianceRoutes = require('./server/routes/alliance');
 const messengerRoutes = require('./server/routes/messenger');
 const gameRoutes = require('./server/routes/game');
 const settingsRoutes = require('./server/routes/settings');
+const coopRoutes = require('./server/routes/coop');
 
 // Initialize Express app
 const app = express();
@@ -76,6 +77,7 @@ app.use('/api', allianceRoutes);
 app.use('/api', messengerRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', settingsRoutes);
+app.use('/api', coopRoutes);
 
 // Create HTTPS server
 const server = createHttpsServer(app);
@@ -97,6 +99,10 @@ server.listen(config.PORT, config.HOST, async () => {
   // Start chat auto-refresh
   startChatAutoRefresh();
 
+  // Start backend automation (auto-repair with interval)
+  const backendAutomation = require('./server/automation');
+  backendAutomation.initialize();
+
   // Display network addresses
   const networkInterfaces = os.networkInterfaces();
   const addresses = [];
@@ -109,7 +115,7 @@ server.listen(config.PORT, config.HOST, async () => {
     }
   }
 
-  console.log(`\n🚀 Shipping Manager Chat Server (HTTPS) running on:`);
+  console.log(`\n🚀 ShippingManager CoPilot Frontend - (HTTPS) running on:`);
   console.log(`   Local:   https://localhost:${config.PORT}`);
   if (addresses.length > 0) {
     addresses.forEach(addr => {

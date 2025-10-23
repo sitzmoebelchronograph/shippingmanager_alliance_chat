@@ -39,11 +39,19 @@
  *    - autoCampaignRenewal: Auto-renew marketing campaigns
  *    - autoPilotNotifications: Enable browser notifications for automation
  *
+ * 4. Intelligent Auto-Depart Settings:
+ *    - autoDepartUseRouteDefaults: Use route defaults vs custom values (default true)
+ *    - minVesselUtilization: Minimum vessel capacity utilization % (default 45%)
+ *    - autoVesselSpeed: Vessel speed as % of max_speed (default 50%)
+ *
  * Default Values:
  * - Fuel alert: $400/ton (industry competitive price)
  * - CO2 alert: $7/ton (low market price)
  * - Maintenance alert: 10% vessel condition
  * - All automation: Disabled by default (user opt-in required)
+ * - Vessel utilization: 45% minimum (prevents unprofitable trips)
+ * - Vessel speed: 50% of max_speed (fuel cost optimization)
+ * - Auto-depart: Use route defaults enabled (respects per-route settings)
  *
  * Synchronization:
  * - Settings changes broadcast to all connected WebSocket clients
@@ -110,7 +118,12 @@ const SETTINGS_FILE = path.join(__dirname, '../../settings.json');
  *   autoDepartAll: false,         // Auto-depart all vessels
  *   autoBulkRepair: false,        // Auto-repair vessels below threshold
  *   autoCampaignRenewal: false,   // Auto-renew marketing campaigns
- *   autoPilotNotifications: false // Browser notifications for automation
+ *   autoPilotNotifications: false,// Browser notifications for automation
+ *
+ *   // Intelligent auto-depart settings
+ *   autoDepartUseRouteDefaults: true, // Use route defaults vs custom
+ *   minVesselUtilization: 45,     // Minimum % capacity utilization
+ *   autoVesselSpeed: 50           // % of max_speed (fuel optimization)
  * }
  *
  * Side Effects:
@@ -144,8 +157,12 @@ router.get('/settings', async (req, res) => {
       autoRebuyCO2Threshold: 7,
       autoDepartAll: false,
       autoBulkRepair: false,
+      autoRepairInterval: '2-3',
       autoCampaignRenewal: false,
-      autoPilotNotifications: false
+      autoPilotNotifications: false,
+      autoDepartUseRouteDefaults: true,
+      minVesselUtilization: 45,
+      autoVesselSpeed: 50
     });
   }
 });
@@ -195,7 +212,10 @@ router.get('/settings', async (req, res) => {
  *   autoDepartAll: boolean,
  *   autoBulkRepair: boolean,
  *   autoCampaignRenewal: boolean,
- *   autoPilotNotifications: boolean
+ *   autoPilotNotifications: boolean,
+ *   autoDepartUseRouteDefaults: boolean,
+ *   minVesselUtilization: number,
+ *   autoVesselSpeed: number
  * }
  *
  * Response Format:
@@ -233,14 +253,28 @@ router.post('/settings', async (req, res) => {
       autoRebuyCO2Threshold: parseInt(settings.autoRebuyCO2Threshold) || 7,
       autoDepartAll: !!settings.autoDepartAll,
       autoBulkRepair: !!settings.autoBulkRepair,
+      autoRepairInterval: settings.autoRepairInterval || '2-3',
       autoCampaignRenewal: !!settings.autoCampaignRenewal,
-      autoPilotNotifications: !!settings.autoPilotNotifications
+      autoPilotNotifications: !!settings.autoPilotNotifications,
+      autoDepartUseRouteDefaults: settings.autoDepartUseRouteDefaults !== undefined ? !!settings.autoDepartUseRouteDefaults : true,
+      minVesselUtilization: parseInt(settings.minVesselUtilization) || 45,
+      autoVesselSpeed: parseInt(settings.autoVesselSpeed) || 50
     };
 
     await fs.writeFile(SETTINGS_FILE, JSON.stringify(validSettings, null, 2), 'utf8');
 
     // Broadcast settings update to all connected clients
     broadcast('settings_update', validSettings);
+
+    // Restart backend automation if repair settings changed
+    if (settings.autoBulkRepair !== undefined || settings.autoRepairInterval !== undefined) {
+      try {
+        const backendAutomation = require('../automation');
+        backendAutomation.restartAutoRepair();
+      } catch (error) {
+        console.error('[Settings] Failed to restart backend automation:', error);
+      }
+    }
 
     res.json({ success: true, settings: validSettings });
   } catch (error) {

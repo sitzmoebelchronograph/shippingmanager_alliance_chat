@@ -33,8 +33,8 @@
  * @requires bunker-management - getCurrentBunkerState
  */
 
-import { purchaseFuel, purchaseCO2, departAllVessels, fetchVessels, getMaintenanceCost, doWearMaintenanceBulk, fetchCampaigns, activateCampaign } from './api.js';
-import { showFeedback, formatNumber, showNotification } from './utils.js';
+import { purchaseFuel, purchaseCO2, departAllVessels, fetchVessels, getMaintenanceCost, doWearMaintenanceBulk, fetchCampaigns, activateCampaign, departVessel, fetchAssignedPorts } from './api.js';
+import { showFeedback, formatNumber, showNotification, showPriceAlert } from './utils.js';
 import { getCurrentBunkerState } from './bunker-management.js';
 
 /**
@@ -85,13 +85,6 @@ let isAutoBuying = false;
 let lastVesselCheck = 0;
 
 /**
- * Timestamp (Date.now()) of last bulk repair check.
- * Used to enforce random 1-2 minute intervals between checks.
- * @type {number}
- */
-let lastRepairCheck = 0;
-
-/**
  * Timestamp (Date.now()) of last campaign renewal check.
  * Used to enforce random 2-3 minute intervals between checks.
  * @type {number}
@@ -140,7 +133,6 @@ async function checkAutoRebuyFuel(settings) {
 
     // If price is at or below threshold, try to buy
     if (fuelPrice <= threshold) {
-      console.log(`[Auto-Rebuy] Fuel price ${fuelPrice} <= threshold ${threshold}, attempting purchase`);
       await performAutoRebuyFuel(bunkerState, fuelPrice);
     }
   } catch (error) {
@@ -181,7 +173,6 @@ async function performAutoRebuyFuel(bunkerState, fuelPrice) {
     const availableSpace = maxFuel - currentFuel;
 
     if (availableSpace <= 0) {
-      console.log('[Auto-Rebuy Fuel] Bunker already full');
       isAutoBuying = false;
       return;
     }
@@ -191,17 +182,25 @@ async function performAutoRebuyFuel(bunkerState, fuelPrice) {
     const amountToBuy = Math.min(availableSpace, maxAffordable);
 
     if (amountToBuy <= 0) {
-      console.log('[Auto-Rebuy Fuel] Not enough funds');
       isAutoBuying = false;
       return;
     }
 
-    console.log(`[Auto-Rebuy Fuel] Buying ${amountToBuy.toFixed(2)} tons at $${fuelPrice}/ton`);
-
     const result = await purchaseFuel(amountToBuy);
 
     if (result.success || result.data) {
-      await sendAutoPilotFeedback(`🔄 Auto-bought ${amountToBuy.toFixed(0)} tons of fuel at $${fuelPrice}/ton`, 'success');
+      showFeedback(`🔄 Auto-bought ${amountToBuy.toFixed(0)} tons of fuel at $${fuelPrice}/ton`, 'success');
+
+      // Send compact notification
+      const settings = window.getSettings ? window.getSettings() : {};
+      if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+        await showNotification('🤖 Auto-Rebuy: Fuel', {
+          body: `Bought ${formatNumber(amountToBuy)}t @ $${fuelPrice}/t`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
+          tag: 'auto-rebuy-fuel',
+          silent: false
+        });
+      }
 
       // Trigger UI update
       if (window.debouncedUpdateBunkerStatus) {
@@ -210,7 +209,7 @@ async function performAutoRebuyFuel(bunkerState, fuelPrice) {
     }
   } catch (error) {
     console.error('[Auto-Rebuy Fuel] Purchase failed:', error);
-    await sendAutoPilotFeedback(`❌ Auto-rebuy fuel failed: ${error.message}`, 'error');
+    showFeedback(`❌ Auto-rebuy fuel failed: ${error.message}`, 'error');
   } finally {
     isAutoBuying = false;
   }
@@ -258,7 +257,6 @@ async function checkAutoRebuyCO2(settings) {
 
     // If price is at or below threshold, try to buy
     if (co2Price <= threshold) {
-      console.log(`[Auto-Rebuy] CO2 price ${co2Price} <= threshold ${threshold}, attempting purchase`);
       await performAutoRebuyCO2(bunkerState, co2Price);
     }
   } catch (error) {
@@ -299,7 +297,6 @@ async function performAutoRebuyCO2(bunkerState, co2Price) {
     const availableSpace = maxCO2 - currentCO2;
 
     if (availableSpace <= 0) {
-      console.log('[Auto-Rebuy CO2] Bunker already full');
       isAutoBuying = false;
       return;
     }
@@ -309,17 +306,25 @@ async function performAutoRebuyCO2(bunkerState, co2Price) {
     const amountToBuy = Math.min(availableSpace, maxAffordable);
 
     if (amountToBuy <= 0) {
-      console.log('[Auto-Rebuy CO2] Not enough funds');
       isAutoBuying = false;
       return;
     }
 
-    console.log(`[Auto-Rebuy CO2] Buying ${amountToBuy.toFixed(2)} tons at $${co2Price}/ton`);
-
     const result = await purchaseCO2(amountToBuy);
 
     if (result.success || result.data) {
-      await sendAutoPilotFeedback(`🔄 Auto-bought ${amountToBuy.toFixed(0)} tons of CO2 at $${co2Price}/ton`, 'success');
+      showFeedback(`🔄 Auto-bought ${amountToBuy.toFixed(0)} tons of CO2 at $${co2Price}/ton`, 'success');
+
+      // Send compact notification
+      const settings = window.getSettings ? window.getSettings() : {};
+      if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+        await showNotification('🤖 Auto-Rebuy: CO2', {
+          body: `Bought ${formatNumber(amountToBuy)}t @ $${co2Price}/t`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
+          tag: 'auto-rebuy-co2',
+          silent: false
+        });
+      }
 
       // Trigger UI update
       if (window.debouncedUpdateBunkerStatus) {
@@ -328,7 +333,7 @@ async function performAutoRebuyCO2(bunkerState, co2Price) {
     }
   } catch (error) {
     console.error('[Auto-Rebuy CO2] Purchase failed:', error);
-    await sendAutoPilotFeedback(`❌ Auto-rebuy CO2 failed: ${error.message}`, 'error');
+    showFeedback(`❌ Auto-rebuy CO2 failed: ${error.message}`, 'error');
   } finally {
     isAutoBuying = false;
   }
@@ -363,7 +368,9 @@ async function performAutoRebuyCO2(bunkerState, co2Price) {
  * @returns {Promise<void>}
  */
 async function checkAutoDepartAll(settings) {
-  if (!settings.autoDepartAll) return;
+  if (!settings.autoDepartAll) {
+    return;
+  }
 
   // Throttle checks - random between 1-2 minutes
   const now = Date.now();
@@ -371,37 +378,257 @@ async function checkAutoDepartAll(settings) {
   const maxInterval = 120000; // 2 minutes
   const randomInterval = minInterval + Math.random() * (maxInterval - minInterval);
 
-  if (now - lastVesselCheck < randomInterval) return;
+  if (now - lastVesselCheck < randomInterval) {
+    return;
+  }
   lastVesselCheck = now;
 
   try {
-    const vesselsData = await fetchVessels();
-    const vesselsInPort = vesselsData.vessels.filter(v => v.status === 'port' && !v.is_parked);
-
-    if (vesselsInPort.length === 0) return;
-
-    // Check if we have fuel (use bunkerState which already has correct values)
+    // 1. Get current bunker state
     const bunkerState = getCurrentBunkerState();
+    const fuelPrice = bunkerState.fuelPrice;
     const currentFuel = bunkerState.currentFuel;
 
     if (currentFuel <= 0) {
-      console.log('[Auto-Depart] No fuel available');
+      return; // No fuel available
+    }
+
+    // 2. Fetch all vessels and assigned ports
+    const vesselsData = await fetchVessels();
+    const assignedPorts = await fetchAssignedPorts();
+
+    if (!vesselsData?.vessels || !assignedPorts) {
+      console.error('[Auto-Depart] Missing vessel or port data');
       return;
     }
 
-    // Auto-depart vessels silently
+    const allVessels = vesselsData.vessels;
+    const harbourVessels = allVessels.filter(v => v.status === 'port' && !v.is_parked);
 
-    const result = await departAllVessels();
+    if (harbourVessels.length === 0) {
+      return; // No vessels in harbor
+    }
 
-    if (result.success || result.data) {
-      await sendAutoPilotFeedback(`🔄 Auto-departed ${vesselsInPort.length} vessel(s)`, 'success');
+    // Track departed and failed vessels
+    let departedCount = 0;
+    const departedVessels = [];
+    const failedVessels = [];
 
-      // Trigger UI update
+    // 3. Group vessels by destination and type
+    const vesselsByDestinationAndType = {};
+
+    for (const vessel of harbourVessels) {
+      // Check if vessel has a route assigned (route_destination is set when in harbor)
+      if (!vessel.route_destination) {
+        continue;
+      }
+
+      // Skip delivery vessels (newly purchased vessels being delivered)
+      if (vessel.delivery_price !== null && vessel.delivery_price > 0) {
+        continue;
+      }
+
+      const destination = vessel.route_destination;
+      const type = vessel.capacity_type; // 'container' or 'tanker'
+      const key = `${destination}_${type}`;
+
+      if (!vesselsByDestinationAndType[key]) {
+        vesselsByDestinationAndType[key] = [];
+      }
+      vesselsByDestinationAndType[key].push(vessel);
+    }
+
+    // 4. For each destination+type combination, decide which vessels to depart
+    for (const key in vesselsByDestinationAndType) {
+      const vessels = vesselsByDestinationAndType[key];
+      const firstVessel = vessels[0];
+      const destination = firstVessel.route_destination; // Use route_destination (set when in harbor)
+      const vesselType = firstVessel.capacity_type;
+
+      // Find port data
+      const port = assignedPorts.find(p => p.code === destination);
+      if (!port) {
+        continue;
+      }
+
+      // Calculate remaining demand
+      const remainingDemand = calculateRemainingDemand(port, vesselType);
+
+      // Find all vessels already en-route to this port
+      const vesselsEnroute = allVessels.filter(v =>
+        v.status === 'enroute' &&
+        v.route_destination === destination &&
+        v.capacity_type === vesselType
+      );
+
+      // Calculate capacity already en-route
+      const capacityEnroute = vesselsEnroute.reduce((sum, v) => {
+        return sum + getTotalCapacity(v);
+      }, 0);
+
+      // Effective demand = Remaining - Already en-route
+      let effectiveDemand = Math.max(0, remainingDemand - capacityEnroute);
+
+      // Sort vessels by capacity (largest first = most efficient)
+      const sortedVessels = vessels.sort((a, b) => {
+        return getTotalCapacity(b) - getTotalCapacity(a);
+      });
+
+      // Decide for each vessel
+      for (const vessel of sortedVessels) {
+        const vesselCapacity = getTotalCapacity(vessel);
+        // Utilization = How much of the vessel will be filled
+        // Example: effectiveDemand=100, vesselCapacity=200 → 50% utilization (half full)
+        const cargoToLoad = Math.min(effectiveDemand, vesselCapacity);
+        const utilizationRate = vesselCapacity > 0 ? cargoToLoad / vesselCapacity : 0;
+        const minUtilization = (settings.minVesselUtilization || 45) / 100;
+
+        // Check if vessel utilization is above minimum threshold
+        const utilizationCheck = utilizationRate >= minUtilization;
+
+        // Debug logging for low utilization
+        if (utilizationCheck) {
+          // Determine speed and guards based on settings
+          let speed, guards;
+
+          if (settings.autoDepartUseRouteDefaults) {
+            // Use route defaults (values set when route was created)
+            speed = vessel.route_speed || vessel.max_speed;
+            guards = vessel.route_guards || 0;
+          } else {
+            // Use custom settings
+            const speedPercent = settings.autoVesselSpeed || 50;
+            speed = Math.round(vessel.max_speed * (speedPercent / 100));
+            // Guards are always from route settings (set when route was created)
+            guards = vessel.route_guards || 0;
+          }
+
+          try {
+            const result = await departVessel(vessel.id, speed, guards);
+
+            // Extract financial data from API response
+            const departInfo = result.data?.depart_info || {};
+            const income = departInfo.depart_income || 0;
+            const harborFee = departInfo.harbor_fee || 0;
+            const fuelUsage = (departInfo.fuel_usage || 0) / 1000; // Convert to tons
+            const co2Emission = (departInfo.co2_emission || 0) / 1000; // Convert to tons
+            const netIncome = income - harborFee;
+
+            // Check if departure was actually successful
+            // API returns $0 income when vessel couldn't depart (e.g., no fuel)
+            if (income === 0 && fuelUsage === 0 && co2Emission === 0) {
+              console.error(`[Auto-Depart] ✗ ${vessel.name} failed to depart (no fuel/CO2 or API error)`);
+
+              // Track as failed departure
+              failedVessels.push({
+                name: vessel.name,
+                reason: 'Insufficient fuel or CO2 in bunker'
+              });
+
+              continue; // Skip this vessel, don't count as departed
+            }
+
+            // Successfully departed
+            departedCount++;
+
+            // Track departed vessel info
+            departedVessels.push({
+              name: vessel.name,
+              destination: destination,
+              capacity: vesselCapacity,
+              utilization: utilizationRate,
+              cargoLoaded: cargoToLoad,
+              speed: speed,
+              guards: guards,
+              income: income,
+              harborFee: harborFee,
+              netIncome: netIncome,
+              fuelUsage: fuelUsage,
+              co2Emission: co2Emission
+            });
+
+            // Update effective demand for next vessel in loop
+            effectiveDemand -= cargoToLoad;
+
+          } catch (error) {
+            console.error(`[Auto-Depart] Failed to depart ${vessel.name}:`, error);
+
+            // Track as failed departure
+            failedVessels.push({
+              name: vessel.name,
+              reason: error.message || 'Unknown error'
+            });
+          }
+        }
+      }
+    }
+
+    // Show error feedback for failed vessels
+    if (failedVessels.length > 0) {
+      showFeedback('<strong>🤖 Auto-Depart</strong><br>No fuel - no vessels sent', 'error');
+    }
+
+    if (departedCount > 0) {
+      // Calculate totals
+      const totalIncome = departedVessels.reduce((sum, v) => sum + v.income, 0);
+      const totalHarborFee = departedVessels.reduce((sum, v) => sum + v.harborFee, 0);
+      const totalNetIncome = departedVessels.reduce((sum, v) => sum + v.netIncome, 0);
+      const totalFuelUsage = departedVessels.reduce((sum, v) => sum + v.fuelUsage, 0);
+      const totalCO2Emission = departedVessels.reduce((sum, v) => sum + v.co2Emission, 0);
+
+      // Create compact one-line vessel list (focus on cargo and money)
+      let vesselList = departedVessels.map(v =>
+        `<div style="font-size: 0.8em; opacity: 0.85; padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+          🚢 <strong>${v.name}</strong> | ${formatNumber(v.cargoLoaded)}/${formatNumber(v.capacity)} TEU (${(v.utilization * 100).toFixed(0)}%) | 💰 $${formatNumber(v.netIncome)}
+        </div>`
+      ).join('');
+
+      const message = `
+        <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid rgba(255,255,255,0.3);">
+          <strong style="font-size: 1.1em;">🤖 Auto-Depart: ${departedCount} vessel${departedCount > 1 ? 's' : ''} departed</strong>
+        </div>
+        <div style="margin: 12px 0; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; font-family: monospace;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: #9ca3af;">Revenue:</span>
+            <span style="color: #10b981; font-weight: bold;">+ $${formatNumber(totalIncome)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            <span style="color: #9ca3af;">Harbor Fees:</span>
+            <span style="color: #ef4444; font-weight: bold;">- $${formatNumber(totalHarborFee)}</span>
+          </div>
+          <div style="height: 1px; background: rgba(255,255,255,0.2); margin: 8px 0;"></div>
+          <div style="display: flex; justify-content: space-between; font-size: 1.1em;">
+            <span style="color: #fff; font-weight: bold;">Total:</span>
+            <span style="color: #10b981; font-weight: bold;">$${formatNumber(totalNetIncome)}</span>
+          </div>
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9em; color: #9ca3af;">
+            ⛽ ${formatNumber(totalFuelUsage)}t Fuel | 💨 ${formatNumber(totalCO2Emission)}t CO2
+          </div>
+        </div>
+        <div style="max-height: 240px; overflow-y: auto; margin-bottom: 10px; padding-right: 8px;">
+          ${vesselList}
+        </div>`;
+
+      // Use showPriceAlert for longer visibility (stays visible until user closes)
+      showPriceAlert(message, 'success');
+
+      // Send compact browser notification
+      const settings = window.getSettings ? window.getSettings() : {};
+      if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+        await showNotification(`🤖 Auto-Depart: ${departedCount} vessel${departedCount > 1 ? 's' : ''}`, {
+          body: `💰 Net: $${formatNumber(totalNetIncome)} | ⛽ ${formatNumber(totalFuelUsage)}t fuel | 💨 ${formatNumber(totalCO2Emission)}t CO2`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>🚢</text></svg>",
+          tag: 'auto-depart',
+          silent: false
+        });
+      }
+
+      // Trigger immediate UI update (vessel count badge must update right away)
       if (window.debouncedUpdateVesselCount) {
-        window.debouncedUpdateVesselCount(500);
+        window.debouncedUpdateVesselCount(0);
       }
       if (window.debouncedUpdateBunkerStatus) {
-        window.debouncedUpdateBunkerStatus(500);
+        window.debouncedUpdateBunkerStatus(1000);
       }
     }
   } catch (error) {
@@ -409,101 +636,56 @@ async function checkAutoDepartAll(settings) {
   }
 }
 
-// ============================================================================
-// Auto Bulk Repair
-// ============================================================================
+/**
+ * Calculates remaining demand at a port (demand - consumed).
+ * Sums both cargo types for containers (dry + refrigerated) and tankers (fuel + crude_oil).
+ *
+ * @param {Object} port - Port object from fetchAssignedPorts()
+ * @param {string} vesselType - 'container' or 'tanker'
+ * @returns {number} Remaining demand in TEU or tons
+ */
+function calculateRemainingDemand(port, vesselType) {
+  if (vesselType === 'container') {
+    const dryDemand = port.demand?.container?.dry || 0;
+    const dryConsumed = port.consumed?.container?.dry || 0;
+    const refDemand = port.demand?.container?.refrigerated || 0;
+    const refConsumed = port.consumed?.container?.refrigerated || 0;
+
+    return (dryDemand - dryConsumed) + (refDemand - refConsumed);
+  } else if (vesselType === 'tanker') {
+    const fuelDemand = port.demand?.tanker?.fuel || 0;
+    const fuelConsumed = port.consumed?.tanker?.fuel || 0;
+    const crudeDemand = port.demand?.tanker?.crude_oil || 0;
+    const crudeConsumed = port.consumed?.tanker?.crude_oil || 0;
+
+    return (fuelDemand - fuelConsumed) + (crudeDemand - crudeConsumed);
+  }
+
+  return 0;
+}
 
 /**
- * Checks if vessels need repair and automatically repairs all vessels with wear > 0.
- * Runs with randomized intervals for anti-detection.
+ * Calculates total capacity of a vessel.
+ * Sums both cargo types for containers (dry + refrigerated) and tankers (fuel + crude_oil).
  *
- * **Throttling Strategy:**
- * - Randomized interval between 1-2 minutes between checks
- * - Uses lastRepairCheck timestamp to enforce minimum intervals
- * - Random timing prevents predictable patterns that could trigger anti-bot
- *
- * **Repair Logic:**
- * - Repairs ALL vessels with wear > 0 (any wear at all)
- * - Fetches maintenance cost for all vessels before repairing
- * - Only repairs if total cost <= current cash
- * - Skips if no vessels need repair or insufficient funds
- *
- * **Cost Calculation:**
- * - Calls getMaintenanceCost() to get accurate repair costs
- * - Extracts 'wear' type maintenance from maintenance_data
- * - Sums total cost across all vessels to repair
- *
- * **Side Effects:**
- * - Triggers UI updates via window.debouncedUpdateRepairCount()
- * - Triggers UI updates via window.debouncedUpdateBunkerStatus()
- * - Sends notification if autoPilotNotifications enabled
- *
- * @async
- * @param {Object} settings - User settings object from window.getSettings()
- * @param {boolean} settings.autoBulkRepair - Whether auto-repair is enabled
- * @returns {Promise<void>}
+ * @param {Object} vessel - Vessel object from fetchVessels()
+ * @returns {number} Total capacity in TEU or tons
  */
-async function checkAutoBulkRepair(settings) {
-  if (!settings.autoBulkRepair) return;
-
-  // Throttle checks - random between 1-2 minutes
-  const now = Date.now();
-  const minInterval = 60000; // 1 minute
-  const maxInterval = 120000; // 2 minutes
-  const randomInterval = minInterval + Math.random() * (maxInterval - minInterval);
-
-  if (now - lastRepairCheck < randomInterval) return;
-  lastRepairCheck = now;
-
-  try {
-    const vesselsData = await fetchVessels();
-    const vessels = vesselsData.vessels || [];
-
-    // Repair ALL vessels with any wear (wear > 0)
-    const vesselsToRepair = vessels.filter(v => {
-      const wear = parseInt(v.wear) || 0;
-      return wear > 0;
-    });
-
-    if (vesselsToRepair.length === 0) return;
-
-    const vesselIds = vesselsToRepair.map(v => v.id);
-    const costData = await getMaintenanceCost(vesselIds);
-
-    let totalCost = 0;
-    if (costData.data?.vessels) {
-      costData.data.vessels.forEach(vessel => {
-        const wearMaintenance = vessel.maintenance_data?.find(m => m.type === 'wear');
-        if (wearMaintenance) {
-          totalCost += wearMaintenance.price || 0;
-        }
-      });
-    }
-
-    const bunkerState = getCurrentBunkerState();
-    if (totalCost > bunkerState.currentCash) {
-      console.log('[Auto-Repair] Not enough cash for repair');
-      return;
-    }
-
-    // Perform repair
-    const result = await doWearMaintenanceBulk(vesselIds);
-
-    if (result.success || result.data) {
-      await sendAutoPilotFeedback(`🔄 Auto-repaired ${vesselsToRepair.length} vessel(s) for $${formatNumber(totalCost)}`, 'success');
-
-      // Trigger UI update
-      if (window.debouncedUpdateRepairCount) {
-        window.debouncedUpdateRepairCount(500);
-      }
-      if (window.debouncedUpdateBunkerStatus) {
-        window.debouncedUpdateBunkerStatus(500);
-      }
-    }
-  } catch (error) {
-    console.error('[Auto-Repair] Error:', error);
+function getTotalCapacity(vessel) {
+  if (vessel.capacity_type === 'container') {
+    return (vessel.capacity?.dry || 0) + (vessel.capacity?.refrigerated || 0);
+  } else if (vessel.capacity_type === 'tanker') {
+    return (vessel.capacity?.fuel || 0) + (vessel.capacity?.crude_oil || 0);
   }
+  return 0;
 }
+
+// ============================================================================
+// Auto Bulk Repair - MOVED TO BACKEND (server/automation.js)
+// ============================================================================
+// Auto-repair now runs on the backend with configurable intervals from settings.
+// The backend broadcasts 'auto_repair_complete' events via WebSocket.
+// Frontend handles these events in the WebSocket message handler (chat.js).
 
 // ============================================================================
 // Auto Campaign Renewal
@@ -578,7 +760,6 @@ async function checkAutoCampaignRenewal(settings) {
         .sort((a, b) => b.price - a.price); // Sort by price descending
 
       if (typeCampaigns.length === 0) {
-        console.log(`[Auto-Campaign] No affordable ${type} campaigns`);
         continue;
       }
 
@@ -589,7 +770,21 @@ async function checkAutoCampaignRenewal(settings) {
 
         if (result.success || result.data) {
           const typeName = type.charAt(0).toUpperCase() + type.slice(1);
-          await sendAutoPilotFeedback(`🔄 Auto-activated ${typeName} campaign for $${formatNumber(bestCampaign.price)}`, 'success');
+          const efficiency = `${bestCampaign.min_efficiency}-${bestCampaign.max_efficiency}%`;
+          const duration = bestCampaign.campaign_duration;
+
+          showFeedback(`🔄 Auto-activated ${typeName} campaign: ${duration}h | Efficiency: ${efficiency} | $${formatNumber(bestCampaign.price)}`, 'success');
+
+          // Send compact notification
+          const settings = window.getSettings ? window.getSettings() : {};
+          if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+            await showNotification(`🤖 Auto-Campaign: ${typeName}`, {
+              body: `${duration}h | Efficiency: ${efficiency} | Cost: $${formatNumber(bestCampaign.price)}`,
+              icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>📊</text></svg>",
+              tag: 'auto-campaign',
+              silent: false
+            });
+          }
 
           // Trigger UI update
           if (window.debouncedUpdateBunkerStatus) {
@@ -661,9 +856,9 @@ export async function runAutomationChecks() {
     const settings = window.getSettings ? window.getSettings() : {};
 
     // Run non-price-dependent checks
+    // Note: Auto-repair now runs on backend (server/automation.js)
     await Promise.all([
       checkAutoDepartAll(settings),
-      checkAutoBulkRepair(settings),
       checkAutoCampaignRenewal(settings)
     ]);
   } catch (error) {
@@ -690,8 +885,6 @@ export async function runAutomationChecks() {
  * @public
  */
 export function initAutomation() {
-  console.log('[Automation] System initialized - checks run every 1-3 minutes');
-
   // Run checks with random interval between 1-3 minutes
   function scheduleNextCheck() {
     const minInterval = 60000; // 1 minute

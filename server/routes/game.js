@@ -32,8 +32,13 @@
 
 const express = require('express');
 const { apiCall } = require('../utils/api');
+const fs = require('fs').promises;
+const path = require('path');
 
 const router = express.Router();
+
+// Auto-depart log file path
+const AUTO_DEPART_LOG = path.join(__dirname, '../../auto-depart.log');
 
 /** GET /api/vessel/get-vessels - Retrieves all vessels currently in harbor. Uses /game/index endpoint to get complete vessel list with status, cargo, maintenance needs, etc. */
 router.get('/vessel/get-vessels', async (req, res) => {
@@ -118,6 +123,74 @@ router.post('/route/depart-all', async (req, res) => {
   } catch (error) {
     console.error('Error departing vessels:', error);
     res.status(500).json({ error: 'Failed to depart vessels' });
+  }
+});
+
+/**
+ * POST /api/route/depart - Departs a single vessel on its assigned route.
+ * Used by intelligent auto-depart to send only profitable vessels.
+ * Validation: user_vessel_id and speed are required.
+ * @param {number} user_vessel_id - The vessel ID to depart
+ * @param {number} speed - Speed to travel at (usually % of max_speed)
+ * @param {number} guards - Number of guards (0 or 10 based on hijacking_risk)
+ * @param {number} history - History parameter (default 0, purpose unclear)
+ */
+router.post('/route/depart', express.json(), async (req, res) => {
+  const { user_vessel_id, speed, guards, history } = req.body;
+
+  if (!user_vessel_id || !speed) {
+    return res.status(400).json({ error: 'Missing user_vessel_id or speed' });
+  }
+
+  try {
+    const data = await apiCall('/route/depart', 'POST', {
+      user_vessel_id,
+      speed,
+      guards: guards || 0,
+      history: history || 0
+    });
+
+    // Log auto-depart action to file
+    if (data.data?.depart_info) {
+      const departInfo = data.data.depart_info;
+      const vesselData = data.data.user_vessels?.[0];
+      const timestamp = new Date().toISOString();
+      const logEntry = `[${timestamp}] Vessel: ${vesselData?.name || user_vessel_id} | ` +
+        `Destination: ${vesselData?.route_destination || 'unknown'} | ` +
+        `Income: $${departInfo.depart_income || 0} | ` +
+        `Harbor Fee: $${departInfo.harbor_fee || 0} | ` +
+        `Net: $${(departInfo.depart_income || 0) - (departInfo.harbor_fee || 0)} | ` +
+        `Fuel: ${((departInfo.fuel_usage || 0) / 1000).toFixed(2)}t | ` +
+        `CO2: ${((departInfo.co2_emission || 0) / 1000).toFixed(2)}t | ` +
+        `Speed: ${speed}kn | Guards: ${guards || 0}\n`;
+
+      try {
+        await fs.appendFile(AUTO_DEPART_LOG, logEntry);
+      } catch (logError) {
+        console.error('[Auto-Depart Log] Failed to write:', logError);
+      }
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error departing vessel:', error);
+    res.status(500).json({ error: 'Failed to depart vessel' });
+  }
+});
+
+/**
+ * GET /api/port/get-assigned-ports - Retrieves demand and consumed data for all assigned ports.
+ * Used by intelligent auto-depart to calculate remaining port capacity.
+ * Returns port demand/consumed for both container and tanker cargo types.
+ * @returns {Object} data.ports - Array of port objects with demand/consumed data
+ */
+router.get('/port/get-assigned-ports', async (req, res) => {
+  try {
+    const data = await apiCall('/port/get-assigned-ports', 'POST', {});
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching assigned ports:', error);
+    res.status(500).json({ error: 'Failed to fetch assigned ports' });
   }
 });
 

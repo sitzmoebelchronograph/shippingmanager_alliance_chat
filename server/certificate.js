@@ -2,7 +2,7 @@
  * @fileoverview HTTPS Certificate Generation and Management Module
  *
  * This module handles automatic generation and management of self-signed SSL/TLS certificates
- * for the Shipping Manager Chat application. It creates a Certificate Authority (CA) that can
+ * for the Shipping Manager CoPilot application. It creates a Certificate Authority (CA) that can
  * be trusted by browsers, then generates server certificates signed by that CA.
  *
  * Key Features:
@@ -120,7 +120,7 @@ function getNetworkIPs() {
  * - SHA-256 signature algorithm
  * - Basic Constraints: CA=true (can sign other certificates)
  * - Key Usage: Certificate Signing, CRL Signing
- * - Common Name: "Shipping Manager Chat CA"
+ * - Common Name: "Shipping Manager CoPilot CA"
  *
  * Platform-Specific Installation:
  * - Windows: Prompts UAC dialog for automatic installation via certutil
@@ -154,8 +154,8 @@ function generateCA() {
   cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 10);
 
   const attrs = [
-    { name: 'commonName', value: 'Shipping Manager Chat CA' },
-    { name: 'organizationName', value: 'Shipping Manager Chat' },
+    { name: 'commonName', value: 'Shipping Manager CoPilot CA' },
+    { name: 'organizationName', value: 'Shipping Manager CoPilot' },
     { name: 'countryName', value: 'US' }
   ];
 

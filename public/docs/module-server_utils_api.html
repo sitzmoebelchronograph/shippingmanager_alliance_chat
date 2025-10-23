@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>server/utils/api - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_config.html">server/config</a></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showFeedback">showFeedback</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showPriceAlert">showPriceAlert</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.repairAllVessels">repairAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">server/utils/api</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    
+        <div class="container-overview">
+        
+            
+                <div class="description usertext"><p>API Helper Functions and Game API Integration</p>
+<p>This module provides centralized API communication with the Shipping Manager game server
+(shippingmanager.cc). It handles authentication, connection pooling, state management,
+and caching to optimize API calls and reduce rate limit risk.</p>
+<p>Key Responsibilities:</p>
+<ul>
+<li>Authenticated API calls with session cookie injection</li>
+<li>HTTP Keep-Alive connection pooling for performance</li>
+<li>User and alliance state initialization and management</li>
+<li>Company name caching to reduce redundant API calls</li>
+<li>Error handling and fallback mechanisms</li>
+</ul>
+<p>Why This Architecture:</p>
+<ul>
+<li>Centralizes all game API communication in one module</li>
+<li>Connection pooling reduces latency (reuses TCP connections)</li>
+<li>State caching reduces API load (important for rate limiting)</li>
+<li>Session cookie injected from environment (extracted by run.js)</li>
+<li>Graceful degradation when user not in alliance</li>
+</ul>
+<p>Connection Pooling Strategy:</p>
+<ul>
+<li>Keep-Alive enabled: Reuses TCP connections instead of opening new ones</li>
+<li>Max 10 simultaneous connections: Prevents overwhelming API server</li>
+<li>LIFO scheduling: Most recently used socket first (better connection reuse)</li>
+<li>30-second keep-alive: Balance between connection reuse and resource usage</li>
+<li>This mimics normal browser behavior, reducing detection risk</li>
+</ul>
+<p>State Management:</p>
+<ul>
+<li>USER_ID: Current user's unique identifier</li>
+<li>USER_COMPANY_NAME: Current user's company name</li>
+<li>ALLIANCE_ID: User's alliance ID (null if not in alliance)</li>
+<li>userNameCache: Map of user_id → company_name (reduces API calls)</li>
+</ul>
+<p>Rate Limiting Considerations:</p>
+<ul>
+<li>Fewer API calls via caching = lower rate limit risk</li>
+<li>Keep-Alive reduces overhead, faster responses</li>
+<li>Connection pooling prevents connection exhaustion</li>
+<li>Mimics normal browser traffic patterns</li>
+</ul></div>
+            
+
+            
+                
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>API Helper Functions and Game API Integration</p>
+<p>This module provides centralized API communication with the Shipping Manager game server
+(shippingmanager.cc). It handles authentication, connection pooling, state management,
+and caching to optimize API calls and reduce rate limit risk.</p>
+<p>Key Responsibilities:</p>
+<ul>
+<li>Authenticated API calls with session cookie injection</li>
+<li>HTTP Keep-Alive connection pooling for performance</li>
+<li>User and alliance state initialization and management</li>
+<li>Company name caching to reduce redundant API calls</li>
+<li>Error handling and fallback mechanisms</li>
+</ul>
+<p>Why This Architecture:</p>
+<ul>
+<li>Centralizes all game API communication in one module</li>
+<li>Connection pooling reduces latency (reuses TCP connections)</li>
+<li>State caching reduces API load (important for rate limiting)</li>
+<li>Session cookie injected from environment (extracted by run.js)</li>
+<li>Graceful degradation when user not in alliance</li>
+</ul>
+<p>Connection Pooling Strategy:</p>
+<ul>
+<li>Keep-Alive enabled: Reuses TCP connections instead of opening new ones</li>
+<li>Max 10 simultaneous connections: Prevents overwhelming API server</li>
+<li>LIFO scheduling: Most recently used socket first (better connection reuse)</li>
+<li>30-second keep-alive: Balance between connection reuse and resource usage</li>
+<li>This mimics normal browser behavior, reducing detection risk</li>
+</ul>
+<p>State Management:</p>
+<ul>
+<li>USER_ID: Current user's unique identifier</li>
+<li>USER_COMPANY_NAME: Current user's company name</li>
+<li>ALLIANCE_ID: User's alliance ID (null if not in alliance)</li>
+<li>userNameCache: Map of user_id → company_name (reduces API calls)</li>
+</ul>
+<p>Rate Limiting Considerations:</p>
+<ul>
+<li>Fewer API calls via caching = lower rate limit risk</li>
+<li>Keep-Alive reduces overhead, faster responses</li>
+<li>Connection pooling prevents connection exhaustion</li>
+<li>Mimics normal browser traffic patterns</li>
+</ul></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+        
+        </div>
+    
+
+    
+
+    
+        <h3 class="subsection-title">Requires</h3>
+
+        <ul>
+            <li>module:axios</li>
+        
+            <li>module:https</li>
+        
+            <li>module:../config</li>
+        </ul>
+    
+
+    
+    
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="~ALLIANCE_ID"><span class="type-signature type-signature-inner">(inner) </span>ALLIANCE_ID<span class="type-signature"> :number|null</span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>User's alliance ID (null if not in alliance)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line55">line 55</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>User's alliance ID (null if not in alliance)</p>
+</div>
+
+
+
+    <h5 class="h5-types">Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">number</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~USER_COMPANY_NAME"><span class="type-signature type-signature-inner">(inner) </span>USER_COMPANY_NAME<span class="type-signature"> :string|null</span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Current user's company name</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line67">line 67</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>Current user's company name</p>
+</div>
+
+
+
+    <h5 class="h5-types">Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~USER_ID"><span class="type-signature type-signature-inner">(inner) </span>USER_ID<span class="type-signature"> :number|null</span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Current user's unique identifier</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line61">line 61</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>Current user's unique identifier</p>
+</div>
+
+
+
+    <h5 class="h5-types">Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">number</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~httpsAgent"><span class="type-signature type-signature-inner, constant">(inner, constant) </span>httpsAgent<span class="type-signature"> :https.Agent</span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>HTTPS agent with Keep-Alive for connection pooling and performance optimization.</p>
+<p>This agent maintains persistent TCP connections to the game API server, reducing
+latency and overhead from repeatedly establishing TLS handshakes.</p>
+<p>Configuration Rationale:</p>
+<ul>
+<li>keepAlive: true - Reuses connections instead of opening new ones per request</li>
+<li>keepAliveMsecs: 30s - TCP keep-alive packets every 30 seconds</li>
+<li>maxSockets: 10 - Limits concurrent connections (avoids API server overload)</li>
+<li>maxFreeSockets: 5 - Keeps 5 idle connections ready for immediate reuse</li>
+<li>timeout: 30s - Socket timeout (prevents hanging connections)</li>
+<li>scheduling: 'lifo' - Uses most recently used socket first (better cache locality)</li>
+</ul>
+<p>Anti-Detection Benefits:</p>
+<ul>
+<li>Connection pooling mimics normal browser behavior</li>
+<li>Limits concurrent connections (doesn't look like a bot storm)</li>
+<li>Keep-Alive is standard browser feature</li>
+<li>Reduces number of TLS handshakes (less suspicious traffic pattern)</li>
+</ul></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line97">line 97</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>HTTPS agent with Keep-Alive for connection pooling and performance optimization.</p>
+<p>This agent maintains persistent TCP connections to the game API server, reducing
+latency and overhead from repeatedly establishing TLS handshakes.</p>
+<p>Configuration Rationale:</p>
+<ul>
+<li>keepAlive: true - Reuses connections instead of opening new ones per request</li>
+<li>keepAliveMsecs: 30s - TCP keep-alive packets every 30 seconds</li>
+<li>maxSockets: 10 - Limits concurrent connections (avoids API server overload)</li>
+<li>maxFreeSockets: 5 - Keeps 5 idle connections ready for immediate reuse</li>
+<li>timeout: 30s - Socket timeout (prevents hanging connections)</li>
+<li>scheduling: 'lifo' - Uses most recently used socket first (better cache locality)</li>
+</ul>
+<p>Anti-Detection Benefits:</p>
+<ul>
+<li>Connection pooling mimics normal browser behavior</li>
+<li>Limits concurrent connections (doesn't look like a bot storm)</li>
+<li>Keep-Alive is standard browser feature</li>
+<li>Reduces number of TLS handshakes (less suspicious traffic pattern)</li>
+</ul>
+</div>
+
+
+
+    <h5 class="h5-types">Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">https.Agent</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="~userNameCache"><span class="type-signature type-signature-inner, constant">(inner, constant) </span>userNameCache<span class="type-signature"> :Map.&lt;number, string></span></h4>
+
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Cache mapping user IDs to company names (reduces API calls)</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line73">line 73</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description usertext">
+    <p>Cache mapping user IDs to company names (reduces API calls)</p>
+</div>
+
+
+
+    <h5 class="h5-types">Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Map.&lt;number, string></span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="~apiCall"><span class="type-signature type-signature-inner">(inner) </span>apiCall<span class="signature">(endpoint, method<span class="signature-attributes">opt</span>, body<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Makes authenticated HTTP API calls to the Shipping Manager game server.</p>
+<p>This is the core function for all API communication. It handles authentication
+via session cookie, sets appropriate headers to mimic browser requests, and
+uses connection pooling for performance.</p>
+<p>Why This Design:</p>
+<ul>
+<li>Centralizes authentication logic (session cookie from environment)</li>
+<li>Mimics browser requests (headers, user agent, origin)</li>
+<li>Uses Keep-Alive agent for connection reuse</li>
+<li>Consistent error handling across all API calls</li>
+<li>30-second timeout prevents hanging requests</li>
+</ul>
+<p>Authentication:</p>
+<ul>
+<li>Session cookie injected via config.SESSION_COOKIE</li>
+<li>Cookie extracted from Steam client by run.js Python script</li>
+<li>Provides full account access (same as logged-in browser session)</li>
+<li>Cookie never stored in files (only in environment variable)</li>
+</ul>
+<p>Headers:</p>
+<ul>
+<li>User-Agent: Mozilla/5.0 (looks like browser, not bot)</li>
+<li>Origin: https://shippingmanager.cc (required for CORS)</li>
+<li>Content-Type: application/json (API expects JSON)</li>
+<li>Accept: application/json (indicates we want JSON response)</li>
+<li>Cookie: Session authentication</li>
+</ul>
+<p>Error Handling:</p>
+<ul>
+<li>HTTP errors: Extracts status code from response</li>
+<li>Network errors: Returns error message</li>
+<li>Logs errors to console for debugging</li>
+<li>Throws error for caller to handle</li>
+</ul>
+<p>Side Effects:</p>
+<ul>
+<li>Makes HTTPS request to shippingmanager.cc</li>
+<li>Reuses existing TCP connections via Keep-Alive agent</li>
+<li>Logs errors to console</li>
+</ul></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line106">line 106</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-examples">Examples</h5>
+    
+    <pre class="prettyprint"><code>// Fetch alliance chat feed
+const data = await apiCall('/alliance/get-chat-feed', 'POST', { alliance_id: 123 });
+console.log(data.data.chat_feed);</code></pre>
+
+    <pre class="prettyprint"><code>// Get user settings (default POST method, empty body)
+const userData = await apiCall('/user/get-user-settings');
+console.log(userData.user.company_name);</code></pre>
+
+
+
+
+    <h5 class="h5-parameters">Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>endpoint</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>API endpoint (e.g., '/alliance/get-chat-feed')</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>method</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>'POST'</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>HTTP method (GET, POST, etc.)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>body</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    <code>{}</code>
+                
+                </td>
+            
+
+            <td class="description last"><p>Request payload (will be JSON stringified)</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-throws">Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc usertext">
+        <p>When API request fails (network error or HTTP error status)</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl class="param-type">
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>API response data (already parsed from JSON)</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getAllianceId"><span class="type-signature type-signature-inner">(inner) </span>getAllianceId<span class="signature">()</span><span class="type-signature"> &rarr; {number|null}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Returns the current user's alliance ID.</p>
+<p>This getter provides read-only access to the alliance ID state variable.
+Used by routes and WebSocket module to check alliance membership.</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line395">line 395</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-examples">Example</h5>
+    
+    <pre class="prettyprint"><code>const allianceId = getAllianceId();
+if (allianceId) {
+  // User is in alliance, show alliance features
+}</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Alliance ID or null if user not in alliance</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getChatFeed"><span class="type-signature type-signature-inner">(inner) </span>getChatFeed<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;Array>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Fetches the alliance chat feed from the game API.</p>
+<p>This function retrieves all recent messages and feed events for the user's alliance.
+It's used by WebSocket auto-refresh (every 25 seconds) and manual chat refresh requests.</p>
+<p>Why This Function:</p>
+<ul>
+<li>Centralizes chat feed retrieval logic</li>
+<li>Handles &quot;no alliance&quot; case gracefully (returns empty array)</li>
+<li>Error handling prevents crashes during network issues</li>
+<li>Used by both WebSocket auto-refresh and manual refresh endpoints</li>
+</ul>
+<p>Feed Contents:</p>
+<ul>
+<li>Chat messages: User messages with message text, user_id, timestamp</li>
+<li>Feed events: Alliance joins, route completions, system announcements</li>
+<li>Typically last 50-100 items (game API decides)</li>
+<li>Ordered by time_created (most recent last)</li>
+</ul>
+<p>No Alliance Handling:</p>
+<ul>
+<li>Returns empty array immediately if ALLIANCE_ID is null</li>
+<li>Prevents 404 errors from /alliance/get-chat-feed endpoint</li>
+<li>Allows app to work for users not in alliance</li>
+</ul>
+<p>Error Handling:</p>
+<ul>
+<li>API errors caught and logged</li>
+<li>Returns empty array on error (prevents crash)</li>
+<li>Silent failures (doesn't throw, doesn't stop auto-refresh)</li>
+</ul>
+<p>Side Effects:</p>
+<ul>
+<li>Makes API call to /alliance/get-chat-feed</li>
+<li>Logs errors to console</li>
+</ul></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line333">line 333</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-examples">Examples</h5>
+    
+    <pre class="prettyprint"><code>const feed = await getChatFeed();
+// Returns:
+// [
+//   { type: 'chat', user_id: 123, message: 'Hello!', time_created: 1729695000 },
+//   { type: 'feed', feed_type: 'route_completed', replacements: {...}, time_created: 1729694500 }
+// ]</code></pre>
+
+    <pre class="prettyprint"><code>// User not in alliance
+const feed = await getChatFeed();
+console.log(feed); // []</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Array of chat messages and feed events, or empty array if no alliance/error</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Array></span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getCompanyName"><span class="type-signature type-signature-inner">(inner) </span>getCompanyName<span class="signature">(userId)</span><span class="type-signature"> &rarr; {Promise.&lt;string>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Retrieves a user's company name with intelligent caching to reduce API calls.</p>
+<p>This function implements a memory cache for company names, significantly reducing
+API calls during chat feed processing. The cache persists for the lifetime of the
+server process.</p>
+<p>Why Caching Matters:</p>
+<ul>
+<li>Chat feeds can contain 50+ messages from same users</li>
+<li>Without cache: 50 API calls per chat refresh (25s interval)</li>
+<li>With cache: ~2-3 API calls per refresh (only new users)</li>
+<li>Reduces rate limit risk by 95%+</li>
+<li>Faster response times (cache lookup vs network roundtrip)</li>
+</ul>
+<p>Cache Strategy:</p>
+<ul>
+<li>Map-based cache: O(1) lookup time</li>
+<li>Persistent: Cache never cleared (safe assumption: usernames don't change often)</li>
+<li>Grows linearly with unique users seen (minimal memory impact)</li>
+<li>Thread-safe: Node.js single-threaded, no race conditions</li>
+</ul>
+<p>Fallback Behavior:</p>
+<ul>
+<li>If API call fails (user deleted, API error), returns &quot;User {userId}&quot;</li>
+<li>Prevents cascade failures from missing user data</li>
+<li>Silent error handling (no throw, no log spam)</li>
+</ul>
+<p>Side Effects:</p>
+<ul>
+<li>Makes API call to /user/get-company on cache miss</li>
+<li>Stores result in userNameCache Map</li>
+<li>Logs errors silently (doesn't log to console)</li>
+</ul></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line187">line 187</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-examples">Examples</h5>
+    
+    <pre class="prettyprint"><code>const name = await getCompanyName(12345);
+console.log(name); // "ABC Shipping Co."
+// Second call returns instantly from cache
+const nameAgain = await getCompanyName(12345);</code></pre>
+
+    <pre class="prettyprint"><code>// Failed API call
+const name = await getCompanyName(99999); // Deleted user
+console.log(name); // "User 99999"</code></pre>
+
+
+
+
+    <h5 class="h5-parameters">Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>userId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>User's unique identifier</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Company name (from cache or API) or &quot;User {userId}&quot; on failure</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;string></span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getUserCompanyName"><span class="type-signature type-signature-inner">(inner) </span>getUserCompanyName<span class="signature">()</span><span class="type-signature"> &rarr; {string|null}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Returns the current user's company name.</p>
+<p>This getter provides read-only access to the company name state variable.
+Used for logging, debugging, and UI display.</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line431">line 431</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-examples">Example</h5>
+    
+    <pre class="prettyprint"><code>const companyName = getUserCompanyName();
+console.log(`Logged in as: ${companyName}`);</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Company name or null if not initialized</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~getUserId"><span class="type-signature type-signature-inner">(inner) </span>getUserId<span class="signature">()</span><span class="type-signature"> &rarr; {number|null}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Returns the current user's unique identifier.</p>
+<p>This getter provides read-only access to the user ID state variable.
+Used by routes to filter messages, identify ownership, etc.</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line414">line 414</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-examples">Example</h5>
+    
+    <pre class="prettyprint"><code>const userId = getUserId();
+const isOwnMessage = message.user_id === userId;</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>User ID or null if not initialized</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+|
+
+<span class="param-type">null</span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~initializeAlliance"><span class="type-signature type-signature-inner">(inner) </span>initializeAlliance<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Initializes user and alliance state on server startup.</p>
+<p>This critical initialization function loads user identity and alliance membership
+from the game API. It must complete successfully before the server can function,
+as many endpoints depend on USER_ID and ALLIANCE_ID state.</p>
+<p>Why This Runs at Startup:</p>
+<ul>
+<li>USER_ID needed for filtering own messages in chat</li>
+<li>ALLIANCE_ID required for all alliance-specific endpoints</li>
+<li>Company name used for logging and debugging</li>
+<li>Early failure prevents server from running with invalid state</li>
+<li>Session cookie validation (fails if cookie invalid/expired)</li>
+</ul>
+<p>Initialization Sequence:</p>
+<ol>
+<li>Load user settings (USER_ID, USER_COMPANY_NAME)
+<ul>
+<li>Endpoint: /user/get-user-settings</li>
+<li>Always required - exits if fails</li>
+</ul>
+</li>
+<li>Attempt to load alliance membership
+<ul>
+<li>Endpoint: /alliance/get-user-alliance</li>
+<li>Optional - sets ALLIANCE_ID to null if not in alliance</li>
+</ul>
+</li>
+</ol>
+<p>Graceful Degradation:</p>
+<ul>
+<li>User not in alliance: ALLIANCE_ID = null, continues running</li>
+<li>Alliance endpoints will return empty arrays</li>
+<li>Chat auto-refresh skips when ALLIANCE_ID is null</li>
+<li>Other features (vessels, bunker, etc.) still work</li>
+</ul>
+<p>Failure Modes:</p>
+<ul>
+<li>User settings fail: process.exit(1) - Critical failure</li>
+<li>Alliance API error: Treats as &quot;not in alliance&quot; - Non-critical</li>
+<li>Invalid session cookie: User settings fail → exit</li>
+<li>Network error: User settings fail → exit</li>
+</ul>
+<p>Side Effects:</p>
+<ul>
+<li>Sets module-level variables: USER_ID, USER_COMPANY_NAME, ALLIANCE_ID</li>
+<li>Makes 1-2 API calls on startup</li>
+<li>Logs initialization status to console</li>
+<li>Exits process (process.exit(1)) if user settings fail</li>
+</ul></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="server_utils_api.js.html">server/utils/api.js</a>, <a href="server_utils_api.js.html#line247">line 247</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-examples">Examples</h5>
+    
+    <pre class="prettyprint"><code>// Called from app.js during server startup
+await initializeAlliance();
+// Console output:
+// ✓ User loaded: ABC Shipping Co. (ID: 12345)
+// ✓ Alliance loaded: Best Alliance (ID: 67890)</code></pre>
+
+    <pre class="prettyprint"><code>// User not in alliance
+await initializeAlliance();
+// Console output:
+// ✓ User loaded: ABC Shipping Co. (ID: 12345)
+// ⚠ User is not in an alliance</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-throws">Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc usertext">
+        <p>Never throws - exits process on critical failure</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl class="param-type">
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;void></span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

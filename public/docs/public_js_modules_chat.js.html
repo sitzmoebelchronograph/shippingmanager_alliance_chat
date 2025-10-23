@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>public/js/modules/chat.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_config.html">server/config</a></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showFeedback">showFeedback</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showPriceAlert">showPriceAlert</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.repairAllVessels">repairAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">public/js/modules/chat.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Alliance Chat Module - Manages real-time alliance chat functionality with WebSocket support,
+ * message rendering, mention autocomplete, and notification handling. This module provides the core
+ * communication interface for alliance members to collaborate and coordinate in the Shipping Manager game.
+ *
+ * Key Features:
+ * - Real-time chat updates via WebSocket (server broadcasts every 25 seconds)
+ * - User mention system with @username autocomplete (converts to [user_id] format)
+ * - Mixed message types: chat messages and system feed events (member joins, route completions)
+ * - Smart auto-scroll behavior (maintains position while scrolling up to read history)
+ * - Desktop notifications for new messages when window is not focused
+ * - Company name caching to reduce API calls
+ *
+ * Message Flow:
+ * 1. Messages loaded from REST API on initial page load
+ * 2. WebSocket pushes updates every 25 seconds from server
+ * 3. New messages trigger notifications if window not focused
+ * 4. Duplicate messages filtered by type+timestamp+content comparison
+ *
+ * Mention System:
+ * - Typing "@" triggers autocomplete with alliance member list
+ * - Selecting member inserts [user_id] into message
+ * - Server converts [user_id] to @CompanyName on broadcast
+ * - Clicking @CompanyName opens private messenger
+ *
+ * @module chat
+ * @requires utils - HTML escaping, feedback, and notification functions
+ * @requires api - Backend API calls for chat data and company names
+ */
+
+import { escapeHtml, showFeedback, handleNotifications } from './utils.js';
+import { getCompanyNameCached, fetchChat, sendChatMessage, fetchAllianceMembers } from './api.js';
+
+/**
+ * Array of all chat messages and feed events.
+ * Maintained in chronological order. Contains both 'chat' and 'feed' type messages.
+ * @type {Array&lt;Object>}
+ */
+let allMessages = [];
+
+/**
+ * Array of alliance members for mention autocomplete.
+ * Populated on chat load. Each member has user_id and company_name properties.
+ * @type {Array&lt;{user_id: number, company_name: string}>}
+ */
+let allianceMembers = [];
+
+/**
+ * Auto-scroll flag controlling scroll-to-bottom behavior.
+ * Set to true when user sends message or is near bottom. Prevents forced scrolling when reading history.
+ * @type {boolean}
+ */
+let autoScroll = true;
+
+/**
+ * Parses message text and converts user ID mentions to clickable company name links.
+ * Handles the mention system by converting [user_id] patterns to @CompanyName with click handlers.
+ *
+ * Processing Steps:
+ * 1. Escape HTML to prevent XSS attacks
+ * 2. Find all [user_id] patterns in the message
+ * 3. Fetch company names for all mentioned users (cached API calls)
+ * 4. Replace [user_id] with clickable @CompanyName elements
+ * 5. Convert newlines to &lt;br> tags
+ *
+ * Side Effects:
+ * - Makes cached API calls to resolve company names
+ * - Returns HTML with embedded click handlers
+ *
+ * @async
+ * @param {string} text - Raw message text from API (may contain [user_id] mentions)
+ * @returns {Promise&lt;string>} HTML string with mentions converted to clickable links
+ *
+ * @example
+ * // Input: "Hey [123], check out the prices!"
+ * // Output: 'Hey &lt;strong class="company-name" data-user-id="123">@CompanyName&lt;/strong>, check out the prices!'
+ */
+export async function parseMessageWithMentions(text) {
+  let htmlMessage = escapeHtml(text);
+  const mentionIdRegex = /\[(\d+)\]/g;
+
+  let replacementPromises = [];
+
+  const matches = [...htmlMessage.matchAll(mentionIdRegex)];
+  matches.forEach(match => {
+    const userId = parseInt(match[1]);
+    replacementPromises.push(getCompanyNameCached(userId));
+  });
+
+  const resolvedNames = await Promise.all(replacementPromises);
+  let i = 0;
+
+  htmlMessage = htmlMessage.replace(mentionIdRegex, (match, userId) => {
+    const companyName = resolvedNames[i++];
+    return `&lt;strong class="company-name" data-user-id="${userId}" style="cursor:pointer;">@${escapeHtml(companyName)}&lt;/strong>`;
+  });
+
+  return htmlMessage.replace(/\n/g, '&lt;br>');
+}
+
+/**
+ * Loads and displays alliance chat messages with intelligent duplicate filtering and notifications.
+ * This is the core function called both on page load and via WebSocket updates every 25 seconds.
+ *
+ * Update Strategy:
+ * - Fetches latest messages from API
+ * - Filters out duplicates using type+timestamp+message comparison
+ * - Only re-renders if new messages found
+ * - Preserves scroll position unless user is at bottom
+ * - Triggers desktop notifications for new messages (if window not focused)
+ *
+ * No Alliance Handling:
+ * - Shows friendly message if user not in alliance
+ * - Disables input controls
+ * - Suggests using private messages instead
+ *
+ * Side Effects:
+ * - Updates allMessages array
+ * - Re-renders chat feed DOM
+ * - May trigger desktop notifications
+ * - Updates scroll position based on user behavior
+ * - May disable input controls if no alliance
+ *
+ * @async
+ * @param {HTMLElement} chatFeed - Chat container DOM element to render messages into
+ * @returns {Promise&lt;void>}
+ *
+ * @example
+ * // Called on page load and via WebSocket updates
+ * const chatFeed = document.getElementById('chatFeed');
+ * loadMessages(chatFeed);
+ */
+export async function loadMessages(chatFeed) {
+  const isScrolledToBottom = chatFeed.scrollHeight - chatFeed.scrollTop - chatFeed.clientHeight &lt; 50;
+
+  try {
+    const data = await fetchChat();
+
+    if (data.no_alliance) {
+      chatFeed.innerHTML = `
+        &lt;div class="empty-message" style="max-width: 500px; margin: 0 auto;">
+          &lt;div style="font-size: 48px; margin-bottom: 20px;">🤝&lt;/div>
+          &lt;h2 style="color: #60a5fa; margin-bottom: 15px; font-size: 20px;">Hey Dude, You're Not in an Alliance!&lt;/h2>
+          &lt;p style="color: #9ca3af; line-height: 1.6;">
+            Join an alliance to see the alliance chat here and communicate with your fellow shipping managers.
+          &lt;/p>
+          &lt;p style="color: #9ca3af; margin-top: 10px; font-size: 14px;">
+            You can still use private messages via the 📬 button above.
+          &lt;/p>
+        &lt;/div>
+      `;
+      const messageInput = document.getElementById('messageInput');
+      const sendMessageBtn = document.getElementById('sendMessageBtn');
+      messageInput.disabled = true;
+      messageInput.placeholder = "Join an alliance to chat...";
+      sendMessageBtn.disabled = true;
+      return;
+    }
+
+    const newMessages = data.messages || data;
+
+    const newOnly = newMessages.filter(msg =>
+      !allMessages.some(existing =>
+        existing.type === msg.type &amp;&amp; existing.timestamp === msg.timestamp &amp;&amp; existing.message === msg.message
+      )
+    );
+
+    if (newOnly.length > 0 || allMessages.length === 0) {
+      allMessages = newMessages;
+      await displayMessages(allMessages, chatFeed);
+
+      if (newOnly.length > 0) {
+        handleNotifications(newOnly);
+      }
+    }
+
+    if (isScrolledToBottom || autoScroll) {
+      chatFeed.scrollTop = chatFeed.scrollHeight;
+      autoScroll = false;
+    }
+
+  } catch (error) {
+    console.error('Error loading messages:', error);
+    if (allMessages.length === 0) {
+      chatFeed.innerHTML = '&lt;div class="empty-message" style="color:#ef4444;">Could not connect to chat server.&lt;/div>';
+    }
+  }
+}
+
+/**
+ * Renders messages to the DOM with appropriate formatting for chat and feed types.
+ * Handles asynchronous mention parsing and registers click events for company names.
+ *
+ * Message Types:
+ * - 'chat': User messages with company name, timestamp, and parsed mentions
+ * - 'feed': System events (member joins, route completions) with different styling
+ *
+ * Processing Flow:
+ * 1. Check if messages array is empty
+ * 2. Map each message to HTML promise (async mention parsing)
+ * 3. Await all HTML promises in parallel
+ * 4. Render all messages at once (prevents DOM thrashing)
+ * 5. Register click events on company names for messenger integration
+ *
+ * Side Effects:
+ * - Replaces entire chatFeed innerHTML
+ * - Registers click event listeners on company names
+ * - Shows "No messages yet" if array is empty
+ *
+ * @async
+ * @param {Array&lt;Object>} messagesToDisplay - Array of message objects to render
+ * @param {string} messagesToDisplay[].type - Message type: 'chat' or 'feed'
+ * @param {HTMLElement} chatFeed - Container element to render messages into
+ * @returns {Promise&lt;void>}
+ */
+export async function displayMessages(messagesToDisplay, chatFeed) {
+  if (!messagesToDisplay || messagesToDisplay.length === 0) {
+    chatFeed.innerHTML = '&lt;div class="empty-message">No messages yet&lt;/div>';
+    return;
+  }
+
+  const messageHtmlPromises = messagesToDisplay.map(async msg => {
+    if (msg.type === 'chat') {
+      const userId = parseInt(msg.user_id);
+      const parsedMessage = await parseMessageWithMentions(msg.message);
+
+      return `
+        &lt;div class="message">
+          &lt;div class="message-header">
+            &lt;span class="company-name" data-user-id="${userId}" style="cursor:pointer;">${escapeHtml(msg.company)}&lt;/span>
+            &lt;span class="timestamp">${msg.timestamp}&lt;/span>
+          &lt;/div>
+          &lt;div class="message-text">${parsedMessage}&lt;/div>
+        &lt;/div>
+      `;
+    } else if (msg.type === 'feed') {
+      return `
+        &lt;div class="message feed">
+          &lt;div class="message-header">
+            &lt;span>SYSTEM: ${msg.feedType}&lt;/span>
+            &lt;span class="timestamp">${msg.timestamp}&lt;/span>
+          &lt;/div>
+          &lt;div class="message-text">${escapeHtml(msg.company)}&lt;/div>
+        &lt;/div>
+      `;
+    }
+  });
+
+  const messageHtmls = await Promise.all(messageHtmlPromises);
+  chatFeed.innerHTML = messageHtmls.join('');
+
+  registerUsernameClickEvents();
+}
+
+/**
+ * Sends a chat message to the alliance feed with validation and UI updates.
+ * Handles the complete flow from user input to API submission and UI refresh.
+ *
+ * Validation:
+ * - Trims whitespace
+ * - Enforces 1-1000 character limit
+ * - Prevents empty messages
+ *
+ * Processing Flow:
+ * 1. Validate message content
+ * 2. Disable input controls (prevents double-send)
+ * 3. Submit to API
+ * 4. Clear input and reset UI state
+ * 5. Enable auto-scroll for new message
+ * 6. Refresh chat after 500ms delay
+ * 7. Re-enable controls
+ *
+ * Side Effects:
+ * - Disables/enables message input and send button
+ * - Clears message input on success
+ * - Resets textarea height to auto
+ * - Updates character count display
+ * - Sets autoScroll flag to true
+ * - Triggers chat reload after 500ms
+ * - Shows success/error feedback
+ *
+ * @async
+ * @param {HTMLTextAreaElement} messageInput - Textarea element for message input
+ * @param {HTMLElement} charCount - Element showing character count
+ * @param {HTMLButtonElement} sendMessageBtn - Send button element
+ * @param {HTMLElement} chatFeed - Chat container for reloading messages
+ * @returns {Promise&lt;void>}
+ */
+export async function sendMessage(messageInput, charCount, sendMessageBtn, chatFeed) {
+  const message = messageInput.value.trim();
+  if (!message || message.length > 1000) {
+    showFeedback('Invalid message length or content.', 'error');
+    return;
+  }
+
+  sendMessageBtn.disabled = true;
+  messageInput.disabled = true;
+
+  try {
+    await sendChatMessage(message);
+
+    messageInput.value = '';
+    messageInput.style.height = 'auto';
+    charCount.textContent = '0 / 1000 characters';
+    showFeedback('Message sent!', 'success');
+    autoScroll = true;
+
+    setTimeout(() => loadMessages(chatFeed), 500);
+  } catch (error) {
+    showFeedback(`Error: ${error.message}`, 'error');
+  } finally {
+    sendMessageBtn.disabled = false;
+    messageInput.disabled = false;
+    handleMessageInput(messageInput, charCount);
+  }
+}
+
+/**
+ * Loads alliance members list for mention autocomplete functionality.
+ * Fetches and caches the member list in module-level variable for autocomplete suggestions.
+ *
+ * @async
+ * @returns {Promise&lt;Array&lt;{user_id: number, company_name: string}>>} Array of alliance members
+ *
+ * @example
+ * // Called on chat initialization
+ * const members = await loadAllianceMembers();
+ * // members = [{ user_id: 123, company_name: "Company A" }, ...]
+ */
+export async function loadAllianceMembers() {
+  allianceMembers = await fetchAllianceMembers();
+  return allianceMembers;
+}
+
+/**
+ * Handles message input changes including auto-resize, character count, and mention autocomplete.
+ * Called on every input event in the message textarea.
+ *
+ * Features:
+ * - Auto-resizes textarea up to 240px max height
+ * - Updates character count with warning/error states
+ * - Triggers mention autocomplete when "@" is typed
+ *
+ * Character Count States:
+ * - Normal: 0-900 characters (default style)
+ * - Warning: 901-1000 characters (yellow)
+ * - Error: >1000 characters (red)
+ *
+ * Side Effects:
+ * - Adjusts textarea height based on content
+ * - Updates character count element text and style
+ * - Triggers mention autocomplete overlay
+ *
+ * @param {HTMLTextAreaElement} messageInput - Message textarea element
+ * @param {HTMLElement} charCount - Character count display element
+ */
+export function handleMessageInput(messageInput, charCount) {
+  messageInput.style.height = 'auto';
+  messageInput.style.height = Math.min(messageInput.scrollHeight, 240) + 'px';
+
+  const currentLength = messageInput.value.length;
+  charCount.textContent = `${currentLength} / 1000 characters`;
+  charCount.className = 'char-count';
+
+  if (currentLength > 900) {
+    charCount.classList.add(currentLength > 1000 ? 'error' : 'warning');
+  }
+
+  handleMentionAutocomplete(messageInput);
+}
+
+function handleMentionAutocomplete(messageInput) {
+  const text = messageInput.value;
+  const match = text.match(/@([^\s\n]*)$/);
+  if (match) {
+    const query = match[1].toLowerCase();
+
+    const filteredMembers = allianceMembers.filter(member =>
+      member.company_name.toLowerCase().includes(query)
+    ).slice(0, 10);
+
+    displaySuggestions(filteredMembers, text.lastIndexOf('@'), messageInput);
+  } else {
+    hideMemberSuggestions();
+  }
+}
+
+function displaySuggestions(members, atIndex, messageInput) {
+  let suggestionBox = document.getElementById('memberSuggestions');
+  if (!suggestionBox) {
+    suggestionBox = document.createElement('div');
+    suggestionBox.id = 'memberSuggestions';
+    const inputWrapper = document.querySelector('.input-wrapper') || messageInput.parentElement;
+    inputWrapper.appendChild(suggestionBox);
+  }
+
+  if (members.length === 0) {
+    hideMemberSuggestions();
+    return;
+  }
+
+  suggestionBox.innerHTML = members.map(member => `
+    &lt;div class="member-suggestion" data-user-id="${member.user_id}" data-company="${escapeHtml(member.company_name)}">
+      ${escapeHtml(member.company_name)}
+    &lt;/div>
+  `).join('');
+
+  suggestionBox.querySelectorAll('.member-suggestion').forEach(item => {
+    item.addEventListener('click', () => {
+      insertMention(item.dataset.userId, atIndex, messageInput);
+      hideMemberSuggestions();
+    });
+  });
+
+  suggestionBox.style.display = 'block';
+}
+
+function hideMemberSuggestions() {
+  const suggestionBox = document.getElementById('memberSuggestions');
+  if (suggestionBox) {
+    suggestionBox.style.display = 'none';
+  }
+}
+
+function insertMention(userId, atIndex, messageInput) {
+  const text = messageInput.value;
+  const beforeAt = text.substring(0, atIndex);
+  const newText = beforeAt + `[${userId}] ` + text.substring(text.length);
+
+  messageInput.value = newText;
+  messageInput.focus();
+  const charCount = document.getElementById('charCount');
+  handleMessageInput(messageInput, charCount);
+}
+
+function registerUsernameClickEvents() {
+  document.querySelectorAll('.company-name').forEach(nameElement => {
+    const userId = parseInt(nameElement.dataset.userId);
+    const companyName = nameElement.textContent.replace(/^@/, '');
+
+    if (userId &amp;&amp; !nameElement.hasAttribute('data-has-click-handler')) {
+      nameElement.setAttribute('data-has-click-handler', 'true');
+      nameElement.addEventListener('click', () => {
+        if (window.openMessengerFromChat) {
+          window.openMessengerFromChat(companyName, userId);
+        }
+      });
+    }
+  });
+}
+
+/**
+ * Handles backend auto-repair completion events from WebSocket.
+ * Displays notification with vessel wear percentages and threshold info.
+ *
+ * The backend (server/automation.js) broadcasts 'auto_repair_complete' events
+ * after successfully repairing vessels. This handler:
+ * - Shows in-app feedback notification
+ * - Displays individual vessel wear percentages
+ * - Shows maintenance threshold from settings
+ * - Sends browser notification if enabled
+ * - Triggers UI updates for vessel and cash displays
+ *
+ * @param {Object} data - Repair completion data from backend
+ * @param {number} data.count - Number of vessels repaired
+ * @param {number} data.totalCost - Total repair cost
+ * @param {Array&lt;Object>} data.repairs - Array of repair details per vessel
+ * @param {string} data.repairs[].name - Vessel name
+ * @param {number} data.repairs[].wear - Vessel wear percentage
+ * @param {number} data.repairs[].cost - Repair cost for this vessel
+ * @param {string} data.message - Formatted message for display
+ */
+function handleBackendAutoRepairComplete(data) {
+  const { count, totalCost, repairs, message } = data;
+
+  // Get current settings for threshold
+  const settings = window.getSettings ? window.getSettings() : {};
+  const threshold = settings.maintenanceThreshold || 10;
+
+  // Build detailed feedback message
+  let feedbackMsg = `🔧 Backend Auto-Repair: ${count} vessel(s) repaired for $${totalCost.toLocaleString()}`;
+  if (repairs &amp;&amp; repairs.length > 0) {
+    feedbackMsg += '\n\nRepaired vessels:';
+    repairs.forEach(repair => {
+      feedbackMsg += `\n• ${repair.name}: ${repair.wear}% wear → $${repair.cost.toLocaleString()}`;
+    });
+    feedbackMsg += `\n\n(Threshold: ${threshold}%)`;
+  }
+
+  // Show in-app notification
+  showFeedback(feedbackMsg, 'success');
+
+  // Send browser notification if enabled
+  if (settings.autoPilotNotifications &amp;&amp; Notification.permission === 'granted') {
+    const body = `${count} vessel${count > 1 ? 's' : ''} repaired - Cost: $${totalCost.toLocaleString()}\nThreshold: ${threshold}%`;
+    showNotification('🤖 Backend Auto-Repair', {
+      body: body,
+      icon: "data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>&lt;text y='50%' x='50%' text-anchor='middle' font-size='80'>🔧&lt;/text>&lt;/svg>",
+      tag: 'backend-auto-repair',
+      silent: false
+    });
+  }
+
+  // Trigger UI updates
+  if (window.debouncedUpdateRepairCount) {
+    window.debouncedUpdateRepairCount(500);
+  }
+  if (window.debouncedUpdateBunkerStatus) {
+    window.debouncedUpdateBunkerStatus(500);
+  }
+}
+
+/**
+ * Initializes WebSocket connection for real-time chat updates.
+ * Establishes WSS connection and handles incoming message broadcasts from server.
+ *
+ * WebSocket Message Types:
+ * - 'chat_update': Server broadcasts new messages every 25 seconds
+ * - 'message_sent': Immediate update when any user sends a message
+ * - 'settings_update': Broadcasts when settings change (triggers global callback)
+ * - 'auto_repair_complete': Backend auto-repair completion notification
+ *
+ * Connection Strategy:
+ * - Uses WSS for HTTPS pages, WS for HTTP
+ * - Connects to same host as the page
+ * - Fails silently if WebSocket not available
+ *
+ * Side Effects:
+ * - Creates WebSocket connection
+ * - Registers onmessage event handler
+ * - Triggers loadMessages() on chat updates
+ * - Calls global handleSettingsUpdate() callback if available
+ * - Calls handleBackendAutoRepairComplete() for repair events
+ *
+ * @example
+ * // Called once on page load
+ * initWebSocket();
+ * // Server broadcasts every 25 seconds: { type: 'chat_update', data: [...messages] }
+ */
+export function initWebSocket() {
+  try {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}`);
+    const chatFeed = document.getElementById('chatFeed');
+    ws.onmessage = (event) => {
+      const { type, data } = JSON.parse(event.data);
+      if (type === 'chat_update' || type === 'message_sent') {
+        loadMessages(chatFeed);
+      } else if (type === 'settings_update') {
+        if (window.handleSettingsUpdate) {
+          window.handleSettingsUpdate(data);
+        }
+      } else if (type === 'auto_repair_complete') {
+        handleBackendAutoRepairComplete(data);
+      }
+    };
+  } catch (e) {
+    console.error('WebSocket not available:', e);
+  }
+}
+
+/**
+ * Sets up scroll event listener to manage auto-scroll behavior intelligently.
+ * Detects when user is near the bottom of chat to enable automatic scrolling for new messages.
+ *
+ * Auto-Scroll Logic:
+ * - Enabled when user is within 50px of bottom
+ * - Disabled when user scrolls up to read history
+ * - Prevents forced scrolling while user is browsing old messages
+ *
+ * This provides a good UX where new messages automatically scroll into view when user
+ * is already at the bottom, but doesn't interrupt reading when scrolled up.
+ *
+ * Side Effects:
+ * - Registers scroll event listener on chat feed
+ * - Updates module-level autoScroll flag
+ *
+ * @param {HTMLElement} chatFeed - Chat container element to monitor
+ *
+ * @example
+ * // Called once on page load
+ * const chatFeed = document.getElementById('chatFeed');
+ * setChatScrollListener(chatFeed);
+ */
+export function setChatScrollListener(chatFeed) {
+  chatFeed.addEventListener('scroll', () => {
+    autoScroll = chatFeed.scrollHeight - chatFeed.scrollTop - chatFeed.clientHeight &lt; 50;
+  });
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

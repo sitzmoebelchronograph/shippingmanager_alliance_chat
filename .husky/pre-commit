@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Generate JSDoc documentation before commit
+echo "🔨 Generating documentation..."
+npm run docs
+
+# Add generated docs to commit
+git add public/docs/
+
+echo "✓ Documentation updated and staged"

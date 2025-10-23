@@ -193,11 +193,10 @@ export async function updateBunkerStatus(settings) {
 
     if (fuelPrice <= settings.fuelThreshold && lastFuelAlertPrice !== fuelPrice) {
       lastFuelAlertPrice = fuelPrice;
-      console.log('[Price Alert] FUEL ALERT TRIGGERED!', fuelPrice);
 
       if (hasPermission) {
         await showNotification('⛽ Fuel Price Alert!', {
-          body: `Fuel price dropped to $${fuelPrice}/ton (Your threshold: $${settings.fuelThreshold}/ton)`,
+          body: `New price: $${fuelPrice}/t`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
           tag: 'fuel-alert',
           silent: false
@@ -209,11 +208,10 @@ export async function updateBunkerStatus(settings) {
 
     if (co2Price <= settings.co2Threshold && lastCO2AlertPrice !== co2Price) {
       lastCO2AlertPrice = co2Price;
-      console.log('[Price Alert] CO2 ALERT TRIGGERED!', co2Price);
 
       if (hasPermission) {
         await showNotification('💨 CO2 Price Alert!', {
-          body: `CO2 price dropped to $${co2Price}/ton (Your threshold: $${settings.co2Threshold}/ton)`,
+          body: `New price: $${co2Price}/t`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
           tag: 'co2-alert',
           silent: false
@@ -300,9 +298,11 @@ export async function updateCampaignsStatus() {
         showPriceAlert(`⚠️ Only ${activeCount}/3 marketing campaigns are active!`, 'warning');
 
         if (Notification.permission === 'granted') {
-          await showNotification('Marketing Campaigns Alert', {
-            body: `Only ${activeCount}/3 campaign types are active`,
-            icon: '/favicon.ico'
+          await showNotification('📊 Marketing Campaigns Alert!', {
+            body: `Only ${activeCount}/3 campaigns active`,
+            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>📊</text></svg>",
+            tag: 'campaigns-alert',
+            silent: false
           });
         }
       }
@@ -313,9 +313,11 @@ export async function updateCampaignsStatus() {
         showPriceAlert(`⚠️ Marketing campaigns changed: ${activeCount}/3 active`, 'warning');
 
         if (Notification.permission === 'granted') {
-          await showNotification('Marketing Campaigns Alert', {
-            body: `Campaign count changed: ${activeCount}/3 types are active`,
-            icon: '/favicon.ico'
+          await showNotification('📊 Marketing Campaigns Alert!', {
+            body: `Only ${activeCount}/3 campaigns active`,
+            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>📊</text></svg>",
+            tag: 'campaigns-alert',
+            silent: false
           });
         }
       }

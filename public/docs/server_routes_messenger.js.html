@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>server/routes/messenger.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_config.html">server/config</a></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showFeedback">showFeedback</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showPriceAlert">showPriceAlert</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.repairAllVessels">repairAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">server/routes/messenger.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Private Messaging API Routes
+ *
+ * This module handles all private messaging (DM) functionality between users in the game.
+ * It provides endpoints for managing contacts, viewing conversation lists, sending messages,
+ * and deleting chats. Acts as a proxy between the frontend and the Shipping Manager game API.
+ *
+ * Key Features:
+ * - Contact list retrieval (both personal contacts and alliance members)
+ * - Conversation list management (all active DM threads)
+ * - Message history retrieval for specific conversations
+ * - Private message sending with validation and rate limiting
+ * - Chat deletion functionality
+ *
+ * Why This Module:
+ * - Separates private messaging concerns from alliance chat
+ * - Provides unified interface for contact management
+ * - Adds input validation before forwarding to game API
+ * - Includes user context (own_user_id, own_company_name) in responses
+ * - Graceful error handling to prevent UI breakage
+ *
+ * Security Considerations:
+ * - Message length validation (0-1000 characters)
+ * - Subject line validation (required, non-empty)
+ * - Target user ID validation (must be valid integer)
+ * - Input sanitization via validator.trim() and validator.unescape()
+ * - Rate limiting on message sending (30 messages/minute)
+ *
+ * Error Handling Philosophy:
+ * - GET endpoints return empty arrays on error (prevents UI breaking)
+ * - POST endpoints return 400/500 errors as appropriate
+ * - Detailed error logging for debugging
+ * - User context always included in successful responses
+ *
+ * @requires express - Router and middleware
+ * @requires validator - Input validation and sanitization
+ * @requires ../utils/api - API helper functions (apiCall, getUserId, etc.)
+ * @requires ../middleware - Rate limiting middleware (messageLimiter)
+ * @module server/routes/messenger
+ */
+
+const express = require('express');
+const validator = require('validator');
+const { apiCall, getUserId, getUserCompanyName } = require('../utils/api');
+const { messageLimiter } = require('../middleware');
+
+const router = express.Router();
+
+/**
+ * GET /api/contact/get-contacts - Retrieves user's contact list and alliance contacts.
+ *
+ * This endpoint fetches both personal contacts and alliance member contacts from the game API,
+ * sorts them alphabetically by company name, and returns them with user context information.
+ *
+ * Why Sorting:
+ * - Alphabetical sorting improves UX (easier to find contacts)
+ * - Game API doesn't guarantee order
+ * - Sorted on server to avoid redundant client-side sorting
+ *
+ * Response Structure:
+ * {
+ *   contacts: [...],              // Personal contacts
+ *   alliance_contacts: [...],     // Alliance member contacts
+ *   own_user_id: 12345,          // Current user's ID
+ *   own_company_name: "ABC Corp" // Current user's company name
+ * }
+ *
+ * User Context:
+ * - own_user_id: Used to filter out self from contact lists
+ * - own_company_name: Used for UI display
+ *
+ * Side Effects:
+ * - Makes API call to /contact/get-contacts
+ *
+ * @name GET /api/contact/get-contacts
+ * @function
+ * @memberof module:server/routes/messenger
+ * @param {express.Request} req - Express request object
+ * @param {express.Response} res - Express response object
+ * @returns {Promise&lt;void>} Sends JSON response with contacts and user context
+ */
+router.get('/contact/get-contacts', async (req, res) => {
+  try {
+    const data = await apiCall('/contact/get-contacts', 'POST', {});
+
+    const contacts = (data.data.contacts || []).sort((a, b) =>
+      (a.company_name || '').localeCompare(b.company_name || '')
+    );
+
+    const allianceContacts = (data.data.alliance_contacts || []).sort((a, b) =>
+      (a.company_name || '').localeCompare(b.company_name || '')
+    );
+
+    res.json({
+      contacts: contacts,
+      alliance_contacts: allianceContacts,
+      own_user_id: getUserId(),
+      own_company_name: getUserCompanyName()
+    });
+  } catch (error) {
+    console.error('Failed to get contacts:', error);
+    res.status(500).json({ error: 'Failed to retrieve contacts' });
+  }
+});
+
+/**
+ * GET /api/messenger/get-chats - Retrieves list of all active conversation threads.
+ *
+ * This endpoint fetches all messenger conversations (DM threads) for the current user.
+ * Each chat represents a conversation with another user, including unread status and
+ * last message preview.
+ *
+ * Why Graceful Error Handling:
+ * - Returns empty chats array instead of error on API failure
+ * - Prevents messenger UI from breaking
+ * - Still includes user context for UI initialization
+ * - Logs error for debugging but doesn't crash frontend
+ *
+ * Response Structure:
+ * {
+ *   chats: [...],                 // Array of conversation objects
+ *   own_user_id: 12345,          // Current user's ID
+ *   own_company_name: "ABC Corp" // Current user's company name
+ * }
+ *
+ * User Context:
+ * - own_user_id: Used to determine message sender/recipient in UI
+ * - own_company_name: Used for UI display
+ *
+ * Side Effects:
+ * - Makes API call to /messenger/get-chats
+ *
+ * @name GET /api/messenger/get-chats
+ * @function
+ * @memberof module:server/routes/messenger
+ * @param {express.Request} req - Express request object
+ * @param {express.Response} res - Express response object
+ * @returns {Promise&lt;void>} Sends JSON response with chats and user context
+ */
+router.get('/messenger/get-chats', async (req, res) => {
+  try {
+    const data = await apiCall('/messenger/get-chats', 'POST', {});
+
+    // Handle case where data.data might be undefined or null
+    const chats = data?.data || [];
+
+    res.json({
+      chats: chats,
+      own_user_id: getUserId(),
+      own_company_name: getUserCompanyName()
+    });
+  } catch (error) {
+    console.error('Failed to get chats:', error.message, error.stack);
+
+    // Return empty chats instead of error to prevent UI breaking
+    res.json({
+      chats: [],
+      own_user_id: getUserId(),
+      own_company_name: getUserCompanyName()
+    });
+  }
+});
+
+/**
+ * POST /api/messenger/get-messages - Retrieves message history for a specific conversation.
+ *
+ * This endpoint fetches all messages within a specific chat thread, identified by chat_id.
+ * Returns the complete message history with timestamps, sender information, and message content.
+ *
+ * Why Flexible Data Structure Handling:
+ * - Game API response structure varies
+ * - data.chat.messages or data.messages depending on endpoint version
+ * - Optional chaining (?.) prevents errors from undefined paths
+ *
+ * Request Body:
+ * {
+ *   chat_id: number  // Required: ID of the conversation
+ * }
+ *
+ * Response Structure:
+ * {
+ *   messages: [...],    // Array of message objects
+ *   user_id: 12345     // Current user's ID
+ * }
+ *
+ * User Context:
+ * - user_id: Used to determine message direction (sent vs received)
+ *
+ * Validation:
+ * - chat_id is required (400 error if missing)
+ *
+ * Side Effects:
+ * - Makes API call to /messenger/get-chat
+ *
+ * @name POST /api/messenger/get-messages
+ * @function
+ * @memberof module:server/routes/messenger
+ * @param {express.Request} req - Express request object with { chat_id: number } body
+ * @param {express.Response} res - Express response object
+ * @returns {Promise&lt;void>} Sends JSON response with messages and user_id
+ */
+router.post('/messenger/get-messages', express.json(), async (req, res) => {
+  const { chat_id } = req.body;
+
+  if (!chat_id) {
+    return res.status(400).json({ error: 'Invalid chat ID' });
+  }
+
+  try {
+    const data = await apiCall('/messenger/get-chat', 'POST', { chat_id });
+
+    const messages = data?.data?.chat?.messages || data?.data?.messages || [];
+
+    res.json({
+      messages: messages,
+      user_id: getUserId()
+    });
+  } catch (error) {
+    console.error('Error getting messages:', error);
+    res.status(500).json({ error: 'Failed to retrieve messages' });
+  }
+});
+
+/**
+ * POST /api/messenger/send-private - Sends a private message to another user.
+ *
+ * This endpoint handles sending private messages (DMs) between users. It validates
+ * the message content, subject line, and recipient, then forwards the message to
+ * the game API. Rate limited to prevent spam.
+ *
+ * Why This Endpoint:
+ * - Bypasses in-game messenger interface (may have bugs/limitations)
+ * - Provides input validation before hitting game API
+ * - Sanitizes input to prevent XSS or injection attacks
+ * - Rate limits to prevent spam (30 messages/minute)
+ *
+ * Validation Rules:
+ * - message: String, 1-1000 characters
+ * - subject: String, non-empty (required)
+ * - target_user_id: Positive integer (required)
+ *
+ * Sanitization:
+ * - validator.trim() - Removes leading/trailing whitespace
+ * - validator.unescape() - Converts HTML entities to characters
+ *
+ * Rate Limiting:
+ * - Applied via messageLimiter middleware
+ * - Limit: 30 requests per minute per IP
+ * - Returns 429 Too Many Requests when exceeded
+ *
+ * Request Body:
+ * {
+ *   message: string,         // Message content (1-1000 chars)
+ *   subject: string,         // Subject line (required)
+ *   target_user_id: number   // Recipient's user ID
+ * }
+ *
+ * Side Effects:
+ * - Makes API call to /messenger/send-message
+ * - Creates new conversation or adds to existing thread
+ * - Recipient receives notification (handled by game)
+ *
+ * @name POST /api/messenger/send-private
+ * @function
+ * @memberof module:server/routes/messenger
+ * @param {express.Request} req - Express request object with message data in body
+ * @param {express.Response} res - Express response object
+ * @returns {Promise&lt;void>} Sends JSON response { success: true } or error
+ */
+router.post('/messenger/send-private', messageLimiter, express.json(), async (req, res) => {
+  const { message, subject, target_user_id } = req.body;
+
+  if (!message || typeof message !== 'string' || message.length === 0 || message.length > 1000) {
+    return res.status(400).json({ error: 'Invalid message' });
+  }
+
+  if (!subject || typeof subject !== 'string' || subject.length === 0) {
+    return res.status(400).json({ error: 'Subject is required' });
+  }
+
+  if (!target_user_id || !Number.isInteger(target_user_id)) {
+    return res.status(400).json({ error: 'Valid target_user_id required' });
+  }
+
+  const sanitizedMessage = validator.trim(message);
+  const sanitizedSubject = validator.trim(subject);
+
+  try {
+    await apiCall('/messenger/send-message', 'POST', {
+      subject: validator.unescape(sanitizedSubject),
+      body: validator.unescape(sanitizedMessage),
+      recipient: target_user_id
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error sending private message:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/messenger/delete-chat - Deletes a conversation thread.
+ *
+ * This endpoint handles deletion of messenger conversations. Requires both chat_ids
+ * (conversation IDs) and system_message_ids (system message IDs) as the game API
+ * needs both to properly clean up all related data.
+ *
+ * Why Both ID Arrays Required:
+ * - Game API separates chat messages from system messages
+ * - Both must be deleted to fully remove conversation
+ * - Prevents orphaned data in game database
+ *
+ * Request Body:
+ * {
+ *   chat_ids: number[],           // Array of chat/conversation IDs to delete
+ *   system_message_ids: number[]  // Array of related system message IDs
+ * }
+ *
+ * Validation:
+ * - Both chat_ids and system_message_ids required (400 error if missing)
+ * - Arrays can be empty but must be present
+ *
+ * Side Effects:
+ * - Makes API call to /messenger/delete-chat
+ * - Permanently removes conversation from messenger
+ * - Cannot be undone (deletion is permanent)
+ *
+ * @name POST /api/messenger/delete-chat
+ * @function
+ * @memberof module:server/routes/messenger
+ * @param {express.Request} req - Express request object with chat deletion data
+ * @param {express.Response} res - Express response object
+ * @returns {Promise&lt;void>} Sends JSON response { success: true, data: {...} }
+ */
+router.post('/messenger/delete-chat', express.json(), async (req, res) => {
+  const { chat_ids, system_message_ids } = req.body;
+
+  if (!chat_ids || !system_message_ids) {
+    return res.status(400).json({ error: 'chat_ids and system_message_ids required' });
+  }
+
+  try {
+    const data = await apiCall('/messenger/delete-chat', 'POST', {
+      chat_ids,
+      system_message_ids
+    });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error deleting chat:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

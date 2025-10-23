@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>public/js/modules/utils.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_config.html">server/config</a></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showFeedback">showFeedback</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showPriceAlert">showPriceAlert</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.repairAllVessels">repairAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">public/js/modules/utils.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Utility Functions Module - Provides essential helper functions for HTML escaping, formatting,
+ * notifications, feedback dialogs, service worker management, and settings persistence.
+ *
+ * Key Categories:
+ * - HTML &amp; Formatting: escapeHtml, formatNumber, renderStars
+ * - User Feedback: showFeedback, showPriceAlert, dismissPriceAlert
+ * - Notifications: Browser/desktop notifications with service worker support
+ * - Service Worker: Registration and notification handling
+ * - Settings: Load/save to server, AutoPilot detection, page title updates
+ * - Tooltips: Custom tooltip system
+ *
+ * Notification Strategy:
+ * - Attempts direct Notification API first (works in most browsers)
+ * - Falls back to service worker notifications if direct fails
+ * - Graceful degradation with error messages
+ * - Auto-closes after 5 seconds
+ *
+ * Settings Persistence:
+ * - Stored on server (not localStorage) for multi-device sync
+ * - Loaded on app initialization
+ * - Saved on every settings change
+ *
+ * @module utils
+ */
+
+/**
+ * Escapes HTML special characters to prevent XSS attacks.
+ * Converts &amp;, &lt;, >, ", and ' to their HTML entity equivalents.
+ *
+ * This is critical for security when displaying user-generated content like
+ * chat messages, company names, or any data from the API.
+ *
+ * @param {string} text - Raw text to escape
+ * @returns {string} HTML-safe escaped text
+ *
+ * @example
+ * escapeHtml('&lt;script>alert("XSS")&lt;/script>');
+ * // Returns: '&amp;lt;script&amp;gt;alert(&amp;quot;XSS&amp;quot;)&amp;lt;/script&amp;gt;'
+ */
+export function escapeHtml(text) {
+  if (!text) return '';
+  const map = {
+    '&amp;': '&amp;amp;',
+    '&lt;': '&amp;lt;',
+    '>': '&amp;gt;',
+    '"': '&amp;quot;',
+    "'": '&amp;#039;'
+  };
+  return String(text).replace(/[&amp;&lt;>"']/g, m => map[m]);
+}
+
+/**
+ * Formats numbers with thousands separators and optional decimal places.
+ * Uses US locale formatting (comma as thousands separator, period as decimal).
+ *
+ * @param {number} num - Number to format
+ * @returns {string} Formatted number string (e.g., "1,234,567.89")
+ *
+ * @example
+ * formatNumber(1234567.89); // Returns: "1,234,567.89"
+ * formatNumber(1000);       // Returns: "1,000"
+ */
+export function formatNumber(num) {
+  return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+/**
+ * Displays a temporary feedback message in the global feedback area.
+ * Supports stacking multiple messages and auto-dismiss after 6 seconds.
+ *
+ * Message Types:
+ * - 'success': Green background (successful operations)
+ * - 'error': Red background (failures, warnings)
+ * - 'warning': Orange/yellow background (cautions)
+ *
+ * Stacking Behavior:
+ * - If price alert is showing, appends feedback below it
+ * - Otherwise replaces existing feedback
+ * - Allows multiple feedback messages to stack
+ *
+ * Side Effects:
+ * - Creates/updates DOM element in global feedback area
+ * - Auto-dismisses after 6 seconds
+ * - Adds close button for manual dismiss
+ *
+ * @param {string} message - Message text (can include HTML)
+ * @param {string} type - Message type: 'success', 'error', or 'warning'
+ *
+ * @example
+ * showFeedback('Vessel purchased successfully!', 'success');
+ * showFeedback('Not enough cash!', 'error');
+ */
+export function showFeedback(message, type) {
+  const globalFeedback = document.getElementById('globalFeedback');
+
+  const hasPriceAlert = globalFeedback.querySelector('#priceAlertMessage');
+
+  if (hasPriceAlert) {
+    // Price alert exists - add feedback message below it without clearing anything
+    const feedbackDiv = document.createElement('div');
+    feedbackDiv.className = `global-feedback-message ${type}`;
+    feedbackDiv.style.position = 'relative';
+    feedbackDiv.style.marginTop = '10px';
+    feedbackDiv.innerHTML = `
+      ${message}
+      &lt;button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; padding: 0; width: 20px; height: 20px; line-height: 18px; transition: color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">×&lt;/button>
+    `;
+    globalFeedback.appendChild(feedbackDiv);
+
+    // Auto-remove only this feedback message after 6 seconds
+    setTimeout(() => {
+      if (feedbackDiv.parentNode) {
+        feedbackDiv.remove();
+      }
+    }, 6000);
+  } else {
+    // No price alert - show feedback as usual
+    const feedbackDiv = document.createElement('div');
+    feedbackDiv.className = `global-feedback-message ${type}`;
+    feedbackDiv.style.position = 'relative';
+    feedbackDiv.innerHTML = `
+      ${message}
+      &lt;button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; padding: 0; width: 20px; height: 20px; line-height: 18px; transition: color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">×&lt;/button>
+    `;
+    globalFeedback.innerHTML = '';
+    globalFeedback.appendChild(feedbackDiv);
+    globalFeedback.style.display = 'block';
+
+    // Auto-remove after 6 seconds
+    setTimeout(() => {
+      if (feedbackDiv.parentNode) {
+        feedbackDiv.remove();
+        // Hide container if empty
+        if (globalFeedback.children.length === 0) {
+          globalFeedback.style.display = 'none';
+        }
+      }
+    }, 6000);
+  }
+}
+
+/**
+ * Timeout ID for price alert auto-dismiss.
+ * Used to clear timeout when alert is manually dismissed.
+ * @type {number|null}
+ */
+let priceAlertTimeout = null;
+
+/**
+ * Displays a persistent price alert with animated entrance and manual dismiss button.
+ * Used for important alerts like fuel/CO2 price drops and campaign warnings.
+ *
+ * Alert Behavior:
+ * - Shows with spinning animation entrance
+ * - Stays visible for 29 minutes (1,740,000ms) for long-term awareness
+ * - Requires manual dismiss via "Got it" button
+ * - Only one price alert at a time (replaces existing)
+ *
+ * Animation:
+ * - Scales from 0 to 1 while rotating 360 degrees
+ * - Uses cubic-bezier easing for bounce effect
+ * - Duration: 800ms
+ *
+ * Side Effects:
+ * - Clears any existing price alert timeout
+ * - Replaces global feedback area content
+ * - Sets 29-minute auto-dismiss timeout
+ *
+ * @param {string} message - Alert message (can include HTML)
+ * @param {string} [type='warning'] - Alert type: 'warning', 'success', 'error'
+ *
+ * @example
+ * showPriceAlert('⛽ Fuel price dropped to $350/ton!', 'warning');
+ */
+export function showPriceAlert(message, type = 'warning') {
+  const globalFeedback = document.getElementById('globalFeedback');
+
+  if (!globalFeedback) {
+    console.error('[showPriceAlert] globalFeedback element not found!');
+    return;
+  }
+
+  if (priceAlertTimeout) {
+    clearTimeout(priceAlertTimeout);
+  }
+
+  globalFeedback.innerHTML = `
+    &lt;div class="global-feedback-message ${type}" id="priceAlertMessage" style="transform: scale(0) rotate(0deg); opacity: 0;">
+      &lt;div style="width: 100%;">${message}&lt;/div>
+      &lt;button
+        id="dismissPriceAlertBtn"
+        style="display: block; margin: 0 auto; padding: 8px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; cursor: pointer; font-weight: 600; transition: all 0.2s;"
+        onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.2)'"
+      >
+        Got it
+      &lt;/button>
+    &lt;/div>
+  `;
+
+  globalFeedback.style.display = 'block';
+
+  const messageEl = document.getElementById('priceAlertMessage');
+  messageEl.offsetHeight;
+
+  messageEl.animate([
+    { transform: 'scale(0) rotate(0deg)', opacity: 0 },
+    { transform: 'scale(0.5) rotate(180deg)', opacity: 1, offset: 0.6 },
+    { transform: 'scale(1) rotate(360deg)', opacity: 1 }
+  ], {
+    duration: 800,
+    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    fill: 'forwards'
+  });
+
+  const dismissBtn = document.getElementById('dismissPriceAlertBtn');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissPriceAlert();
+    });
+  }
+
+  // Auto-dismiss after 30 seconds, but pause timer when mouse is over the message
+  let timeRemaining = 30000; // 30 seconds
+  let lastTimestamp = Date.now();
+  let isMouseOver = false;
+
+  const startAutoDismissTimer = () => {
+    if (timeRemaining &lt;= 0) {
+      // Timer expired while mouse was over - don't restart
+      return;
+    }
+    priceAlertTimeout = setTimeout(() => {
+      if (!isMouseOver) {
+        dismissPriceAlert();
+      }
+    }, timeRemaining);
+  };
+
+  messageEl.addEventListener('mouseenter', () => {
+    isMouseOver = true;
+    // Pause timer - calculate remaining time
+    if (priceAlertTimeout) {
+      clearTimeout(priceAlertTimeout);
+      const elapsed = Date.now() - lastTimestamp;
+      timeRemaining -= elapsed;
+      if (timeRemaining &lt; 0) timeRemaining = 0; // Stop at 0
+    }
+  });
+
+  messageEl.addEventListener('mouseleave', () => {
+    isMouseOver = false;
+    // Resume timer with remaining time (only if time remaining > 0)
+    if (timeRemaining > 0) {
+      lastTimestamp = Date.now();
+      startAutoDismissTimer();
+    }
+  });
+
+  // Start initial timer
+  lastTimestamp = Date.now();
+  startAutoDismissTimer();
+}
+
+export function dismissPriceAlert() {
+  const globalFeedback = document.getElementById('globalFeedback');
+
+  if (priceAlertTimeout) {
+    clearTimeout(priceAlertTimeout);
+    priceAlertTimeout = null;
+  }
+
+  globalFeedback.style.display = 'none';
+  globalFeedback.innerHTML = '';
+}
+
+/**
+ * Renders a reputation score as star rating with partial stars.
+ * Converts percentage (0-100) to 5-star display with gradient for partial stars.
+ *
+ * Star Calculation:
+ * - Full stars: floor(percentage / 20)
+ * - Partial star: remainder as percentage gradient
+ * - Empty stars: remaining to reach 5 total
+ *
+ * Colors:
+ * - Filled: Gold (#fbbf24)
+ * - Empty: Gray transparent (rgba(156, 163, 175, 0.2))
+ *
+ * @param {number} percentage - Reputation percentage (0-100)
+ * @returns {string} HTML string with star emojis and styling
+ *
+ * @example
+ * renderStars(73); // Returns: 3.65 stars (3 full, 1 partial at 65%, 1 empty)
+ */
+export function renderStars(percentage) {
+  const fullStars = Math.floor(percentage / 20);
+  const remainder = percentage % 20;
+  const partialPercent = (remainder / 20) * 100;
+  const emptyStars = 5 - fullStars - (remainder > 0 ? 1 : 0);
+
+  let stars = '';
+
+  for (let i = 0; i &lt; fullStars; i++) {
+    stars += '&lt;span style="color: #fbbf24;">⭐&lt;/span>';
+  }
+
+  if (remainder > 0) {
+    stars += `
+      &lt;span style="
+        background: linear-gradient(to right, #fbbf24 0%, #fbbf24 ${partialPercent}%, rgba(156, 163, 175, 0.2) ${partialPercent}%, rgba(156, 163, 175, 0.2) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+      ">⭐&lt;/span>
+    `;
+  }
+
+  for (let i = 0; i &lt; emptyStars; i++) {
+    stars += '&lt;span style="color: rgba(156, 163, 175, 0.2);">⭐&lt;/span>';
+  }
+
+  return stars;
+}
+
+/**
+ * Requests browser notification permission from the user.
+ * Checks current permission status and prompts if not yet decided.
+ *
+ * Permission States:
+ * - 'granted': Already have permission, returns true
+ * - 'denied': User denied, returns false (cannot re-request)
+ * - 'default': Not yet asked, prompts user
+ *
+ * @async
+ * @returns {Promise&lt;boolean>} True if permission granted, false otherwise
+ */
+export async function requestNotificationPermission() {
+  if (!("Notification" in window)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission !== "denied") {
+    const permission = await Notification.requestPermission();
+    return permission === "granted";
+  }
+  return false;
+}
+
+/**
+ * Service worker registration object.
+ * Used for showing notifications via service worker API when direct API fails.
+ * @type {ServiceWorkerRegistration|null}
+ */
+let swRegistration = null;
+
+/**
+ * Registers service worker for notification support and offline capabilities.
+ * Handles installation, waiting, and activation states for proper service worker lifecycle.
+ *
+ * Service Worker Purpose:
+ * - Enables notifications in browsers that don't support direct Notification API
+ * - Provides fallback for notification display
+ * - Required for showing notifications when page is not focused
+ *
+ * Lifecycle Handling:
+ * - Waits for installing worker to activate
+ * - Skips waiting for waiting worker
+ * - Logs status of already-active worker
+ *
+ * Side Effects:
+ * - Registers /sw.js service worker
+ * - Updates module-level swRegistration variable
+ * - Logs registration status to console
+ *
+ * @async
+ * @returns {Promise&lt;ServiceWorkerRegistration|null>} Service worker registration or null if not supported
+ */
+export async function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      swRegistration = await navigator.serviceWorker.register('/sw.js');
+
+      if (swRegistration.installing) {
+        await new Promise((resolve) => {
+          swRegistration.installing.addEventListener('statechange', (e) => {
+            if (e.target.state === 'activated') {
+              resolve();
+            }
+          });
+        });
+      } else if (swRegistration.waiting) {
+        swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+      return swRegistration;
+    } catch (error) {
+      console.error('[Service Worker] Registration failed:', error);
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Shows a browser/desktop notification with fallback strategies.
+ * Attempts direct Notification API first, falls back to service worker if needed.
+ *
+ * Notification Strategy:
+ * 1. Try creating notification directly (works in most browsers)
+ * 2. If direct fails, use service worker showNotification (background support)
+ * 3. If both fail, show error price alert
+ *
+ * Default Enhancements:
+ * - Vibration pattern: [200ms, 100ms pause, 200ms]
+ * - Badge: Anchor emoji
+ * - Click handler: Focus window and close notification
+ * - Auto-close after 5 seconds (unless autoClose: false)
+ *
+ * @async
+ * @param {string} title - Notification title
+ * @param {Object} options - Notification options
+ * @param {string} [options.body] - Notification body text
+ * @param {string} [options.icon] - Icon URL or data URI
+ * @param {string} [options.tag] - Unique tag for notification grouping
+ * @param {boolean} [options.silent=false] - Silent notification
+ * @param {boolean} [options.autoClose=true] - Auto-close after 5 seconds
+ * @param {Object} [options.data] - Custom data attached to notification
+ * @returns {Promise&lt;boolean>} True if notification shown successfully
+ * @throws {Error} Shows error price alert on failure
+ *
+ * @example
+ * showNotification('Fuel Price Alert', {
+ *   body: 'Fuel dropped to $350/ton',
+ *   icon: '/favicon.ico',
+ *   tag: 'fuel-alert'
+ * });
+ */
+export async function showNotification(title, options) {
+  if (Notification.permission !== 'granted') {
+    return false;
+  }
+
+  const enhancedOptions = {
+    ...options,
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    badge: "data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>&lt;text y='50%' x='50%' text-anchor='middle' font-size='80'>⚓&lt;/text>&lt;/svg>"
+  };
+
+  try {
+    try {
+      const notification = new Notification(title, enhancedOptions);
+      notification.onclick = function() {
+        window.focus();
+        notification.close();
+      };
+      if (options.autoClose !== false) {
+        setTimeout(() => notification.close(), 5000);
+      }
+      return true;
+    } catch (directError) {
+      if (swRegistration &amp;&amp; swRegistration.active) {
+        await swRegistration.showNotification(title, enhancedOptions);
+        return true;
+      } else {
+        throw new Error('Service Worker not ready. Please reload the page.');
+      }
+    }
+  } catch (error) {
+    showPriceAlert(`❌ Notification Error&lt;br>&lt;br>${error.message}`, 'error');
+    throw error;
+  }
+}
+
+export async function showChatNotification(title, message) {
+  if (Notification.permission === "granted" &amp;&amp; document.hidden) {
+    await showNotification(title, {
+      body: message,
+      icon: "data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>&lt;text y='50%' x='50%' text-anchor='middle' font-size='80'>⚓&lt;/text>&lt;/svg>",
+      tag: "shipping-manager-chat",
+      silent: false,
+      data: { action: 'focus-chat' }
+    });
+  }
+}
+
+export function handleNotifications(newMessages) {
+  if (document.hidden) {
+    newMessages.forEach(msg => {
+      if (msg.type === 'chat') {
+        showChatNotification(
+          `💬 ${msg.company}`,
+          msg.message.substring(0, 100) + (msg.message.length > 100 ? '...' : '')
+        );
+      } else if (msg.type === 'feed') {
+        showChatNotification(
+          '📢 Alliance Event',
+          `${msg.feedType}: ${msg.company}`
+        );
+      }
+    });
+  }
+}
+
+// --- Tooltip System ---
+
+export function initCustomTooltips() {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'custom-tooltip';
+  document.body.appendChild(tooltip);
+
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('[title]');
+    if (target &amp;&amp; target.hasAttribute('title')) {
+      const title = target.getAttribute('title');
+      if (!title) return;
+
+      target.setAttribute('data-title', title);
+      target.removeAttribute('title');
+
+      tooltip.textContent = title;
+      tooltip.classList.add('show');
+
+      const moveTooltip = (event) => {
+        const x = event.clientX;
+        const y = event.clientY;
+        const tooltipRect = tooltip.getBoundingClientRect();
+
+        let left = x + 10;
+        let top = y + 10;
+
+        if (left + tooltipRect.width > window.innerWidth) {
+          left = window.innerWidth - tooltipRect.width - 10;
+        }
+
+        if (top + tooltipRect.height > window.innerHeight) {
+          top = y - tooltipRect.height - 10;
+        }
+
+        if (left &lt; 10) {
+          left = 10;
+        }
+
+        if (top &lt; 10) {
+          top = 10;
+        }
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+      };
+
+      moveTooltip(e);
+      target.addEventListener('mousemove', moveTooltip);
+
+      const hideTooltip = () => {
+        tooltip.classList.remove('show');
+        target.removeEventListener('mousemove', moveTooltip);
+        target.removeEventListener('mouseout', hideTooltip);
+
+        if (target.hasAttribute('data-title')) {
+          target.setAttribute('title', target.getAttribute('data-title'));
+          target.removeAttribute('data-title');
+        }
+      };
+
+      target.addEventListener('mouseout', hideTooltip);
+    }
+  });
+}
+
+// --- Settings Functions ---
+
+export async function loadSettings() {
+  try {
+    const response = await fetch('/api/settings');
+    const settings = await response.json();
+    return settings;
+  } catch (error) {
+    console.error('Error loading settings from server:', error);
+    // Return default settings if server request fails
+    return {
+      fuelThreshold: 400,
+      co2Threshold: 7,
+      maintenanceThreshold: 10,
+      autoRebuyFuel: false,
+      autoRebuyFuelUseAlert: true,
+      autoRebuyFuelThreshold: 400,
+      autoRebuyCO2: false,
+      autoRebuyCO2UseAlert: true,
+      autoRebuyCO2Threshold: 7,
+      autoDepartAll: false,
+      autoBulkRepair: false,
+      autoCampaignRenewal: false,
+      autoPilotNotifications: false
+    };
+  }
+}
+
+export async function saveSettings(settings) {
+  try {
+    const response = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(settings)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save settings');
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error saving settings to server:', error);
+    showFeedback('Failed to save settings', 'error');
+    throw error;
+  }
+}
+
+export function isAutoPilotActive(settings) {
+  return settings.autoRebuyFuel ||
+         settings.autoRebuyCO2 ||
+         settings.autoDepartAll ||
+         settings.autoBulkRepair ||
+         settings.autoCampaignRenewal;
+}
+
+export function updatePageTitle(settings) {
+  const autoPilotActive = isAutoPilotActive(settings);
+
+  const browserTabTitle = autoPilotActive
+    ? '⚓ Shipping Manager - ✨AutoPilot✨'
+    : '⚓ Shipping Manager - CoPilot';
+
+  // Update browser tab title
+  document.title = browserTabTitle;
+
+  // Update page header with shiny effect ONLY on "AutoPilot" word
+  const headerElement = document.getElementById('pageHeaderTitle');
+  if (headerElement) {
+    if (autoPilotActive) {
+      // Split text so only "AutoPilot" has the shiny effect
+      headerElement.innerHTML = 'Shipping Manager - &lt;span class="autopilot-active">AutoPilot&lt;/span>';
+    } else {
+      headerElement.textContent = 'Shipping Manager - CoPilot';
+    }
+  }
+
+  // Show/hide notifications checkbox based on AutoPilot status
+  const notificationsContainer = document.getElementById('autoPilotNotificationsContainer');
+  const notificationsCheckbox = document.getElementById('autoPilotNotifications');
+
+  if (notificationsContainer) {
+    if (autoPilotActive) {
+      notificationsContainer.style.display = 'block';
+    } else {
+      notificationsContainer.style.display = 'none';
+      if (notificationsCheckbox &amp;&amp; notificationsCheckbox.checked) {
+        notificationsCheckbox.checked = false;
+        settings.autoPilotNotifications = false;
+        saveSettings(settings);
+      }
+    }
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

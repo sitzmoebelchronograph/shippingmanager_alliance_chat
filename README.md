@@ -1,10 +1,22 @@
 # Shipping Manager - CoPilot
 
+A comprehensive standalone web application for [Shipping Manager](http://shippingmanager.cc/) that fixes the game's critical chat bug and adds powerful automation features.
+
+## 🎯 Key Features at a Glance
+
+- ✅ **Bug-Free Chat**: Alliance chat and private messaging without page reload bugs
+- 🤖 **AutoPilot System**: Intelligent automation for fuel/CO2 purchasing, vessel operations, and campaign management with configurable intervals
+- 📱 **Mobile Support**: Full HTTPS support with mobile notifications
+- 🚢 **Fleet Management**: Vessel purchasing, bulk repairs, automated departures, and alliance cooperation
+- 💰 **Smart Purchasing**: Price alerts, auto-rebuy, and detailed cost calculations
+- 🤝 **Alliance Cooperation**: Manage and send coop vessels to alliance members
+- 🔒 **Secure**: Rate-limited API calls, input validation, and anti-detection mechanisms
+
 ## Problem Statement
 
 When playing [Shipping Manager](http://shippingmanager.cc/) on Steam, the in-game chat suffers from a critical page reload bug. Typing certain characters causes the entire game page to refresh, making communication with alliance members nearly impossible. Messages get lost mid-typing, disrupting coordination and team play.
 
-This tool provides a comprehensive standalone web interface that connects directly to the Shipping Manager API, offering alliance chat, private messaging, game management features, and more - all without the game's input bugs :)
+This tool provides a comprehensive standalone web interface that connects directly to the Shipping Manager API, offering alliance chat, private messaging, game management features, **and intelligent automation** - all without the game's input bugs :)
 
 ## Features
 
@@ -33,6 +45,8 @@ This tool provides a comprehensive standalone web interface that connects direct
   - Direct access to start conversations
 
 ### Game Management
+- **Points Display**: Real-time premium points balance
+- **CEO Level Badge**: Display your current CEO level with a golden star badge
 - **Cash Display**: Real-time cash balance with auto-updates every 30 seconds
 - **Stock Display**:
   - Real-time stock value and trend indicator (only visible if IPO active)
@@ -86,7 +100,12 @@ This tool provides a comprehensive standalone web interface that connects direct
     - Engine type and power (e.g., "mih_x1 (60,000 kW)")
     - Length, Fuel capacity
     - Service interval, Current port
+    - **Efficiency Color Coding**: CO2 and Fuel factors with visual indicators
+      - 🟢 Green: Factor < 1.0 (efficient, below standard consumption)
+      - ⚪ Gray: Factor = 1.0 (standard efficiency)
+      - 🟠 Orange: Factor > 1.0 (inefficient, above standard consumption)
     - Special features (Gearless, Antifouling)
+    - Width (if applicable), Perks (if available)
   - High-quality vessel images
   - Quantity selection (1-99 vessels per purchase)
   - Individual vessel purchase with confirmation
@@ -102,15 +121,104 @@ This tool provides a comprehensive standalone web interface that connects direct
   - Clear error messages with purchased count
   - Auto-refresh vessel list after purchases
 
+### Alliance Cooperation 🤝
+
+- **Coop Management Interface**:
+  - Header display shows available/cap ratio (e.g., "17/68")
+  - Color-coded status: Green when all sent (0 available), Red when vessels need sending
+  - Button badge shows available count only when > 0
+  - Real-time stats: available, cap, sent this season, received this season
+- **Member List**:
+  - Shows only enabled alliance members
+  - Sorted by total vessel count (highest first)
+  - Displays user ID, total vessels, and fuel amount
+  - Visual indicator (✓) for members with real purchases
+  - Border color coding: Green for purchasers, Gray for others
+- **Coop Actions**:
+  - One-click "Send max" button per member
+  - Placeholder functionality (ready for API implementation)
+  - Success feedback notifications
+
+### AutoPilot - Intelligent Automation System 🤖
+
+**Smart automation features with anti-detection mechanisms and event-driven architecture:**
+
+- **Auto-Rebuy Fuel**:
+  - Monitors fuel prices continuously (every 30-35 seconds)
+  - Automatically purchases fuel when price drops at/below configured threshold
+  - Configurable threshold (default: $400/ton)
+  - Can use alert threshold or custom threshold
+  - Event-driven: Triggers immediately when price drops
+  - Continues buying until bunker is full or funds depleted
+  - Pure price-based strategy (no time windows)
+
+- **Auto-Rebuy CO2**:
+  - Monitors CO2 prices continuously (every 30-35 seconds)
+  - Automatically purchases CO2 when price drops at/below configured threshold
+  - Configurable threshold (default: $7/ton)
+  - Can use alert threshold or custom threshold
+  - Event-driven: Triggers immediately when price drops
+  - Continues buying until bunker is full or funds depleted
+  - Pure price-based strategy (no time windows)
+
+- **Auto-Depart All Vessels**:
+  - Continuously monitors vessels in port
+  - Automatically departs all ready vessels when fuel is available
+  - Detects failed departures (insufficient fuel/CO2)
+  - Shows green success notification for successful departures
+  - Shows red error notification for failed departures ("🤖 Auto-Depart\nNo fuel - no vessels sent")
+  - Random 1-2 minute intervals between checks
+  - Prevents API spam with intelligent timing
+
+- **Auto Bulk Repair**:
+  - Monitors all vessels for wear/maintenance needs
+  - Automatically repairs all vessels with wear > 0%
+  - Only repairs when sufficient funds are available
+  - **Configurable Check Interval**: Choose from 0-1h to 12-24h ranges
+  - Random check within selected time range (e.g., 2-3 hours = random check between 2-3h)
+  - Server-side execution ensures repairs happen even when browser is closed
+  - Detailed cost preview before repair
+
+- **Auto Campaign Renewal**:
+  - Monitors active marketing campaigns
+  - Automatically renews expired campaigns (reputation, awareness, green)
+  - Random 2-3 minute intervals between checks
+  - Prevents campaign downtime
+  - Only activates when funds are sufficient
+
+- **Anti-Detection Features**:
+  - Randomized check intervals (1-3 minutes for main loop)
+  - Event-driven rebuy (triggered by price updates, not polling)
+  - Rate-limited API calls with random delays
+  - Human-like behavior patterns
+  - Prevents account flagging
+
+- **AutoPilot Notifications**:
+  - Optional browser notifications for all automation actions
+  - Toggle in settings to enable/disable
+  - Shows fuel/CO2 purchases, departures, repairs, campaign renewals
+  - Desktop and mobile support
+  - Visual feedback in UI for all actions
+
 ### Settings & Customization
 - **Price Alert Thresholds**:
   - Customizable fuel price alert threshold (default: $400/ton)
   - Customizable CO2 price alert threshold (default: $7/ton)
   - Browser notification test button
+- **AutoPilot Settings**:
+  - Enable/disable auto-rebuy fuel
+  - Enable/disable auto-rebuy CO2
+  - Enable/disable auto-depart all vessels
+  - Enable/disable auto bulk repair (with configurable interval: 0-1h to 12-24h)
+  - Enable/disable auto campaign renewal
+  - Enable/disable AutoPilot notifications
+  - Configurable thresholds (use alert threshold or custom value)
 - **Maintenance Settings**:
   - Configurable wear threshold for automatic repair detection
   - Options: 10% or 20% wear threshold
-- **Persistent Settings**: All preferences saved in browser localStorage
+  - Configurable auto-repair check interval (0-1h, 1-2h, 2-3h, 3-4h, 4-5h, 5-6h, 6-12h, 12-24h)
+- **Persistent Settings**: All preferences saved in settings.json on server (survives restarts)
+- **Real-Time Sync**: Settings changes broadcast to all connected clients via WebSocket (multi-tab/multi-device sync)
 
 ### Advanced Features
 - **Smart Purchase Dialogs**: Detailed confirmation dialogs showing:
@@ -296,15 +404,15 @@ If the UAC dialog is cancelled or fails:
 
 **Windows:**
 1. Open Command Prompt as Administrator
-2. Run: `certutil -delstore Root "Shipping Manager Chat CA"`
+2. Run: `certutil -delstore Root "Shipping Manager CoPilot CA"`
 
 **Android:**
 1. Settings → Security → Trusted Credentials → User
-2. Find "Shipping Manager Chat CA" → Remove
+2. Find "Shipping Manager CoPilot CA" → Remove
 
 **iOS:**
 1. Settings → General → VPN & Device Management
-2. Find "Shipping Manager Chat CA" → Remove Profile
+2. Find "Shipping Manager CoPilot CA" → Remove Profile
 
 ### macOS Installation
 ```bash
@@ -346,6 +454,48 @@ The application uses HTTPS with CA-signed certificates that include all your loc
 
 ***
 
+## Privacy & Data Collection
+
+**This application collects ZERO data from users.**
+
+- **No telemetry**: The software does not send any usage data, statistics, or analytics to the developer
+- **No tracking**: Your gameplay data, account information, and activity remain completely private
+- **Local only**: All data is stored locally on your machine (settings.json, session cookies in memory)
+- **No external servers**: The application only communicates with shippingmanager.cc API - never with developer servers
+- **Open source**: You can verify the code yourself - there are no hidden data collection mechanisms
+
+**The developer has zero interest in your data.** This tool was created to solve a game bug, not to collect user information.
+
+***
+
+## Documentation
+
+This project includes comprehensive JSDoc documentation for all modules and functions.
+
+### Generate Documentation
+
+```bash
+# Generate HTML documentation
+npm run docs
+```
+
+The documentation is automatically:
+- **Generated before every commit** (via git pre-commit hook)
+- **Served by the application** at `https://localhost:12345/docs/index.html`
+- **Accessible via the 📖 button** in the UI (next to settings ⚙️)
+
+The documentation includes:
+- All backend modules (server routes, utilities, middleware)
+- All frontend modules (API, automation, bunker management, chat, coop, messenger, vessel management, etc.)
+- Function signatures, parameters, return values, and examples
+
+**View Documentation:**
+1. Start the application (`node run.js`)
+2. Click the 📖 button in the UI, or
+3. Navigate to `https://localhost:12345/docs/index.html`
+
+***
+
 ## Project Structure
 
 ```
@@ -359,7 +509,9 @@ shippingmanager_messanger/
 │   ├── routes/              # API routes:
 │   │   ├── alliance.js      # Alliance chat endpoints
 │   │   ├── messenger.js     # Private messaging endpoints
-│   │   └── game.js          # Game management (vessels, fuel, CO2, campaigns)
+│   │   ├── game.js          # Game management (vessels, fuel, CO2, campaigns)
+│   │   ├── coop.js          # Alliance cooperation endpoints
+│   │   └── settings.js      # Settings persistence (AutoPilot configuration)
 │   ├── utils/               # Helper functions (API calls, caching)
 │   └── websocket.js         # WebSocket server for real-time updates
 ├── helper/
@@ -367,11 +519,38 @@ shippingmanager_messanger/
 ├── public/
 │   ├── index.html           # Main application UI
 │   ├── sw.js                # Service Worker for mobile notifications
-│   ├── css/style.css        # Styling
+│   ├── css/style.css        # Modern dark theme with glassmorphism
 │   └── js/
-│       └── script.js        # Main application logic
+│       ├── script.js        # Main application logic & initialization
+│       └── modules/         # Modular ES6 architecture:
+│           ├── api.js               # API communication layer
+│           ├── automation.js        # AutoPilot system
+│           ├── bunker-management.js # Fuel/CO2 management
+│           ├── chat.js              # Alliance chat functionality
+│           ├── coop.js              # Alliance cooperation management
+│           ├── messenger.js         # Private messaging
+│           ├── ui-dialogs.js        # Reusable dialog components
+│           ├── utils.js             # Utility functions
+│           └── vessel-management.js # Vessel operations
+├── settings.json            # Persistent settings storage (auto-generated)
+├── eslint.config.js         # ESLint configuration for code quality
 └── screenshots/             # Screenshots for documentation
 ```
+
+### Architecture Highlights
+
+**Modular ES6 Frontend:**
+- Clean separation of concerns with ES6 modules
+- Each module handles specific domain logic (chat, vessels, automation)
+- Shared utilities and API layer
+- Easy to maintain and extend
+
+**Secure Backend:**
+- Fully documented with JSDoc comments
+- Rate-limited API endpoints
+- Input validation on all routes
+- WebSocket for real-time updates
+- HTTPS with CA-signed certificates
 
 ***
 
@@ -431,6 +610,6 @@ This tool is not affiliated with Shipping Manager or Steam. It's a community-cre
 
 ***
 
-## Demo
+## Application Preview
 
-![Demo](screenshots/demo.gif)
+![Application Demo](screenshots/demo.gif)
