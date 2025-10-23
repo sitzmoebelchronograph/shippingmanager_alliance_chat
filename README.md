@@ -1,4 +1,4 @@
-# Shipping Manager - Messenger
+# Shipping Manager - CoPilot
 
 ## Problem Statement
 
@@ -59,6 +59,8 @@ This tool provides a comprehensive standalone web interface that connects direct
 - **Vessel Management**:
   - Real-time count of vessels ready to depart
   - Separate badge for vessels at anchor
+  - **Pending Vessels Badge**: Track vessels under construction with countdown timers
+  - **Pending Vessels Filter**: View all vessels being built with completion times
   - One-click "Depart All" with detailed feedback
   - Shows fuel/CO2 consumption and earnings per departure
   - Auto-refresh every 30 seconds

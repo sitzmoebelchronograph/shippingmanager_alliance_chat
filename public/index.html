@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shipping Manager - Messenger</title>
+    <title>⚓ Shipping Manager - CoPilot</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
             <div class="header-top" style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <h1>
                     <span class="header-icon">⚓</span>
-                    <span class="header-text">Shipping Manager - Messenger</span>
+                    <span class="header-text" id="pageHeaderTitle">Shipping Manager - CoPilot</span>
                 </h1>
                 <div class="header-right">
                     <button id="notificationBtn">🔔 Enable<br>Notifications</button>
@@ -113,7 +113,7 @@
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2>All Private Conversations</h2>
-                <button id="closeAllChatsBtn" class="close-btn">X</button>
+                <button id="closeAllChatsBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
             </div>
             <div class="messenger-feed" id="allChatsList">
             </div>
@@ -124,7 +124,7 @@
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2>👥 Contact List</h2>
-                <button id="closeContactListBtn" class="close-btn">X</button>
+                <button id="closeContactListBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
             </div>
             <div class="messenger-feed" id="contactListFeed">
             </div>
@@ -134,8 +134,9 @@
     <div id="chatSelectionOverlay" class="overlay" style="display:none;">
         <div class="messenger-window">
             <div class="messenger-header">
+                <button id="backToAllChatsBtn" class="close-btn" style="margin-right: 10px; font-weight: 900; font-size: 24px; background: transparent; border: none;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">←</span></button>
                 <h2 id="chatSelectionTitle">Select Conversation</h2>
-                <button id="closeChatSelectionBtn" class="close-btn">X</button>
+                <button id="closeChatSelectionBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
             </div>
             <div class="messenger-feed" id="chatSelectionList">
             </div>
@@ -145,9 +146,10 @@
     <div id="messengerOverlay" class="overlay" style="display:none;">
         <div class="messenger-window">
             <div class="messenger-header">
-                <button id="backToSelectionBtn" class="close-btn" style="margin-right: 10px;">←</button>
+                <button id="backToSelectionBtn" class="close-btn" style="margin-right: 10px; font-weight: 900; font-size: 24px; background: transparent; border: none;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">←</span></button>
                 <h2 id="messengerTitle">Private Chat with ...</h2>
-                <button id="closeMessengerBtn" class="close-btn">X</button>
+                <button id="deleteChatBtn" class="close-btn" style="background: transparent; border: none; color: #ef4444; margin-right: 10px; font-size: 20px; font-weight: 900;" onmouseover="this.querySelector('span').style.animation='shake-trash-simple 0.5s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">🗑️</span></button>
+                <button id="closeMessengerBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
             </div>
             <div class="messenger-feed" id="messengerFeed">
             </div>
@@ -178,7 +180,7 @@
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2>📊 Marketing Campaigns</h2>
-                <button id="closeCampaignsBtn" class="close-btn">X</button>
+                <button id="closeCampaignsBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
             </div>
             <div class="messenger-feed" style="padding: 20px; overflow-y: auto;">
                 <div id="campaignsContent" style="max-width: 600px; margin: 0 auto;">
@@ -192,7 +194,7 @@
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2>⚙️ Settings</h2>
-                <button id="closeSettingsBtn" class="close-btn">X</button>
+                <button id="closeSettingsBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
             </div>
             <div class="messenger-feed" style="padding: 20px; overflow-y: auto;">
                 <div style="max-width: 500px; margin: 0 auto;">
@@ -248,6 +250,111 @@
                         " onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">
                             🔔 Test Browser Notification
                         </button>
+                    </div>
+
+                    <!-- Auto-Pilot Settings Section -->
+                    <div style="margin-bottom: 25px; padding: 20px; background: rgba(16, 185, 129, 0.05); border: 2px solid rgba(16, 185, 129, 0.3); border-radius: 12px;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #10b981; font-weight: 700;">🤖 Auto-Pilot - Settings</h3>
+                        <p style="margin: 0 0 20px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
+                            Enable automated game management. When ANY function is active, page title changes to <strong>"AutoPilot"</strong> mode.
+                        </p>
+
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <!-- Auto-rebuy Fuel -->
+                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoRebuyFuel" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">⛽ Auto-Rebuy Fuel</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                    Automatically purchase fuel when price drops at/below threshold
+                                </p>
+
+                                <!-- Nested: Use Alert Value -->
+                                <div id="autoRebuyFuelOptions" style="margin: 12px 0 0 28px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid rgba(251, 191, 36, 0.3);">
+                                    <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 10px;">
+                                        <input type="checkbox" id="autoRebuyFuelUseAlert" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;">
+                                        <span style="color: #d1d5db; font-size: 13px;">Use alert threshold</span>
+                                    </label>
+                                    <div>
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">Max price ($/ton):</label>
+                                        <input type="number" id="autoRebuyFuelThreshold" min="1" max="1000" value="400" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Auto-rebuy CO2 -->
+                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoRebuyCO2" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">💨 Auto-Rebuy CO2</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                    Automatically purchase CO2 when price drops at/below threshold
+                                </p>
+
+                                <!-- Nested: Use Alert Value -->
+                                <div id="autoRebuyCO2Options" style="margin: 12px 0 0 28px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid rgba(96, 165, 250, 0.3);">
+                                    <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 10px;">
+                                        <input type="checkbox" id="autoRebuyCO2UseAlert" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;">
+                                        <span style="color: #d1d5db; font-size: 13px;">Use alert threshold</span>
+                                    </label>
+                                    <div>
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">Max price ($/ton):</label>
+                                        <input type="number" id="autoRebuyCO2Threshold" min="1" max="100" value="7" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Auto-Depart All -->
+                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoDepartAll" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🚢 Auto-Depart All</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                    Automatically depart vessels when they arrive in harbor (endless loop)
+                                </p>
+                            </div>
+
+                            <!-- Auto Bulk Repair -->
+                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoBulkRepair" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🔧 Auto Bulk Repair</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                    Automatically repair all vessels as long as funds are available
+                                </p>
+                            </div>
+
+                            <!-- Auto Campaign Renewal -->
+                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoCampaignRenewal" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">📊 Auto Campaign Renewal</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                    When a campaign expires, automatically purchase the most expensive one that current funds allow
+                                </p>
+                            </div>
+
+                            <!-- Separator & Notifications (only visible when AutoPilot active) -->
+                            <div id="autoPilotNotificationsContainer" style="display: none;">
+                                <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 8px 0;"></div>
+
+                                <!-- Auto-Pilot Notifications -->
+                                <div style="padding: 12px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px;">
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" id="autoPilotNotifications" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                        <span style="color: #60a5fa; font-size: 14px; font-weight: 600;">🔔 Auto-Pilot Notifications</span>
+                                    </label>
+                                    <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                        Send browser notifications for all auto-pilot actions
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Maintenance Section -->
@@ -320,7 +427,7 @@
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2 id="buyVesselsHeader">⛴️ Buy Vessels</h2>
-                <button id="closeBuyVesselsBtn" class="close-btn">X</button>
+                <button id="closeBuyVesselsBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
             </div>
 
             <div class="vessel-header-controls">
@@ -353,7 +460,7 @@
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2>⚙️ Filter by Engine Type</h2>
-                <button id="closeEngineFilterBtn" class="close-btn">X</button>
+                <button id="closeEngineFilterBtn" class="close-btn" style="background: transparent; border: none; font-weight: 900; font-size: 20px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">X</span></button>
             </div>
             <div class="messenger-feed" id="engineFilterList" style="padding: 20px; overflow-y: auto;">
                 <!-- Engine list will be populated by JavaScript -->
@@ -361,6 +468,6 @@
         </div>
     </div>
 
-    <script src="/js/script.js"></script>
+    <script type="module" src="/js/script.js"></script>
 </body>
 </html>

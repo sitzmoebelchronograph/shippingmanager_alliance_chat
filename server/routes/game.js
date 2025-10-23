@@ -1,14 +1,41 @@
-// routes/game.js - Game Management Routes
+/**
+ * @fileoverview Game Management API Routes
+ *
+ * This module provides HTTP endpoints for managing game resources including vessels,
+ * fuel/CO2 purchases, user settings, vessel maintenance, marketing campaigns, and
+ * vessel acquisitions. These endpoints proxy requests to the Shipping Manager game API
+ * while adding validation and error handling.
+ *
+ * Key Features:
+ * - Vessel management (list vessels in harbor, purchase new vessels, bulk repairs)
+ * - Bunker operations (fuel and CO2 price monitoring and purchasing)
+ * - Route management (depart all vessels at once)
+ * - Marketing campaigns (view available campaigns, activate/renew)
+ * - User settings retrieval (anchor points, company data)
+ *
+ * Why This Module:
+ * - Consolidates all game resource management endpoints
+ * - Provides validation before forwarding to game API
+ * - Standardizes error responses across all game operations
+ * - Enables automation features (auto-rebuy, auto-depart, auto-repair)
+ *
+ * Common Patterns:
+ * - GET endpoints retrieve current state (prices, vessels, settings)
+ * - POST endpoints perform actions (purchase, depart, repair)
+ * - All endpoints include error handling with descriptive messages
+ * - Graceful degradation (empty arrays instead of errors for UI-critical endpoints)
+ *
+ * @requires express - Router and middleware
+ * @requires ../utils/api - API helper function (apiCall)
+ * @module server/routes/game
+ */
 
 const express = require('express');
 const { apiCall } = require('../utils/api');
 
 const router = express.Router();
 
-/**
- * GET /api/vessel/get-vessels
- * Get vessels in harbor
- */
+/** GET /api/vessel/get-vessels - Retrieves all vessels currently in harbor. Uses /game/index endpoint to get complete vessel list with status, cargo, maintenance needs, etc. */
 router.get('/vessel/get-vessels', async (req, res) => {
   try {
     const data = await apiCall('/game/index', 'POST', {});
@@ -21,10 +48,7 @@ router.get('/vessel/get-vessels', async (req, res) => {
   }
 });
 
-/**
- * GET /api/user/get-settings
- * Get user settings (includes anchor_points)
- */
+/** GET /api/user/get-settings - Retrieves user settings including anchor points (used for auto-rebuy calculations). */
 router.get('/user/get-settings', async (req, res) => {
   try {
     const data = await apiCall('/user/get-user-settings', 'GET', {});
@@ -35,10 +59,7 @@ router.get('/user/get-settings', async (req, res) => {
   }
 });
 
-/**
- * GET /api/bunker/get-prices
- * Get bunker prices (fuel and CO2)
- */
+/** GET /api/bunker/get-prices - Fetches current market prices for fuel and CO2. Critical for price alerts and auto-rebuy features. */
 router.get('/bunker/get-prices', async (req, res) => {
   try {
     const data = await apiCall('/bunker/get-prices', 'POST', {});
@@ -50,8 +71,8 @@ router.get('/bunker/get-prices', async (req, res) => {
 });
 
 /**
- * POST /api/bunker/purchase-fuel
- * Purchase fuel
+ * POST /api/bunker/purchase-fuel - Purchases specified amount of fuel.
+ * Validation: amount must be positive integer. Used by manual purchases and auto-rebuy automation.
  */
 router.post('/bunker/purchase-fuel', express.json(), async (req, res) => {
   const { amount } = req.body;
@@ -70,8 +91,8 @@ router.post('/bunker/purchase-fuel', express.json(), async (req, res) => {
 });
 
 /**
- * POST /api/bunker/purchase-co2
- * Purchase CO2
+ * POST /api/bunker/purchase-co2 - Purchases specified amount of CO2 certificates.
+ * Validation: amount must be positive integer. Used by manual purchases and auto-rebuy automation.
  */
 router.post('/bunker/purchase-co2', express.json(), async (req, res) => {
   const { amount } = req.body;
@@ -89,10 +110,7 @@ router.post('/bunker/purchase-co2', express.json(), async (req, res) => {
   }
 });
 
-/**
- * POST /api/route/depart-all
- * Depart all vessels
- */
+/** POST /api/route/depart-all - Departs all vessels in harbor on their assigned routes. Used by automation features. */
 router.post('/route/depart-all', async (req, res) => {
   try {
     const data = await apiCall('/route/depart-all', 'POST', {});
@@ -103,10 +121,7 @@ router.post('/route/depart-all', async (req, res) => {
   }
 });
 
-/**
- * POST /api/maintenance/get
- * Get maintenance cost for vessels
- */
+/** POST /api/maintenance/get - Calculates maintenance cost for specified vessels. Returns total repair cost and individual vessel costs. */
 router.post('/maintenance/get', express.json(), async (req, res) => {
   const { vessel_ids } = req.body;
 
@@ -123,10 +138,7 @@ router.post('/maintenance/get', express.json(), async (req, res) => {
   }
 });
 
-/**
- * POST /api/maintenance/do-wear-maintenance-bulk
- * Perform bulk wear maintenance on vessels
- */
+/** POST /api/maintenance/do-wear-maintenance-bulk - Performs bulk wear maintenance on multiple vessels. Repairs all specified vessels in a single API call. */
 router.post('/maintenance/do-wear-maintenance-bulk', express.json(), async (req, res) => {
   const { vessel_ids } = req.body;
 
@@ -144,23 +156,30 @@ router.post('/maintenance/do-wear-maintenance-bulk', express.json(), async (req,
 });
 
 /**
- * GET /api/marketing/get-campaigns
- * Get marketing campaigns status
+ * GET /api/marketing/get-campaigns - Retrieves available marketing campaigns and active campaign status.
+ * Graceful error handling: Returns empty arrays instead of error to prevent UI breaking.
  */
 router.get('/marketing/get-campaigns', async (req, res) => {
   try {
     const data = await apiCall('/marketing-campaign/get-marketing', 'POST', {});
     res.json(data);
   } catch (error) {
-    console.error('Error getting marketing campaigns:', error);
-    res.status(500).json({ error: 'Failed to retrieve marketing campaigns' });
+    console.error('Error getting marketing campaigns:', error.message, error.stack);
+
+    // Return empty campaigns instead of error to prevent UI breaking
+    res.json({
+      data: {
+        marketing_campaigns: [],
+        active_campaigns: []
+      },
+      user: {
+        reputation: 0
+      }
+    });
   }
 });
 
-/**
- * POST /api/marketing/activate-campaign
- * Activate a marketing campaign
- */
+/** POST /api/marketing/activate-campaign - Activates a marketing campaign by campaign_id. Used for manual activation and auto-renewal automation. */
 router.post('/marketing/activate-campaign', express.json(), async (req, res) => {
   const { campaign_id } = req.body;
 
@@ -177,10 +196,7 @@ router.post('/marketing/activate-campaign', express.json(), async (req, res) => 
   }
 });
 
-/**
- * GET /api/vessel/get-all-acquirable
- * Get all vessels available for purchase
- */
+/** GET /api/vessel/get-all-acquirable - Fetches all vessels available for purchase from the marketplace. */
 router.get('/vessel/get-all-acquirable', async (req, res) => {
   try {
     const data = await apiCall('/vessel/get-all-acquirable-vessels', 'POST', {});
@@ -192,8 +208,9 @@ router.get('/vessel/get-all-acquirable', async (req, res) => {
 });
 
 /**
- * POST /api/vessel/purchase-vessel
- * Purchase a vessel
+ * POST /api/vessel/purchase-vessel - Purchases a new vessel with specified configuration.
+ * Default configuration: 4-blade propeller, optional antifouling, no enhanced deck beams.
+ * Validation: vessel_id and name are required fields.
  */
 router.post('/vessel/purchase-vessel', express.json(), async (req, res) => {
   const { vessel_id, name, antifouling_model } = req.body;

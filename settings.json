@@ -1,0 +1,15 @@
+{
+  "fuelThreshold": 400,
+  "co2Threshold": 7,
+  "maintenanceThreshold": 10,
+  "autoRebuyFuel": true,
+  "autoRebuyFuelUseAlert": false,
+  "autoRebuyFuelThreshold": 550,
+  "autoRebuyCO2": true,
+  "autoRebuyCO2UseAlert": false,
+  "autoRebuyCO2Threshold": 10,
+  "autoDepartAll": false,
+  "autoBulkRepair": true,
+  "autoCampaignRenewal": true,
+  "autoPilotNotifications": true
+}
