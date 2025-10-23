@@ -4,7 +4,7 @@
  *
  * Key Categories:
  * - HTML & Formatting: escapeHtml, formatNumber, renderStars
- * - User Feedback: showFeedback, showPriceAlert, dismissPriceAlert
+ * - User Feedback: showSideNotification
  * - Notifications: Browser/desktop notifications with service worker support
  * - Service Worker: Registration and notification handling
  * - Settings: Load/save to server, AutoPilot detection, page title updates
@@ -66,214 +66,130 @@ export function formatNumber(num) {
 }
 
 /**
- * Displays a temporary feedback message in the global feedback area.
- * Supports stacking multiple messages and auto-dismiss after 6 seconds.
+ * Shows a side notification (slides in from right, auto-dismisses after duration)
  *
- * Message Types:
- * - 'success': Green background (successful operations)
- * - 'error': Red background (failures, warnings)
- * - 'warning': Orange/yellow background (cautions)
- *
- * Stacking Behavior:
- * - If price alert is showing, appends feedback below it
- * - Otherwise replaces existing feedback
- * - Allows multiple feedback messages to stack
- *
- * Side Effects:
- * - Creates/updates DOM element in global feedback area
- * - Auto-dismisses after 6 seconds
- * - Adds close button for manual dismiss
- *
- * @param {string} message - Message text (can include HTML)
- * @param {string} type - Message type: 'success', 'error', or 'warning'
- *
- * @example
- * showFeedback('Vessel purchased successfully!', 'success');
- * showFeedback('Not enough cash!', 'error');
+ * @param {string} message - HTML message content
+ * @param {string} type - Notification type: 'success', 'error', 'warning', 'info'
+ * @param {number} duration - Display duration in milliseconds (default based on type)
+ * @param {boolean} isAlert - Whether this is an alert notification (megaphone + Got it button)
  */
-export function showFeedback(message, type) {
-  const globalFeedback = document.getElementById('globalFeedback');
+export function showSideNotification(message, type = 'info', duration = null, isAlert = false) {
+  try {
+    const container = document.getElementById('sideNotifications');
 
-  const hasPriceAlert = globalFeedback.querySelector('#priceAlertMessage');
-
-  if (hasPriceAlert) {
-    // Price alert exists - add feedback message below it without clearing anything
-    const feedbackDiv = document.createElement('div');
-    feedbackDiv.className = `global-feedback-message ${type}`;
-    feedbackDiv.style.position = 'relative';
-    feedbackDiv.style.marginTop = '10px';
-    feedbackDiv.innerHTML = `
-      ${message}
-      <button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; padding: 0; width: 20px; height: 20px; line-height: 18px; transition: color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">×</button>
-    `;
-    globalFeedback.appendChild(feedbackDiv);
-
-    // Auto-remove only this feedback message after 6 seconds
-    setTimeout(() => {
-      if (feedbackDiv.parentNode) {
-        feedbackDiv.remove();
-      }
-    }, 6000);
-  } else {
-    // No price alert - show feedback as usual
-    const feedbackDiv = document.createElement('div');
-    feedbackDiv.className = `global-feedback-message ${type}`;
-    feedbackDiv.style.position = 'relative';
-    feedbackDiv.innerHTML = `
-      ${message}
-      <button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; padding: 0; width: 20px; height: 20px; line-height: 18px; transition: color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">×</button>
-    `;
-    globalFeedback.innerHTML = '';
-    globalFeedback.appendChild(feedbackDiv);
-    globalFeedback.style.display = 'block';
-
-    // Auto-remove after 6 seconds
-    setTimeout(() => {
-      if (feedbackDiv.parentNode) {
-        feedbackDiv.remove();
-        // Hide container if empty
-        if (globalFeedback.children.length === 0) {
-          globalFeedback.style.display = 'none';
-        }
-      }
-    }, 6000);
-  }
-}
-
-/**
- * Timeout ID for price alert auto-dismiss.
- * Used to clear timeout when alert is manually dismissed.
- * @type {number|null}
- */
-let priceAlertTimeout = null;
-
-/**
- * Displays a persistent price alert with animated entrance and manual dismiss button.
- * Used for important alerts like fuel/CO2 price drops and campaign warnings.
- *
- * Alert Behavior:
- * - Shows with spinning animation entrance
- * - Stays visible for 29 minutes (1,740,000ms) for long-term awareness
- * - Requires manual dismiss via "Got it" button
- * - Only one price alert at a time (replaces existing)
- *
- * Animation:
- * - Scales from 0 to 1 while rotating 360 degrees
- * - Uses cubic-bezier easing for bounce effect
- * - Duration: 800ms
- *
- * Side Effects:
- * - Clears any existing price alert timeout
- * - Replaces global feedback area content
- * - Sets 29-minute auto-dismiss timeout
- *
- * @param {string} message - Alert message (can include HTML)
- * @param {string} [type='warning'] - Alert type: 'warning', 'success', 'error'
- *
- * @example
- * showPriceAlert('⛽ Fuel price dropped to $350/ton!', 'warning');
- */
-export function showPriceAlert(message, type = 'warning') {
-  const globalFeedback = document.getElementById('globalFeedback');
-
-  if (!globalFeedback) {
-    console.error('[showPriceAlert] globalFeedback element not found!');
-    return;
-  }
-
-  if (priceAlertTimeout) {
-    clearTimeout(priceAlertTimeout);
-  }
-
-  globalFeedback.innerHTML = `
-    <div class="global-feedback-message ${type}" id="priceAlertMessage" style="transform: scale(0) rotate(0deg); opacity: 0;">
-      <div style="width: 100%;">${message}</div>
-      <button
-        id="dismissPriceAlertBtn"
-        style="display: block; margin: 0 auto; padding: 8px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; color: white; cursor: pointer; font-weight: 600; transition: all 0.2s;"
-        onmouseover="this.style.background='rgba(255,255,255,0.3)'"
-        onmouseout="this.style.background='rgba(255,255,255,0.2)'"
-      >
-        Got it
-      </button>
-    </div>
-  `;
-
-  globalFeedback.style.display = 'block';
-
-  const messageEl = document.getElementById('priceAlertMessage');
-  messageEl.offsetHeight;
-
-  messageEl.animate([
-    { transform: 'scale(0) rotate(0deg)', opacity: 0 },
-    { transform: 'scale(0.5) rotate(180deg)', opacity: 1, offset: 0.6 },
-    { transform: 'scale(1) rotate(360deg)', opacity: 1 }
-  ], {
-    duration: 800,
-    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-    fill: 'forwards'
-  });
-
-  const dismissBtn = document.getElementById('dismissPriceAlertBtn');
-  if (dismissBtn) {
-    dismissBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dismissPriceAlert();
-    });
-  }
-
-  // Auto-dismiss after 30 seconds, but pause timer when mouse is over the message
-  let timeRemaining = 30000; // 30 seconds
-  let lastTimestamp = Date.now();
-  let isMouseOver = false;
-
-  const startAutoDismissTimer = () => {
-    if (timeRemaining <= 0) {
-      // Timer expired while mouse was over - don't restart
+    if (!container) {
+      console.error('[showSideNotification] CRITICAL ERROR: sideNotifications container not found! This should never happen.');
+      console.error('[showSideNotification] Message that failed to display:', message);
+      console.error('[showSideNotification] Type:', type, 'isAlert:', isAlert);
       return;
     }
-    priceAlertTimeout = setTimeout(() => {
-      if (!isMouseOver) {
-        dismissPriceAlert();
-      }
-    }, timeRemaining);
-  };
 
-  messageEl.addEventListener('mouseenter', () => {
-    isMouseOver = true;
-    // Pause timer - calculate remaining time
-    if (priceAlertTimeout) {
-      clearTimeout(priceAlertTimeout);
-      const elapsed = Date.now() - lastTimestamp;
-      timeRemaining -= elapsed;
-      if (timeRemaining < 0) timeRemaining = 0; // Stop at 0
+  // Determine duration based on type if not specified
+  if (!duration) {
+    if (isAlert) {
+      duration = 30000; // 30 seconds for alerts
+    } else if (type === 'warning') {
+      duration = 12000; // 12 seconds for warnings
+    } else if (type === 'error') {
+      duration = 10000; // 10 seconds for errors
+    } else {
+      duration = 6000; // 6 seconds for success/info
     }
-  });
-
-  messageEl.addEventListener('mouseleave', () => {
-    isMouseOver = false;
-    // Resume timer with remaining time (only if time remaining > 0)
-    if (timeRemaining > 0) {
-      lastTimestamp = Date.now();
-      startAutoDismissTimer();
-    }
-  });
-
-  // Start initial timer
-  lastTimestamp = Date.now();
-  startAutoDismissTimer();
-}
-
-export function dismissPriceAlert() {
-  const globalFeedback = document.getElementById('globalFeedback');
-
-  if (priceAlertTimeout) {
-    clearTimeout(priceAlertTimeout);
-    priceAlertTimeout = null;
   }
 
-  globalFeedback.style.display = 'none';
-  globalFeedback.innerHTML = '';
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `side-notification ${type}`;
+
+  // Add alert class if this is an alert notification
+  if (isAlert) {
+    notification.classList.add('alert');
+  }
+
+  // Create message content wrapper
+  const messageContent = document.createElement('div');
+  messageContent.className = 'notification-message';
+  messageContent.innerHTML = message;
+  notification.appendChild(messageContent);
+
+  // Add "Got it" button for alerts OR X button for normal notifications
+  if (isAlert) {
+    const gotItBtn = document.createElement('button');
+    gotItBtn.className = 'got-it-btn';
+    gotItBtn.textContent = 'Got it';
+    gotItBtn.onclick = (e) => {
+      e.stopPropagation();
+      dismissNotification(notification);
+    };
+    notification.appendChild(gotItBtn);
+  } else {
+    // Add X close button for normal notifications
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-btn';
+    closeBtn.innerHTML = '×';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      dismissNotification(notification);
+    };
+    notification.appendChild(closeBtn);
+  }
+
+  // Add to container (append to bottom)
+  container.appendChild(notification);
+
+  // Track hover state to prevent auto-dismiss
+  let isHovered = false;
+  let dismissTimeout = null;
+
+  notification.addEventListener('mouseenter', () => {
+    isHovered = true;
+    if (dismissTimeout) {
+      clearTimeout(dismissTimeout);
+      dismissTimeout = null;
+    }
+  });
+
+  notification.addEventListener('mouseleave', () => {
+    isHovered = false;
+    // Restart auto-dismiss timer when mouse leaves
+    scheduleDismiss();
+  });
+
+  // Function to dismiss notification
+  function dismissNotification(notif) {
+    if (dismissTimeout) {
+      clearTimeout(dismissTimeout);
+    }
+    notif.style.animation = 'slideOutToRight 0.3s ease-in';
+    setTimeout(() => {
+      if (notif.parentNode) {
+        notif.parentNode.removeChild(notif);
+      }
+    }, 300);
+  }
+
+  // Schedule auto-dismiss
+  function scheduleDismiss() {
+    if (dismissTimeout) {
+      clearTimeout(dismissTimeout);
+    }
+    dismissTimeout = setTimeout(() => {
+      if (!isHovered) {
+        dismissNotification(notification);
+      }
+    }, duration);
+  }
+
+  // Initial auto-dismiss schedule
+  scheduleDismiss();
+
+  return notification;
+  } catch (error) {
+    console.error('[showSideNotification] CRITICAL ERROR: Exception thrown while creating notification!');
+    console.error('[showSideNotification] Error:', error);
+    console.error('[showSideNotification] Message:', message);
+    console.error('[showSideNotification] Stack trace:', error.stack);
+  }
 }
 
 /**
@@ -469,7 +385,7 @@ export async function showNotification(title, options) {
       }
     }
   } catch (error) {
-    showPriceAlert(`❌ Notification Error<br><br>${error.message}`, 'error');
+    showSideNotification(`🔔 <strong>Notification Error</strong><br><br>${error.message}`, 'error', null, true);
     throw error;
   }
 }
@@ -574,7 +490,7 @@ export function initCustomTooltips() {
 
 export async function loadSettings() {
   try {
-    const response = await fetch('/api/settings');
+    const response = await fetch(window.apiUrl('/api/settings'));
     const settings = await response.json();
     return settings;
   } catch (error) {
@@ -600,7 +516,7 @@ export async function loadSettings() {
 
 export async function saveSettings(settings) {
   try {
-    const response = await fetch('/api/settings', {
+    const response = await fetch(window.apiUrl('/api/settings'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -616,7 +532,7 @@ export async function saveSettings(settings) {
     return result;
   } catch (error) {
     console.error('Error saving settings to server:', error);
-    showFeedback('Failed to save settings', 'error');
+    showSideNotification('⚙️ <strong>Failed to save settings</strong><br><br>Check connection', 'error');
     throw error;
   }
 }
@@ -650,20 +566,4 @@ export function updatePageTitle(settings) {
     }
   }
 
-  // Show/hide notifications checkbox based on AutoPilot status
-  const notificationsContainer = document.getElementById('autoPilotNotificationsContainer');
-  const notificationsCheckbox = document.getElementById('autoPilotNotifications');
-
-  if (notificationsContainer) {
-    if (autoPilotActive) {
-      notificationsContainer.style.display = 'block';
-    } else {
-      notificationsContainer.style.display = 'none';
-      if (notificationsCheckbox && notificationsCheckbox.checked) {
-        notificationsCheckbox.checked = false;
-        settings.autoPilotNotifications = false;
-        saveSettings(settings);
-      }
-    }
-  }
 }

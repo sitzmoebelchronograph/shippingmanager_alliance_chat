@@ -12,11 +12,15 @@ A comprehensive standalone web application for [Shipping Manager](http://shippin
 - 🤝 **Alliance Cooperation**: Manage and send coop vessels to alliance members
 - 🔒 **Secure**: Rate-limited API calls, input validation, and anti-detection mechanisms
 
-## Problem Statement
+# The Great Feature Creep Adventure 🚢
 
-When playing [Shipping Manager](http://shippingmanager.cc/) on Steam, the in-game chat suffers from a critical page reload bug. Typing certain characters causes the entire game page to refresh, making communication with alliance members nearly impossible. Messages get lost mid-typing, disrupting coordination and team play.
+This project started out of pure frustration with bugs in [Shipping Manager](http://shippingmanager.cc/) and the complete lack of ongoing development by the creators. Initially, I just wanted to build a simple chat messenger - something that would let me communicate with my alliance on Steam without constantly worrying about certain keystrokes triggering a full page reload (a well-known bug that never gets fixed). 
 
-This tool provides a comprehensive standalone web interface that connects directly to the Shipping Manager API, offering alliance chat, private messaging, game management features, **and intelligent automation** - all without the game's input bugs :)
+What really annoyed me was that I couldn't log in through the browser using my Steam account to get game notifications while walking around the house.
+
+Well... things got a bit out of hand, and the result is what you see here now 😃
+
+This comprehensive standalone web interface connects directly to the Shipping Manager API, offering alliance chat, private messaging, game management features, and intelligent automation - all without the game's infuriating input bugs that make basic communication nearly impossible.
 
 ## Features
 

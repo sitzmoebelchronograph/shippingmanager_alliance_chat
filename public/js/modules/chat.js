@@ -28,7 +28,7 @@
  * @requires api - Backend API calls for chat data and company names
  */
 
-import { escapeHtml, showFeedback, handleNotifications } from './utils.js';
+import { escapeHtml, showSideNotification, handleNotifications } from './utils.js';
 import { getCompanyNameCached, fetchChat, sendChatMessage, fetchAllianceMembers } from './api.js';
 
 /**
@@ -289,7 +289,7 @@ export async function displayMessages(messagesToDisplay, chatFeed) {
 export async function sendMessage(messageInput, charCount, sendMessageBtn, chatFeed) {
   const message = messageInput.value.trim();
   if (!message || message.length > 1000) {
-    showFeedback('Invalid message length or content.', 'error');
+    showSideNotification('Invalid message length or content.', 'error');
     return;
   }
 
@@ -302,12 +302,12 @@ export async function sendMessage(messageInput, charCount, sendMessageBtn, chatF
     messageInput.value = '';
     messageInput.style.height = 'auto';
     charCount.textContent = '0 / 1000 characters';
-    showFeedback('Message sent!', 'success');
+    showSideNotification('Message sent!', 'success');
     autoScroll = true;
 
     setTimeout(() => loadMessages(chatFeed), 500);
   } catch (error) {
-    showFeedback(`Error: ${error.message}`, 'error');
+    showSideNotification(`Error: ${error.message}`, 'error');
   } finally {
     sendMessageBtn.disabled = false;
     messageInput.disabled = false;
@@ -488,10 +488,11 @@ function handleBackendAutoRepairComplete(data) {
   }
 
   // Show in-app notification
-  showFeedback(feedbackMsg, 'success');
+  showSideNotification(feedbackMsg, 'success');
 
   // Send browser notification if enabled
-  if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+  const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
+  if (desktopNotifsEnabled && Notification.permission === 'granted') {
     const body = `${count} vessel${count > 1 ? 's' : ''} repaired - Cost: $${totalCost.toLocaleString()}\nThreshold: ${threshold}%`;
     showNotification('🤖 Backend Auto-Repair', {
       body: body,

@@ -34,7 +34,7 @@ export async function getCompanyNameCached(userId) {
   }
 
   try {
-    const response = await fetch('/api/company-name', {
+    const response = await fetch(window.apiUrl('/api/company-name'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userIdInt })
@@ -60,7 +60,7 @@ export async function getCompanyNameCached(userId) {
  */
 export async function fetchAllianceMembers() {
   try {
-    const response = await fetch('/api/alliance-members');
+    const response = await fetch(window.apiUrl('/api/alliance-members'));
     if (!response.ok) throw new Error('Failed to load alliance members');
     return await response.json();
   } catch (error) {
@@ -80,7 +80,7 @@ export async function fetchAllianceMembers() {
  */
 export async function fetchChat() {
   try {
-    const response = await fetch('/api/chat');
+    const response = await fetch(window.apiUrl('/api/chat'));
     if (!response.ok) throw new Error('Failed to load chat feed');
     return await response.json();
   } catch (error) {
@@ -100,7 +100,7 @@ export async function fetchChat() {
  */
 export async function sendChatMessage(message) {
   try {
-    const response = await fetch('/api/send-message', {
+    const response = await fetch(window.apiUrl('/api/send-message'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: message })
@@ -131,7 +131,7 @@ export async function sendChatMessage(message) {
  */
 export async function fetchVessels() {
   try {
-    const response = await fetch('/api/vessel/get-vessels');
+    const response = await fetch(window.apiUrl('/api/vessel/get-vessels'));
     if (!response.ok) throw new Error('Failed to get vessels');
     return await response.json();
   } catch (error) {
@@ -151,7 +151,7 @@ export async function fetchVessels() {
  */
 export async function fetchUserSettings() {
   try {
-    const response = await fetch('/api/user/get-settings');
+    const response = await fetch(window.apiUrl('/api/user/get-settings'));
     if (!response.ok) throw new Error('Failed to get user settings');
     return await response.json();
   } catch (error) {
@@ -176,7 +176,7 @@ export async function fetchUserSettings() {
  */
 export async function fetchBunkerPrices() {
   try {
-    const response = await fetch('/api/bunker/get-prices');
+    const response = await fetch(window.apiUrl('/api/bunker/get-prices'));
     if (!response.ok) throw new Error('Failed to get bunker prices');
     return await response.json();
   } catch (error) {
@@ -197,7 +197,7 @@ export async function fetchBunkerPrices() {
  */
 export async function purchaseFuel(amount) {
   try {
-    const response = await fetch('/api/bunker/purchase-fuel', {
+    const response = await fetch(window.apiUrl('/api/bunker/purchase-fuel'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: Math.round(amount * 1000) })
@@ -220,7 +220,7 @@ export async function purchaseFuel(amount) {
  */
 export async function purchaseCO2(amount) {
   try {
-    const response = await fetch('/api/bunker/purchase-co2', {
+    const response = await fetch(window.apiUrl('/api/bunker/purchase-co2'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: Math.round(amount * 1000) })
@@ -242,7 +242,7 @@ export async function purchaseCO2(amount) {
  */
 export async function departAllVessels() {
   try {
-    const response = await fetch('/api/route/depart-all', {
+    const response = await fetch(window.apiUrl('/api/route/depart-all'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -268,7 +268,7 @@ export async function departAllVessels() {
  */
 export async function fetchContacts() {
   try {
-    const response = await fetch('/api/contact/get-contacts');
+    const response = await fetch(window.apiUrl('/api/contact/get-contacts'));
     if (!response.ok) throw new Error('Failed to get contacts');
     return await response.json();
   } catch (error) {
@@ -289,7 +289,7 @@ export async function fetchContacts() {
  */
 export async function fetchMessengerChats() {
   try {
-    const response = await fetch('/api/messenger/get-chats');
+    const response = await fetch(window.apiUrl('/api/messenger/get-chats'));
     if (!response.ok) throw new Error('Failed to get chats');
     return await response.json();
   } catch (error) {
@@ -308,7 +308,7 @@ export async function fetchMessengerChats() {
  */
 export async function fetchMessengerMessages(chatId) {
   try {
-    const response = await fetch('/api/messenger/get-messages', {
+    const response = await fetch(window.apiUrl('/api/messenger/get-messages'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId })
@@ -334,7 +334,7 @@ export async function fetchMessengerMessages(chatId) {
  */
 export async function sendPrivateMessage(targetUserId, subject, message) {
   try {
-    const response = await fetch('/api/messenger/send-private', {
+    const response = await fetch(window.apiUrl('/api/messenger/send-private'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -367,7 +367,7 @@ export async function sendPrivateMessage(targetUserId, subject, message) {
  */
 export async function deleteChat(chatId, isSystemChat = false) {
   try {
-    const response = await fetch('/api/messenger/delete-chat', {
+    const response = await fetch(window.apiUrl('/api/messenger/delete-chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -400,7 +400,7 @@ export async function deleteChat(chatId, isSystemChat = false) {
  */
 export async function fetchCampaigns() {
   try {
-    const response = await fetch('/api/marketing/get-campaigns');
+    const response = await fetch(window.apiUrl('/api/marketing/get-campaigns'));
     if (!response.ok) throw new Error('Failed to fetch campaigns');
     return await response.json();
   } catch (error) {
@@ -421,7 +421,7 @@ export async function fetchCampaigns() {
  */
 export async function activateCampaign(campaignId) {
   try {
-    const response = await fetch('/api/marketing/activate-campaign', {
+    const response = await fetch(window.apiUrl('/api/marketing/activate-campaign'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ campaign_id: campaignId })
@@ -445,7 +445,7 @@ export async function activateCampaign(campaignId) {
  */
 export async function fetchAcquirableVessels() {
   try {
-    const response = await fetch('/api/vessel/get-all-acquirable');
+    const response = await fetch(window.apiUrl('/api/vessel/get-all-acquirable'));
     if (!response.ok) throw new Error('Failed to load vessels');
     return await response.json();
   } catch (error) {
@@ -468,7 +468,7 @@ export async function fetchAcquirableVessels() {
  */
 export async function purchaseVessel(vesselId, name, antifouling) {
   try {
-    const response = await fetch('/api/vessel/purchase-vessel', {
+    const response = await fetch(window.apiUrl('/api/vessel/purchase-vessel'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -495,7 +495,7 @@ export async function purchaseVessel(vesselId, name, antifouling) {
  */
 export async function getMaintenanceCost(vesselIds) {
   try {
-    const response = await fetch('/api/maintenance/get', {
+    const response = await fetch(window.apiUrl('/api/maintenance/get'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ vessel_ids: JSON.stringify(vesselIds) })
@@ -520,7 +520,7 @@ export async function getMaintenanceCost(vesselIds) {
  */
 export async function doWearMaintenanceBulk(vesselIds) {
   try {
-    const response = await fetch('/api/maintenance/do-wear-maintenance-bulk', {
+    const response = await fetch(window.apiUrl('/api/maintenance/do-wear-maintenance-bulk'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ vessel_ids: JSON.stringify(vesselIds) })
@@ -546,7 +546,7 @@ export async function doWearMaintenanceBulk(vesselIds) {
  */
 export async function departVessel(vesselId, speed, guards = 0) {
   try {
-    const response = await fetch('/api/route/depart', {
+    const response = await fetch(window.apiUrl('/api/route/depart'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -579,7 +579,7 @@ export async function departVessel(vesselId, speed, guards = 0) {
  */
 export async function fetchAssignedPorts() {
   try {
-    const response = await fetch('/api/port/get-assigned-ports');
+    const response = await fetch(window.apiUrl('/api/port/get-assigned-ports'));
     if (!response.ok) throw new Error('Failed to fetch assigned ports');
     const data = await response.json();
     return data.data?.ports || [];

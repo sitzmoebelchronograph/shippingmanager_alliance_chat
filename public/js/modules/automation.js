@@ -29,12 +29,12 @@
  *
  * @module automation
  * @requires api - purchaseFuel, purchaseCO2, departAllVessels, fetchVessels, getMaintenanceCost, doWearMaintenanceBulk, fetchCampaigns, activateCampaign
- * @requires utils - showFeedback, formatNumber, showNotification
+ * @requires utils - formatNumber, showNotification, showSideNotification, saveSettings
  * @requires bunker-management - getCurrentBunkerState
  */
 
 import { purchaseFuel, purchaseCO2, departAllVessels, fetchVessels, getMaintenanceCost, doWearMaintenanceBulk, fetchCampaigns, activateCampaign, departVessel, fetchAssignedPorts } from './api.js';
-import { showFeedback, formatNumber, showNotification, showPriceAlert } from './utils.js';
+import { formatNumber, showNotification, showSideNotification, saveSettings } from './utils.js';
 import { getCurrentBunkerState } from './bunker-management.js';
 
 /**
@@ -52,9 +52,10 @@ import { getCurrentBunkerState } from './bunker-management.js';
 async function sendAutoPilotFeedback(message, type = 'success') {
   const settings = window.getSettings ? window.getSettings() : {};
 
-  showFeedback(message, type);
+  showSideNotification(message, type);
 
-  if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+  const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
+  if (desktopNotifsEnabled && Notification.permission === 'granted') {
     // Strip HTML tags for notification
     const plainMessage = message.replace(/<[^>]*>/g, '');
     await showNotification('🤖 Auto-Pilot Action', {
@@ -78,6 +79,14 @@ async function sendAutoPilotFeedback(message, type = 'success') {
 let isAutoBuying = false;
 
 /**
+ * Cooldown timestamps to prevent rapid re-buying after a purchase.
+ * Each purchase sets a 3-minute cooldown before next purchase attempt.
+ */
+let lastFuelPurchaseTime = 0;
+let lastCO2PurchaseTime = 0;
+const PURCHASE_COOLDOWN = 180000; // 3 minutes
+
+/**
  * Timestamp (Date.now()) of last vessel departure check.
  * Used to enforce random 1-2 minute intervals between checks.
  * @type {number}
@@ -90,6 +99,60 @@ let lastVesselCheck = 0;
  * @type {number}
  */
 let lastCampaignCheck = 0;
+
+
+/**
+ * Shows a center alert (like price alerts) with optional auto-dismiss.
+ * @param {string} message - HTML message to display (should include full styling)
+ * @param {number} [duration=0] - Auto-dismiss after milliseconds (0 = manual dismiss only)
+ */
+function showCenterAlert(message, duration = 0) {
+  const globalFeedback = document.getElementById('globalFeedback');
+  if (!globalFeedback) return;
+
+  globalFeedback.innerHTML = message;
+  globalFeedback.style.display = 'block';
+  globalFeedback.classList.add('show', 'price-alert-container');
+
+  if (duration > 0) {
+    setTimeout(() => {
+      globalFeedback.classList.remove('show');
+      setTimeout(() => {
+        globalFeedback.style.display = 'none';
+        globalFeedback.innerHTML = '';
+      }, 300);
+    }, duration);
+  }
+}
+
+/**
+ * Updates the Auto-Depart settings label with status text.
+ * @param {string} statusText - Status to display (e.g., "(no fuel - auto depart paused)")
+ */
+function updateAutoDepartLabel(statusText = '') {
+  const checkbox = document.getElementById('autoDepartAll');
+  if (!checkbox) return;
+
+  const label = checkbox.parentElement;
+  if (!label) return;
+
+  // Remove existing status text
+  const existingStatus = label.querySelector('.auto-depart-status');
+  if (existingStatus) {
+    existingStatus.remove();
+  }
+
+  // Add new status text if provided
+  if (statusText) {
+    const statusSpan = document.createElement('span');
+    statusSpan.className = 'auto-depart-status';
+    statusSpan.style.color = '#fbbf24';
+    statusSpan.style.fontSize = '0.9em';
+    statusSpan.style.marginLeft = '8px';
+    statusSpan.textContent = statusText;
+    label.appendChild(statusSpan);
+  }
+}
 
 // ============================================================================
 // Auto-Rebuy Fuel
@@ -119,6 +182,13 @@ let lastCampaignCheck = 0;
 async function checkAutoRebuyFuel(settings) {
   if (!settings.autoRebuyFuel) return;
   if (isAutoBuying) return; // Prevent concurrent purchases
+
+  // Check cooldown - don't buy if we just bought recently
+  const timeSinceLastPurchase = Date.now() - lastFuelPurchaseTime;
+  if (timeSinceLastPurchase < PURCHASE_COOLDOWN) {
+    console.log(`[Auto-Rebuy Fuel] Cooldown active (${Math.floor((PURCHASE_COOLDOWN - timeSinceLastPurchase) / 1000)}s remaining)`);
+    return;
+  }
 
   try {
     const bunkerState = getCurrentBunkerState();
@@ -189,11 +259,15 @@ async function performAutoRebuyFuel(bunkerState, fuelPrice) {
     const result = await purchaseFuel(amountToBuy);
 
     if (result.success || result.data) {
-      showFeedback(`🔄 Auto-bought ${amountToBuy.toFixed(0)} tons of fuel at $${fuelPrice}/ton`, 'success');
+      // Set cooldown timestamp to prevent rapid re-buying
+      lastFuelPurchaseTime = Date.now();
+
+      showSideNotification(`⛽ <strong>Auto-Rebuy</strong><br><br>Purchased ${amountToBuy.toFixed(0)}t fuel @ $${fuelPrice}/t`, 'success');
 
       // Send compact notification
       const settings = window.getSettings ? window.getSettings() : {};
-      if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+      const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
+      if (desktopNotifsEnabled && Notification.permission === 'granted') {
         await showNotification('🤖 Auto-Rebuy: Fuel', {
           body: `Bought ${formatNumber(amountToBuy)}t @ $${fuelPrice}/t`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
@@ -209,7 +283,7 @@ async function performAutoRebuyFuel(bunkerState, fuelPrice) {
     }
   } catch (error) {
     console.error('[Auto-Rebuy Fuel] Purchase failed:', error);
-    showFeedback(`❌ Auto-rebuy fuel failed: ${error.message}`, 'error');
+    showSideNotification(`⛽ <strong>Auto-Rebuy Failed</strong><br><br>${error.message}`, 'error');
   } finally {
     isAutoBuying = false;
   }
@@ -243,6 +317,13 @@ async function performAutoRebuyFuel(bunkerState, fuelPrice) {
 async function checkAutoRebuyCO2(settings) {
   if (!settings.autoRebuyCO2) return;
   if (isAutoBuying) return; // Prevent concurrent purchases
+
+  // Check cooldown - don't buy if we just bought recently
+  const timeSinceLastPurchase = Date.now() - lastCO2PurchaseTime;
+  if (timeSinceLastPurchase < PURCHASE_COOLDOWN) {
+    console.log(`[Auto-Rebuy CO2] Cooldown active (${Math.floor((PURCHASE_COOLDOWN - timeSinceLastPurchase) / 1000)}s remaining)`);
+    return;
+  }
 
   try {
     const bunkerState = getCurrentBunkerState();
@@ -313,11 +394,15 @@ async function performAutoRebuyCO2(bunkerState, co2Price) {
     const result = await purchaseCO2(amountToBuy);
 
     if (result.success || result.data) {
-      showFeedback(`🔄 Auto-bought ${amountToBuy.toFixed(0)} tons of CO2 at $${co2Price}/ton`, 'success');
+      // Set cooldown timestamp to prevent rapid re-buying
+      lastCO2PurchaseTime = Date.now();
+
+      showSideNotification(`💨 <strong>Auto-Rebuy</strong><br><br>Purchased ${amountToBuy.toFixed(0)}t CO2 @ $${co2Price}/t`, 'success');
 
       // Send compact notification
       const settings = window.getSettings ? window.getSettings() : {};
-      if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+      const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
+      if (desktopNotifsEnabled && Notification.permission === 'granted') {
         await showNotification('🤖 Auto-Rebuy: CO2', {
           body: `Bought ${formatNumber(amountToBuy)}t @ $${co2Price}/t`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
@@ -333,7 +418,7 @@ async function performAutoRebuyCO2(bunkerState, co2Price) {
     }
   } catch (error) {
     console.error('[Auto-Rebuy CO2] Purchase failed:', error);
-    showFeedback(`❌ Auto-rebuy CO2 failed: ${error.message}`, 'error');
+    showSideNotification(`💨 <strong>Auto-Rebuy Failed</strong><br><br>${error.message}`, 'error');
   } finally {
     isAutoBuying = false;
   }
@@ -389,8 +474,30 @@ async function checkAutoDepartAll(settings) {
     const fuelPrice = bunkerState.fuelPrice;
     const currentFuel = bunkerState.currentFuel;
 
-    if (currentFuel <= 0) {
-      return; // No fuel available
+    // Check if fuel went back above threshold
+    if (currentFuel >= 10 && settings.autoDepartLastLowFuelWarning) {
+      // Clear warning timestamp in settings (syncs across all browser sessions)
+      settings.autoDepartLastLowFuelWarning = null;
+      await saveSettings(settings);
+
+      updateAutoDepartLabel(''); // Clear status text in this session
+
+      // Show resumed notification (only in this session, that's okay)
+      showSideNotification(
+        '✅ <strong>Auto-Depart Resumed</strong><br><br>Fuel back above 10t - automatic departures active again',
+        'success',
+        5000
+      );
+    }
+
+    // Check if fuel is too low
+    if (currentFuel < 10) {
+      console.log(`[Auto-Depart] Skipping - insufficient fuel in bunker (${currentFuel.toFixed(1)}t < 10t minimum)`);
+
+      // Update settings label (local to this session)
+      updateAutoDepartLabel('(no fuel - auto depart paused)');
+
+      return; // Not enough fuel to depart vessels (all sessions skip)
     }
 
     // 2. Fetch all vessels and assigned ports
@@ -442,12 +549,28 @@ async function checkAutoDepartAll(settings) {
     for (const key in vesselsByDestinationAndType) {
       const vessels = vesselsByDestinationAndType[key];
       const firstVessel = vessels[0];
-      const destination = firstVessel.route_destination; // Use route_destination (set when in harbor)
       const vesselType = firstVessel.capacity_type;
+
+      // Determine next destination: The port that is NOT the current port
+      // If vessel is in port A with route A→B or B→A, next destination is the OTHER port
+      let destination;
+      if (firstVessel.route_destination === firstVessel.current_port_code) {
+        // Vessel completed route TO current port, next destination is origin
+        destination = firstVessel.route_origin;
+      } else if (firstVessel.route_origin === firstVessel.current_port_code) {
+        // Vessel completed route FROM current port (returned), next destination is the other end
+        destination = firstVessel.route_destination;
+      } else {
+        // Fallback: use route_destination
+        destination = firstVessel.route_destination;
+      }
+
+      console.log(`[Auto-Depart] Vessel ${firstVessel.name} in ${firstVessel.current_port_code} → next destination: ${destination}`);
 
       // Find port data
       const port = assignedPorts.find(p => p.code === destination);
       if (!port) {
+        console.log(`[Auto-Depart] Port not found: ${destination}`);
         continue;
       }
 
@@ -477,6 +600,22 @@ async function checkAutoDepartAll(settings) {
       // Decide for each vessel
       for (const vessel of sortedVessels) {
         const vesselCapacity = getTotalCapacity(vessel);
+
+        // CRITICAL: Skip vessel if there is NO demand at destination
+        if (effectiveDemand <= 0) {
+          const reason = `No demand at destination (current demand: ${remainingDemand.toLocaleString()}, already en-route: ${capacityEnroute.toLocaleString()})`;
+          console.log(`[Auto-Depart] Skipping vessel ${vessel.name} (ID: ${vessel.id}) → ${destination}: ${reason}`);
+
+          // Track failed vessel with reason
+          failedVessels.push({
+            name: vessel.name,
+            destination: destination,
+            reason: reason
+          });
+
+          continue;
+        }
+
         // Utilization = How much of the vessel will be filled
         // Example: effectiveDemand=100, vesselCapacity=200 → 50% utilization (half full)
         const cargoToLoad = Math.min(effectiveDemand, vesselCapacity);
@@ -517,14 +656,8 @@ async function checkAutoDepartAll(settings) {
             // Check if departure was actually successful
             // API returns $0 income when vessel couldn't depart (e.g., no fuel)
             if (income === 0 && fuelUsage === 0 && co2Emission === 0) {
-              console.error(`[Auto-Depart] ✗ ${vessel.name} failed to depart (no fuel/CO2 or API error)`);
-
-              // Track as failed departure
-              failedVessels.push({
-                name: vessel.name,
-                reason: 'Insufficient fuel or CO2 in bunker'
-              });
-
+              console.log(`[Auto-Depart] Skipping ${vessel.name} → ${destination}: Insufficient fuel or CO2 in bunker`);
+              // Don't show error notification - user can see bunker status
               continue; // Skip this vessel, don't count as departed
             }
 
@@ -551,11 +684,12 @@ async function checkAutoDepartAll(settings) {
             effectiveDemand -= cargoToLoad;
 
           } catch (error) {
-            console.error(`[Auto-Depart] Failed to depart ${vessel.name}:`, error);
+            console.error(`[Auto-Depart] Failed to depart ${vessel.name} → ${destination}:`, error);
 
             // Track as failed departure
             failedVessels.push({
               name: vessel.name,
+              destination: destination,
               reason: error.message || 'Unknown error'
             });
           }
@@ -565,7 +699,24 @@ async function checkAutoDepartAll(settings) {
 
     // Show error feedback for failed vessels
     if (failedVessels.length > 0) {
-      showFeedback('<strong>🤖 Auto-Depart</strong><br>No fuel - no vessels sent', 'error');
+      // Create detailed list of failed vessels with reasons
+      const failedList = failedVessels.map(v =>
+        `<div style="font-size: 0.85em; opacity: 0.9; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          🚢 <strong>${v.name}</strong> → ${v.destination}<br>
+          <span style="color: #fbbf24; font-size: 0.9em;">⚠️ ${v.reason}</span>
+        </div>`
+      ).join('');
+
+      const message = `
+        <div style="margin-bottom: 8px;">
+          <strong>🤖 Auto-Depart: ${failedVessels.length} vessel${failedVessels.length > 1 ? 's' : ''} could not depart</strong>
+        </div>
+        <div style="max-height: 200px; overflow-y: auto;">
+          ${failedList}
+        </div>
+      `;
+
+      showSideNotification(message, 'warning', null, true);
     }
 
     if (departedCount > 0) {
@@ -576,16 +727,19 @@ async function checkAutoDepartAll(settings) {
       const totalFuelUsage = departedVessels.reduce((sum, v) => sum + v.fuelUsage, 0);
       const totalCO2Emission = departedVessels.reduce((sum, v) => sum + v.co2Emission, 0);
 
-      // Create compact one-line vessel list (focus on cargo and money)
+      // Create compact vessel list (mobile-friendly)
       let vesselList = departedVessels.map(v =>
-        `<div style="font-size: 0.8em; opacity: 0.85; padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,0.08);">
-          🚢 <strong>${v.name}</strong> | ${formatNumber(v.cargoLoaded)}/${formatNumber(v.capacity)} TEU (${(v.utilization * 100).toFixed(0)}%) | 💰 $${formatNumber(v.netIncome)}
+        `<div style="font-size: 0.8em; opacity: 0.85; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+          <div>🚢 <strong>${v.name}</strong></div>
+          <div style="font-size: 0.9em; color: #9ca3af; margin-top: 2px;">
+            ${formatNumber(v.cargoLoaded)}/${formatNumber(v.capacity)} TEU (${(v.utilization * 100).toFixed(0)}%) | 💰 $${formatNumber(v.netIncome)}
+          </div>
         </div>`
       ).join('');
 
       const message = `
         <div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid rgba(255,255,255,0.3);">
-          <strong style="font-size: 1.1em;">🤖 Auto-Depart: ${departedCount} vessel${departedCount > 1 ? 's' : ''} departed</strong>
+          <strong style="font-size: 1.1em;">🤖 Auto-Depart: ${departedCount} vessel${departedCount > 1 ? 's' : ''}</strong>
         </div>
         <div style="margin: 12px 0; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; font-family: monospace;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
@@ -602,19 +756,22 @@ async function checkAutoDepartAll(settings) {
             <span style="color: #10b981; font-weight: bold;">$${formatNumber(totalNetIncome)}</span>
           </div>
           <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9em; color: #9ca3af;">
-            ⛽ ${formatNumber(totalFuelUsage)}t Fuel | 💨 ${formatNumber(totalCO2Emission)}t CO2
+            <div style="font-size: 0.85em; margin-bottom: 4px; opacity: 0.8;">Consumption:</div>
+            <div>⛽ ${formatNumber(totalFuelUsage)}t Fuel</div>
+            <div style="margin-top: 2px;">💨 ${formatNumber(totalCO2Emission)}t CO2</div>
           </div>
         </div>
         <div style="max-height: 240px; overflow-y: auto; margin-bottom: 10px; padding-right: 8px;">
           ${vesselList}
         </div>`;
 
-      // Use showPriceAlert for longer visibility (stays visible until user closes)
-      showPriceAlert(message, 'success');
+      // Use side notification (slides from right, auto-dismisses)
+      showSideNotification(message, 'success', 15000); // 15 seconds for long vessel lists
 
       // Send compact browser notification
       const settings = window.getSettings ? window.getSettings() : {};
-      if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+      const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
+      if (desktopNotifsEnabled && Notification.permission === 'granted') {
         await showNotification(`🤖 Auto-Depart: ${departedCount} vessel${departedCount > 1 ? 's' : ''}`, {
           body: `💰 Net: $${formatNumber(totalNetIncome)} | ⛽ ${formatNumber(totalFuelUsage)}t fuel | 💨 ${formatNumber(totalCO2Emission)}t CO2`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>🚢</text></svg>",
@@ -773,11 +930,12 @@ async function checkAutoCampaignRenewal(settings) {
           const efficiency = `${bestCampaign.min_efficiency}-${bestCampaign.max_efficiency}%`;
           const duration = bestCampaign.campaign_duration;
 
-          showFeedback(`🔄 Auto-activated ${typeName} campaign: ${duration}h | Efficiency: ${efficiency} | $${formatNumber(bestCampaign.price)}`, 'success');
+          showSideNotification(`📊 <strong>Auto-Campaign</strong><br><br>Activated ${typeName} campaign<br>Duration: ${duration}h | Efficiency: ${efficiency}<br>Cost: $${formatNumber(bestCampaign.price)}`, 'success');
 
           // Send compact notification
           const settings = window.getSettings ? window.getSettings() : {};
-          if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+          const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
+          if (desktopNotifsEnabled && Notification.permission === 'granted') {
             await showNotification(`🤖 Auto-Campaign: ${typeName}`, {
               body: `${duration}h | Efficiency: ${efficiency} | Cost: $${formatNumber(bestCampaign.price)}`,
               icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>📊</text></svg>",

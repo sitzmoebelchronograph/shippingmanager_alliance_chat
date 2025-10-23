@@ -21,7 +21,7 @@
  * @requires api - Backend API calls for data fetching
  */
 
-import { escapeHtml, formatNumber, renderStars, showFeedback, showPriceAlert } from './utils.js';
+import { escapeHtml, formatNumber, renderStars, showSideNotification } from './utils.js';
 import { fetchCampaigns, activateCampaign, fetchContacts } from './api.js';
 
 /**
@@ -215,7 +215,10 @@ export function showSettings(settings) {
   document.getElementById('autoBulkRepair').checked = settings.autoBulkRepair || false;
   document.getElementById('autoRepairInterval').value = settings.autoRepairInterval || '2-3';
   document.getElementById('autoCampaignRenewal').checked = settings.autoCampaignRenewal || false;
-  document.getElementById('autoPilotNotifications').checked = settings.autoPilotNotifications || false;
+
+  // Desktop notifications master toggle
+  const enableDesktopNotifs = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
+  document.getElementById('enableDesktopNotifications').checked = enableDesktopNotifs;
 
   // Intelligent Auto-Depart Settings
   const useRouteDefaults = settings.autoDepartUseRouteDefaults !== undefined ? settings.autoDepartUseRouteDefaults : true;
@@ -403,7 +406,7 @@ export async function showCampaignsOverlay() {
     document.getElementById('campaignsOverlay').style.display = 'flex';
   } catch (error) {
     console.error('Error showing campaigns overlay:', error);
-    showFeedback('Failed to load campaigns', 'error');
+    showSideNotification('Failed to load campaigns', 'error');
   }
 }
 
@@ -445,7 +448,7 @@ export async function buyCampaign(campaignId, typeName, duration, price, updateC
   try {
     const data = await activateCampaign(campaignId);
 
-    showFeedback(`✅ ${typeName} campaign activated for ${duration} hours!`, 'success');
+    showSideNotification(`✅ ${typeName} campaign activated for ${duration} hours!`, 'success');
 
     closeCampaignsOverlay();
     if (updateCallbacks) {
@@ -455,7 +458,7 @@ export async function buyCampaign(campaignId, typeName, duration, price, updateC
 
   } catch (error) {
     console.error('Error buying campaign:', error);
-    showFeedback('Failed to activate campaign', 'error');
+    showSideNotification('Failed to activate campaign', 'error');
   }
 }
 

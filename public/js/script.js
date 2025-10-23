@@ -49,13 +49,35 @@ import {
   registerServiceWorker,
   requestNotificationPermission,
   showNotification,
-  showFeedback,
-  showPriceAlert,
+  showSideNotification,
   updatePageTitle
 } from './modules/utils.js';
 
 // Import API functions
 import { fetchAllianceMembers } from './modules/api.js';
+
+// ===== DEMO MODE DETECTION =====
+// If URL contains ?demo=true, use demo API instead of real API
+const urlParams = new URLSearchParams(window.location.search);
+const IS_DEMO_MODE = urlParams.get('demo') === 'true';
+const API_PREFIX = IS_DEMO_MODE ? '/api/demo' : '/api';
+
+console.log(`[App] Running in ${IS_DEMO_MODE ? 'DEMO' : 'LIVE'} mode (API prefix: ${API_PREFIX})`);
+
+// Make API_PREFIX globally available for modules
+window.API_PREFIX = API_PREFIX;
+window.IS_DEMO_MODE = IS_DEMO_MODE;
+
+/**
+ * Helper function to build API URLs with demo mode support
+ * @param {string} endpoint - API endpoint path (e.g., '/user/get-settings')
+ * @returns {string} Full API URL with correct prefix
+ */
+window.apiUrl = function(endpoint) {
+  // Remove leading /api if present (to avoid double prefix)
+  const cleanEndpoint = endpoint.replace(/^\/api/, '');
+  return `${API_PREFIX}${cleanEndpoint}`;
+};
 
 // Import UI dialogs
 import {
@@ -457,7 +479,7 @@ async function testBrowserNotification() {
   const hasPermission = await requestNotificationPermission();
 
   if (!hasPermission) {
-    showFeedback('Please enable notifications first!', 'error');
+    showSideNotification('Please enable notifications first!', 'error');
     return;
   }
 
@@ -469,10 +491,10 @@ async function testBrowserNotification() {
       silent: false
     });
 
-    showPriceAlert(`⚠️ Test Alert<br><br>⛽ Fuel threshold: <strong>$${settings.fuelThreshold}/ton</strong><br>💨 CO2 threshold: <strong>$${settings.co2Threshold}/ton</strong>`, 'warning');
+    showSideNotification(`⚠️ <strong>Test Alert</strong><br><br>⛽ Fuel threshold: $${settings.fuelThreshold}/ton<br>💨 CO2 threshold: $${settings.co2Threshold}/ton`, 'warning', null, true);
   } catch (error) {
     console.error('[Test Alert] Notification error:', error);
-    showPriceAlert(`❌ Failed to send notification<br><br><strong>Error:</strong> ${error.message}<br><br><strong>Permission:</strong> ${Notification.permission}<br><strong>Secure:</strong> ${window.isSecureContext ? 'Yes' : 'No'}<br><strong>Protocol:</strong> ${window.location.protocol}`, 'error');
+    showSideNotification(`🔔 <strong>Failed to send notification</strong><br><br>Error: ${error.message}<br>Permission: ${Notification.permission}<br>Secure: ${window.isSecureContext ? 'Yes' : 'No'}<br>Protocol: ${window.location.protocol}`, 'error', null, true);
   }
 }
 
@@ -609,7 +631,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== STEP 1.5: Load User Settings (CEO Level & Points) =====
   try {
-    const userResponse = await fetch('/api/user/get-settings');
+    const userResponse = await fetch(apiUrl('/api/user/get-settings'));
     if (userResponse.ok) {
       const userData = await userResponse.json();
 
@@ -922,9 +944,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     updatePageTitle(settings);
   });
 
-  // Enable/disable AutoPilot action notifications
-  document.getElementById('autoPilotNotifications').addEventListener('change', function() {
-    settings.autoPilotNotifications = this.checked;
+  // Desktop notifications master toggle
+  document.getElementById('enableDesktopNotifications').addEventListener('change', function() {
+    settings.enableDesktopNotifications = this.checked;
     saveSettings(settings);
   });
 
@@ -985,17 +1007,51 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Button to manually request notification permission
   const notificationBtn = document.getElementById('notificationBtn');
   if (notificationBtn) {
-    notificationBtn.addEventListener('click', async () => {
-      const hasPermission = await requestNotificationPermission();
-      if (hasPermission) {
+    // Update button state based on browser permission AND settings
+    const updateNotificationButtonState = () => {
+      const settings = window.getSettings ? window.getSettings() : {};
+      const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
+
+      // Only show button if browser permission is missing (regardless of settings)
+      if (Notification.permission !== "granted") {
+        // Show red disabled megaphone
+        notificationBtn.classList.remove('enabled');
+        notificationBtn.classList.add('disabled');
+        notificationBtn.style.display = '';
+      } else {
+        // Hide button completely when browser permission is granted
         notificationBtn.style.display = 'none';
-        showFeedback('Notifications enabled!', 'success');
+      }
+    };
+
+    // Set initial state
+    updateNotificationButtonState();
+
+    notificationBtn.addEventListener('click', async () => {
+      // Only handle browser permission (device-specific), not global settings
+
+      if (Notification.permission === "denied") {
+        // Browser has blocked notifications - user must enable in browser settings
+        showSideNotification('⚠️ <strong>Browser Blocked</strong><br><br>Enable in browser settings', 'warning', null, true);
+        return;
+      }
+
+      if (Notification.permission === "default") {
+        // Ask for browser permission
+        const hasPermission = await requestNotificationPermission();
+        if (hasPermission) {
+          showSideNotification('✅ <strong>Browser Permission Granted</strong>', 'success');
+        }
+        updateNotificationButtonState();
+        return;
+      }
+
+      if (Notification.permission === "granted") {
+        // Already granted - show info
+        showSideNotification('✅ <strong>Browser Permission</strong><br><br>Already granted for this device', 'success');
       }
     });
-    // Hide button if permission already granted
-    if (Notification.permission === "granted") {
-      notificationBtn.style.display = 'none';
-    }
+
   }
 
   // Auto-request notification permission on load (if not already decided)
@@ -1068,8 +1124,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Refresh repair count every 60-70 seconds
   setInterval(() => updateRepairCount(settings), 60000 + Math.random() * 10000);
 
-  // Refresh bunker status every 30-35 seconds
-  setInterval(() => updateBunkerStatus(settings), 30000 + Math.random() * 5000);
+  // Refresh bunker prices every 30 minutes + 1 minute random (prices change every 30min)
+  setInterval(() => updateBunkerStatus(settings), (30 * 60 * 1000) + (Math.random() * 60 * 1000));
 
   // Refresh campaign status every 60-70 seconds
   setInterval(updateCampaignsStatus, 60000 + Math.random() * 10000);
