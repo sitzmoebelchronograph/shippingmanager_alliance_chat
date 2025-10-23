@@ -159,7 +159,7 @@ router.get('/settings', async (req, res) => {
       autoBulkRepair: false,
       autoRepairInterval: '2-3',
       autoCampaignRenewal: false,
-      autoPilotNotifications: false,
+      enableDesktopNotifications: true,
       autoDepartUseRouteDefaults: true,
       minVesselUtilization: 45,
       autoVesselSpeed: 50
@@ -255,7 +255,7 @@ router.post('/settings', async (req, res) => {
       autoBulkRepair: !!settings.autoBulkRepair,
       autoRepairInterval: settings.autoRepairInterval || '2-3',
       autoCampaignRenewal: !!settings.autoCampaignRenewal,
-      autoPilotNotifications: !!settings.autoPilotNotifications,
+      enableDesktopNotifications: settings.enableDesktopNotifications !== undefined ? !!settings.enableDesktopNotifications : true,
       autoDepartUseRouteDefaults: settings.autoDepartUseRouteDefaults !== undefined ? !!settings.autoDepartUseRouteDefaults : true,
       minVesselUtilization: parseInt(settings.minVesselUtilization) || 45,
       autoVesselSpeed: parseInt(settings.autoVesselSpeed) || 50

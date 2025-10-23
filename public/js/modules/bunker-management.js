@@ -22,7 +22,7 @@
  * @requires ui-dialogs - Confirmation dialogs for purchases
  */
 
-import { formatNumber, showFeedback, showPriceAlert, showNotification } from './utils.js';
+import { formatNumber, showSideNotification, showNotification } from './utils.js';
 import { fetchBunkerPrices, purchaseFuel as apiPurchaseFuel, purchaseCO2 as apiPurchaseCO2, fetchCampaigns } from './api.js';
 import { showConfirmDialog } from './ui-dialogs.js';
 
@@ -190,11 +190,12 @@ export async function updateBunkerStatus(settings) {
     document.getElementById('co2Btn').title = `Buy ${formatNumber(co2Needed)}t CO2 for $${formatNumber(co2Cost)} (Price: $${co2Price}/t)`;
 
     const hasPermission = Notification.permission === "granted";
+    const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
 
     if (fuelPrice <= settings.fuelThreshold && lastFuelAlertPrice !== fuelPrice) {
       lastFuelAlertPrice = fuelPrice;
 
-      if (hasPermission) {
+      if (hasPermission && desktopNotifsEnabled) {
         await showNotification('⛽ Fuel Price Alert!', {
           body: `New price: $${fuelPrice}/t`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
@@ -203,13 +204,13 @@ export async function updateBunkerStatus(settings) {
         });
       }
 
-      showPriceAlert(`⛽ Fuel Price Alert!<br><br>Current price: <strong>$${fuelPrice}/ton</strong><br>Your threshold: $${settings.fuelThreshold}/ton`, 'warning');
+      showSideNotification(`⛽ <strong>Fuel Price Alert!</strong><br><br>Current price: <strong style="color: #4ade80;">$${fuelPrice}/ton</strong><br>Your threshold: $${settings.fuelThreshold}/ton`, 'success', null, true);
     }
 
     if (co2Price <= settings.co2Threshold && lastCO2AlertPrice !== co2Price) {
       lastCO2AlertPrice = co2Price;
 
-      if (hasPermission) {
+      if (hasPermission && desktopNotifsEnabled) {
         await showNotification('💨 CO2 Price Alert!', {
           body: `New price: $${co2Price}/t`,
           icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
@@ -218,7 +219,7 @@ export async function updateBunkerStatus(settings) {
         });
       }
 
-      showPriceAlert(`💨 CO2 Price Alert!<br><br>Current price: <strong>$${co2Price}/ton</strong><br>Your threshold: $${settings.co2Threshold}/ton`, 'warning');
+      showSideNotification(`💨 <strong>CO2 Price Alert!</strong><br><br>Current price: <strong style="color: #4ade80;">$${co2Price}/ton</strong><br>Your threshold: $${settings.co2Threshold}/ton`, 'success', null, true);
     }
 
     if (fuelPrice > settings.fuelThreshold) {
@@ -295,7 +296,7 @@ export async function updateCampaignsStatus() {
 
     if (lastCampaignsCount === null) {
       if (activeCount !== 3) {
-        showPriceAlert(`⚠️ Only ${activeCount}/3 marketing campaigns are active!`, 'warning');
+        showSideNotification(`📊 <strong>Marketing Campaigns</strong><br><br>Only ${activeCount}/3 campaigns are active!`, 'warning', null, true);
 
         if (Notification.permission === 'granted') {
           await showNotification('📊 Marketing Campaigns Alert!', {
@@ -308,9 +309,9 @@ export async function updateCampaignsStatus() {
       }
     } else if (lastCampaignsCount !== activeCount) {
       if (activeCount === 3) {
-        showFeedback('✅ All 3 marketing campaigns are now active!', 'success');
+        showSideNotification('✅ All 3 marketing campaigns are now active!', 'success');
       } else {
-        showPriceAlert(`⚠️ Marketing campaigns changed: ${activeCount}/3 active`, 'warning');
+        showSideNotification(`⚠️ <strong>Marketing Campaigns</strong><br><br>${activeCount}/3 campaigns active`, 'warning', null, true);
 
         if (Notification.permission === 'granted') {
           await showNotification('📊 Marketing Campaigns Alert!', {
@@ -360,7 +361,7 @@ export async function buyMaxFuel() {
   const fuelNeeded = Math.max(0, maxFuel - currentFuel);
 
   if (fuelNeeded === 0) {
-    showFeedback('Fuel tank is already full!', 'error');
+    showSideNotification('⛽ Fuel tank is already full!', 'info');
     return;
   }
 
@@ -386,15 +387,15 @@ export async function buyMaxFuel() {
     const data = await apiPurchaseFuel(fuelNeeded);
 
     if (data.error) {
-      showFeedback(`Error: ${data.error}`, 'error');
+      showSideNotification(`⛽ <strong>Purchase Failed</strong><br><br>${data.error}`, 'error');
     } else {
-      showFeedback(`Purchased ${formatNumber(fuelNeeded)}t fuel for $${formatNumber(totalCost)}!`, 'success');
+      showSideNotification(`⛽ <strong>Fuel Purchased!</strong><br><br>Amount: ${formatNumber(fuelNeeded)}t<br>Cost: $${formatNumber(totalCost)}`, 'success');
       if (window.debouncedUpdateBunkerStatus) {
         window.debouncedUpdateBunkerStatus(500);
       }
     }
   } catch (error) {
-    showFeedback(`Error: ${error.message}`, 'error');
+    showSideNotification(`⛽ <strong>Error</strong><br><br>${error.message}`, 'error');
   }
 }
 
@@ -428,7 +429,7 @@ export async function buyMaxCO2() {
   const co2Needed = Math.max(0, maxCO2 - currentCO2);
 
   if (co2Needed === 0) {
-    showFeedback('CO2 storage is already full!', 'error');
+    showSideNotification('💨 CO2 storage is already full!', 'info');
     return;
   }
 
@@ -454,15 +455,15 @@ export async function buyMaxCO2() {
     const data = await apiPurchaseCO2(co2Needed);
 
     if (data.error) {
-      showFeedback(`Error: ${data.error}`, 'error');
+      showSideNotification(`💨 <strong>Purchase Failed</strong><br><br>${data.error}`, 'error');
     } else {
-      showFeedback(`Purchased ${formatNumber(co2Needed)}t CO2 for $${formatNumber(totalCost)}!`, 'success');
+      showSideNotification(`💨 <strong>CO2 Purchased!</strong><br><br>Amount: ${formatNumber(co2Needed)}t<br>Cost: $${formatNumber(totalCost)}`, 'success');
       if (window.debouncedUpdateBunkerStatus) {
         window.debouncedUpdateBunkerStatus(500);
       }
     }
   } catch (error) {
-    showFeedback(`Error: ${error.message}`, 'error');
+    showSideNotification(`💨 <strong>Error</strong><br><br>${error.message}`, 'error');
   }
 }
 

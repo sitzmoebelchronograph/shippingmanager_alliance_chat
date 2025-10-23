@@ -45,6 +45,7 @@ const messengerRoutes = require('./server/routes/messenger');
 const gameRoutes = require('./server/routes/game');
 const settingsRoutes = require('./server/routes/settings');
 const coopRoutes = require('./server/routes/coop');
+const demoRoutes = require('./server/routes/demo');
 
 // Initialize Express app
 const app = express();
@@ -78,6 +79,9 @@ app.use('/api', messengerRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', coopRoutes);
+
+// Demo API (provides dummy data for recordings)
+app.use('/api/demo', demoRoutes);
 
 // Create HTTPS server
 const server = createHttpsServer(app);

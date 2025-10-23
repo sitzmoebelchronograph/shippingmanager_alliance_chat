@@ -10,7 +10,7 @@
  * @requires utils - Formatting and feedback functions
  */
 
-import { formatNumber, escapeHtml, showFeedback } from './utils.js';
+import { formatNumber, escapeHtml, showSideNotification } from './utils.js';
 
 /**
  * Fetches coop data from the backend API
@@ -21,7 +21,7 @@ import { formatNumber, escapeHtml, showFeedback } from './utils.js';
  */
 export async function fetchCoopData() {
   try {
-    const response = await fetch('/api/coop/data');
+    const response = await fetch(window.apiUrl('/api/coop/data'));
     if (!response.ok) throw new Error('Failed to fetch coop data');
     return await response.json();
   } catch (error) {
@@ -214,6 +214,6 @@ export function closeCoopOverlay() {
  * @returns {void}
  */
 export function sendCoopMax(userId) {
-  showFeedback(`Send max coop to user ${userId} - API endpoint not yet implemented`, 'info');
+  showSideNotification(`Send max coop to user ${userId} - API endpoint not yet implemented`, 'info');
   console.log(`[Coop] Send max to user ${userId} - Placeholder function`);
 }

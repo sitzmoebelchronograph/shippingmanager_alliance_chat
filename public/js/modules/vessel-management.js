@@ -39,7 +39,7 @@
  * @requires bunker-management - Cash and fuel inventory management
  */
 
-import { formatNumber, showFeedback, showPriceAlert } from './utils.js';
+import { formatNumber, showSideNotification } from './utils.js';
 import { escapeHtml } from './utils.js';
 import {
   fetchVessels,
@@ -257,7 +257,7 @@ export async function departAllVessels() {
     const data = await apiDepartAllVessels();
 
     if (data.error) {
-      showFeedback(`Error: ${data.error}`, 'error');
+      showSideNotification(`<strong>Error</strong><br><br>${data.error}`, 'error', null, true);
       departBtn.disabled = false;
       return;
     }
@@ -280,16 +280,16 @@ export async function departAllVessels() {
     }
 
     if (vesselsDeparted === 0) {
-      showPriceAlert('🚢 No vessels could depart! Check fuel availability.', 'error');
+      showSideNotification('🚢 <strong>No vessels could depart!</strong><br><br>Check fuel availability.', 'error', null, true);
     } else if (vesselsDeparted < vesselsInHarbor) {
       const vesselsRemaining = vesselsInHarbor - vesselsDeparted;
-      showPriceAlert(`<strong>🚢 Only ${vesselsDeparted} of ${vesselsInHarbor} vessels departed!</strong><br><br>${vesselsRemaining} vessels remaining in harbor<br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'error');
+      showSideNotification(`🚢 <strong>Only ${vesselsDeparted} of ${vesselsInHarbor} vessels departed!</strong><br><br>${vesselsRemaining} vessels remaining in harbor<br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'error', null, true);
     } else {
-      showPriceAlert(`<strong>🚢 All ${vesselsDeparted} vessel${vesselsDeparted === 1 ? '' : 's'} departed!</strong><br><br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'success');
+      showSideNotification(`🚢 <strong>All ${vesselsDeparted} vessel${vesselsDeparted === 1 ? '' : 's'} departed!</strong><br><br>⛽ Fuel used: ${formatNumber(fuelUsed)}t<br>💨 CO2 emitted: ${formatNumber(co2Emitted)}t<br>💰 Net income: $${formatNumber(netIncome)}<br><span style="opacity: 0.7; font-size: 0.9em;">(Income: $${formatNumber(departIncome)} - Fee: $${formatNumber(harborFee)})</span>`, 'success', null, true);
     }
 
   } catch (error) {
-    showFeedback(`Error: ${error.message}`, 'error');
+    showSideNotification(`<strong>Error</strong><br><br>${error.message}`, 'error', null, true);
     departBtn.disabled = false;
   }
 }
@@ -375,7 +375,7 @@ export async function repairAllVessels(settings) {
     });
 
     if (vesselsToRepair.length === 0) {
-      showFeedback('No vessels need repair!', 'error');
+      showSideNotification('🔧 No vessels need repair!', 'info');
       return;
     }
 
@@ -394,7 +394,7 @@ export async function repairAllVessels(settings) {
 
     const bunkerState = getCurrentBunkerState();
     if (totalCost > bunkerState.currentCash) {
-      showFeedback(`<strong>Not enough cash!</strong><br><br>Repair cost: $${formatNumber(totalCost)}<br>Your cash: $${formatNumber(bunkerState.currentCash)}<br>Missing: $${formatNumber(totalCost - bunkerState.currentCash)}`, 'error');
+      showSideNotification(`🔧 <strong>Not enough cash!</strong><br><br>Repair cost: $${formatNumber(totalCost)}<br>Your cash: $${formatNumber(bunkerState.currentCash)}<br>Missing: $${formatNumber(totalCost - bunkerState.currentCash)}`, 'error', null, true);
       return;
     }
 
@@ -417,12 +417,12 @@ export async function repairAllVessels(settings) {
     const repairData = await doWearMaintenanceBulk(vesselIds);
 
     if (repairData.error) {
-      showFeedback(`Error: ${repairData.error}`, 'error');
+      showSideNotification(`<strong>Error</strong><br><br>${repairData.error}`, 'error', null, true);
       repairBtn.disabled = false;
       return;
     }
 
-    showFeedback(`<strong>${vesselsToRepair.length} vessels repaired!</strong><br><br>💰 Total cost: $${formatNumber(totalCost)}<br>🔧 Wear threshold: ${settings.maintenanceThreshold}%`, 'success');
+    showSideNotification(`🔧 <strong>${vesselsToRepair.length} vessels repaired!</strong><br><br>💰 Total cost: $${formatNumber(totalCost)}<br>🔧 Wear threshold: ${settings.maintenanceThreshold}%`, 'success');
 
     if (window.debouncedUpdateRepairCount && window.debouncedUpdateBunkerStatus) {
       setTimeout(() => window.debouncedUpdateRepairCount(800), 1000);
@@ -430,7 +430,7 @@ export async function repairAllVessels(settings) {
     }
 
   } catch (error) {
-    showFeedback(`Error: ${error.message}`, 'error');
+    showSideNotification(`<strong>Error</strong><br><br>${error.message}`, 'error', null, true);
     repairBtn.disabled = false;
   }
 }
@@ -870,13 +870,13 @@ export async function purchaseSingleVessel(vessel, quantity = 1) {
       if (data.error) {
         failCount++;
         if (data.error === 'vessel_limit_reached') {
-          showFeedback(`❌ Vessel limit reached! Purchased ${successCount} vessel(s), cannot buy more.`, 'error');
+          showSideNotification(`🚢 <strong> Vessel limit reached! Purchased ${successCount} vessel(s), cannot buy more.</strong>`, 'error', null, true);
           break;
         } else if (data.error === 'not_enough_cash') {
-          showFeedback(`❌ Not enough cash! Purchased ${successCount} vessel(s), ran out of money.`, 'error');
+          showSideNotification(`🚢 <strong> Not enough cash! Purchased ${successCount} vessel(s), ran out of money.</strong>`, 'error', null, true);
           break;
         } else {
-          showFeedback(`❌ Error: ${data.error} - Purchased ${successCount} so far`, 'error');
+          showSideNotification(`🚢 <strong> Error: ${data.error} - Purchased ${successCount} so far`, 'error');
         }
       } else {
         successCount++;
@@ -891,12 +891,12 @@ export async function purchaseSingleVessel(vessel, quantity = 1) {
     } catch (error) {
       failCount++;
       console.error('Error purchasing vessel:', error);
-      showFeedback(`❌ Network error purchasing ${vessel.name}`, 'error');
+      showSideNotification(`🚢 <strong> Network error purchasing ${vessel.name}`, 'error', null, true);
     }
   }
 
   if (successCount > 0 && failCount === 0) {
-    showFeedback(`✓ Successfully purchased ${successCount}x ${vessel.name}!`, 'success');
+    showSideNotification(`🚢 <strong>Purchase Successful!</strong><br><br>Purchased ${successCount}x ${vessel.name}`, 'success');
   }
 
   if (successCount > 0 && window.updateVesselCount) {
@@ -977,15 +977,15 @@ export async function purchaseBulk() {
           console.error(`Failed to purchase ${item.vessel.name}:`, data.error);
 
           if (data.error === 'vessel_limit_reached') {
-            showFeedback(`❌ Vessel limit reached! Purchased ${successCount} vessel(s), could not buy more.`, 'error');
+            showSideNotification(`🚢 <strong> Vessel limit reached! Purchased ${successCount} vessel(s), could not buy more.</strong>`, 'error', null, true);
             i = selectedVessels.length;
             break;
           } else if (data.error === 'not_enough_cash') {
-            showFeedback(`❌ Not enough cash! Purchased ${successCount} vessel(s), ran out of money.`, 'error');
+            showSideNotification(`🚢 <strong> Not enough cash! Purchased ${successCount} vessel(s), ran out of money.</strong>`, 'error', null, true);
             i = selectedVessels.length;
             break;
           } else {
-            showFeedback(`❌ Error: ${data.error} - Purchased ${successCount} so far`, 'error');
+            showSideNotification(`🚢 <strong> Error: ${data.error} - Purchased ${successCount} so far`, 'error');
           }
         } else {
           successCount++;
@@ -996,7 +996,7 @@ export async function purchaseBulk() {
       } catch (error) {
         failCount++;
         console.error(`Error purchasing ${item.vessel.name}:`, error);
-        showFeedback(`❌ Network error purchasing ${item.vessel.name}`, 'error');
+        showSideNotification(`🚢 <strong> Network error purchasing ${item.vessel.name}`, 'error', null, true);
       }
 
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -1014,7 +1014,7 @@ export async function purchaseBulk() {
   if (selectedCountEl) selectedCountEl.textContent = '0';
 
   if (successCount > 0 && failCount === 0) {
-    showFeedback(`✓ Successfully purchased all ${successCount} vessel(s)!`, 'success');
+    showSideNotification(`🚢 <strong>Bulk Purchase Successful!</strong><br><br>Purchased ${successCount} vessel(s)`, 'success');
   }
 
   if (successCount > 0 && window.updateVesselCount) {
