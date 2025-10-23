@@ -1,4 +1,41 @@
-// certificate.js - HTTPS Certificate Generation and Management
+/**
+ * @fileoverview HTTPS Certificate Generation and Management Module
+ *
+ * This module handles automatic generation and management of self-signed SSL/TLS certificates
+ * for the Shipping Manager Chat application. It creates a Certificate Authority (CA) that can
+ * be trusted by browsers, then generates server certificates signed by that CA.
+ *
+ * Key Features:
+ * - Generates a long-lived (10 year) Certificate Authority that can be installed in system trust store
+ * - Creates server certificates with Subject Alternative Names (SANs) for all network interfaces
+ * - Supports localhost, 127.0.0.1, ::1, and all LAN IP addresses (e.g., 192.168.x.x)
+ * - Provides automatic CA installation on Windows via certutil (requires admin rights)
+ * - Certificates valid for 1 year and automatically regenerated when missing
+ *
+ * Why This Exists:
+ * - WebSocket connections (wss://) require HTTPS, not just HTTP
+ * - Browser security policies require trusted certificates for WebSocket communication
+ * - Supporting multiple network interfaces allows access from other devices on LAN
+ * - CA-based approach allows one-time browser trust instead of per-certificate warnings
+ *
+ * Certificate Chain:
+ *   CA Certificate (10yr) → Server Certificate (1yr)
+ *   ca-cert.pem, ca-key.pem → cert.pem, key.pem
+ *
+ * Installation Workflow:
+ * 1. First run: Generate CA + server cert, prompt for CA installation
+ * 2. User installs CA in system trust store (manual or automatic)
+ * 3. All future server certificates signed by this CA are automatically trusted
+ * 4. Server cert regenerated when missing (uses existing CA if available)
+ *
+ * @requires fs - File system operations for certificate storage
+ * @requires path - Path resolution for certificate files
+ * @requires https - HTTPS server creation
+ * @requires os - Network interface detection and platform detection
+ * @requires child_process - Certificate installation via certutil
+ * @requires node-forge - RSA key generation and X.509 certificate creation
+ * @module server/certificate
+ */
 
 const fs = require('fs');
 const path = require('path');
@@ -7,13 +44,48 @@ const os = require('os');
 const { execSync } = require('child_process');
 const forge = require('node-forge');
 
+/**
+ * File path for the Certificate Authority certificate (10-year validity)
+ * @constant {string}
+ */
 const CA_CERT_PATH = path.join(__dirname, '..', 'ca-cert.pem');
+
+/**
+ * File path for the Certificate Authority private key
+ * @constant {string}
+ */
 const CA_KEY_PATH = path.join(__dirname, '..', 'ca-key.pem');
+
+/**
+ * File path for the server certificate (1-year validity)
+ * @constant {string}
+ */
 const CERT_PATH = path.join(__dirname, '..', 'cert.pem');
+
+/**
+ * File path for the server private key
+ * @constant {string}
+ */
 const KEY_PATH = path.join(__dirname, '..', 'key.pem');
 
 /**
- * Get all local network IP addresses
+ * Detects all non-internal IPv4 addresses from network interfaces.
+ *
+ * This function scans all network interfaces on the system and collects their IPv4 addresses,
+ * excluding loopback/internal interfaces. These IPs are used as Subject Alternative Names (SANs)
+ * in the server certificate, allowing the application to be accessed from other devices on the LAN.
+ *
+ * Why This Matters:
+ * - Browsers require certificates to explicitly list all hostnames/IPs they'll be accessed via
+ * - Without SANs for network IPs, accessing via 192.168.x.x would show certificate warnings
+ * - Dynamically detecting IPs ensures certificates work across different network configurations
+ *
+ * @function getNetworkIPs
+ * @returns {string[]} Array of IPv4 addresses (e.g., ['192.168.1.100', '10.0.0.5'])
+ *
+ * @example
+ * const ips = getNetworkIPs();
+ * console.log(ips); // ['192.168.1.100', '192.168.56.1']
  */
 function getNetworkIPs() {
   const networkInterfaces = os.networkInterfaces();
@@ -31,7 +103,43 @@ function getNetworkIPs() {
 }
 
 /**
- * Generate Certificate Authority (CA)
+ * Generates a self-signed Certificate Authority (CA) for signing server certificates.
+ *
+ * This function creates a long-lived (10 year) CA certificate and private key that can be
+ * installed in the system's trust store. Once installed, all server certificates signed by
+ * this CA will be automatically trusted by browsers without security warnings.
+ *
+ * Why This Approach:
+ * - Self-signed server certificates trigger warnings on every access
+ * - CA-based approach requires one-time installation, then all future certs are trusted
+ * - 10-year validity means CA doesn't need frequent regeneration
+ * - Automatic installation on Windows (via certutil) streamlines setup
+ *
+ * Certificate Properties:
+ * - 2048-bit RSA key pair
+ * - SHA-256 signature algorithm
+ * - Basic Constraints: CA=true (can sign other certificates)
+ * - Key Usage: Certificate Signing, CRL Signing
+ * - Common Name: "Shipping Manager Chat CA"
+ *
+ * Platform-Specific Installation:
+ * - Windows: Prompts UAC dialog for automatic installation via certutil
+ * - macOS: Provides manual command for adding to System keychain
+ * - Linux: Provides manual command for adding to ca-certificates
+ *
+ * Side Effects:
+ * - Writes ca-cert.pem and ca-key.pem to project root
+ * - Attempts automatic installation on Windows (requires user approval)
+ * - Logs installation instructions to console
+ *
+ * @function generateCA
+ * @returns {{cert: string, key: string}} Object with PEM-encoded CA certificate and private key
+ *
+ * @example
+ * const ca = generateCA();
+ * // Creates ca-cert.pem and ca-key.pem in project root
+ * // On Windows, shows UAC prompt for installation
+ * console.log(ca.cert); // PEM-encoded certificate
  */
 function generateCA() {
   console.log('Generating Certificate Authority (CA)...');
@@ -103,7 +211,51 @@ function generateCA() {
 }
 
 /**
- * Generate server certificate signed by CA
+ * Generates a server certificate signed by the Certificate Authority.
+ *
+ * This function creates a 1-year server certificate with Subject Alternative Names (SANs)
+ * covering all network interfaces. The certificate is signed by the CA (loaded or generated),
+ * allowing browsers to trust it without warnings if the CA is installed in the system trust store.
+ *
+ * Why This Design:
+ * - 1-year validity balances security (shorter lifespan) with convenience (not too frequent renewal)
+ * - SANs for all network IPs enable access from other devices on LAN
+ * - localhost + 127.0.0.1 + ::1 ensure local development works
+ * - CA-signed approach means regenerating server cert doesn't require browser reconfiguration
+ *
+ * Certificate Properties:
+ * - 2048-bit RSA key pair
+ * - SHA-256 signature algorithm
+ * - Common Name: "localhost"
+ * - Subject Alternative Names:
+ *   - DNS: localhost
+ *   - IP: 127.0.0.1, ::1
+ *   - IP: All detected network IPs (e.g., 192.168.1.100)
+ * - Extended Key Usage: Server Authentication, Client Authentication
+ *
+ * Certificate Workflow:
+ * 1. Check if CA exists, generate if missing
+ * 2. Load CA certificate and private key
+ * 3. Generate new server key pair
+ * 4. Detect all network IPs via getNetworkIPs()
+ * 5. Create certificate with SANs for localhost + all IPs
+ * 6. Sign certificate with CA private key
+ * 7. Write cert.pem and key.pem to disk
+ *
+ * Side Effects:
+ * - May trigger CA generation if CA files don't exist
+ * - Writes cert.pem and key.pem to project root
+ * - Logs detected network IPs to console
+ *
+ * @function generateCertificate
+ * @returns {void}
+ *
+ * @example
+ * generateCertificate();
+ * // Generates cert.pem and key.pem
+ * // Console output:
+ * //   "Adding network IP to certificate: 192.168.1.100"
+ * //   "✓ Server certificate generated successfully"
  */
 function generateCertificate() {
   console.log('Generating server certificate...');
@@ -186,7 +338,32 @@ function generateCertificate() {
 }
 
 /**
- * Load or generate certificate
+ * Loads existing server certificate or generates a new one if missing.
+ *
+ * This function implements lazy certificate generation - it only creates certificates
+ * when they don't exist. This ensures the server can start quickly on subsequent runs
+ * without regenerating certificates unnecessarily.
+ *
+ * Why This Pattern:
+ * - Certificates are only generated when needed (first run or after deletion)
+ * - Automatic regeneration ensures server always has valid certificates
+ * - Existing certificates are reused to maintain consistent SSL fingerprints
+ * - No manual intervention required for certificate management
+ *
+ * Certificate Lifecycle:
+ * 1. Check if cert.pem and key.pem exist
+ * 2. If missing, generate new server certificate (which may also generate CA)
+ * 3. Read certificate and key files into memory
+ * 4. Return as Buffer objects for HTTPS server
+ *
+ * @function loadCertificate
+ * @returns {{cert: Buffer, key: Buffer}} Object with certificate and private key as Buffers
+ *
+ * @example
+ * const credentials = loadCertificate();
+ * const server = https.createServer(credentials, app);
+ * // If certificates missing, generates them first
+ * // Otherwise, loads existing cert.pem and key.pem
  */
 function loadCertificate() {
   if (!fs.existsSync(CERT_PATH) || !fs.existsSync(KEY_PATH)) {
@@ -200,7 +377,36 @@ function loadCertificate() {
 }
 
 /**
- * Create HTTPS server
+ * Creates an HTTPS server with automatically managed SSL certificates.
+ *
+ * This is the primary export function used by app.js to create the HTTPS server.
+ * It handles certificate loading/generation transparently, providing a simple
+ * interface for creating a secure server.
+ *
+ * Why HTTPS Required:
+ * - WebSocket Secure (wss://) connections require HTTPS, not HTTP
+ * - Modern browsers block insecure WebSocket connections from secure contexts
+ * - Session cookies from shippingmanager.cc may have Secure flag, requiring HTTPS
+ * - Accessing from other devices on LAN requires trusted certificates
+ *
+ * Certificate Management:
+ * - Automatically loads or generates certificates via loadCertificate()
+ * - No manual intervention required
+ * - Server starts with valid HTTPS configuration on first run
+ *
+ * @function createHttpsServer
+ * @param {Express} app - Express application instance
+ * @returns {https.Server} HTTPS server instance configured with SSL certificates
+ *
+ * @example
+ * const express = require('express');
+ * const { createHttpsServer } = require('./server/certificate');
+ *
+ * const app = express();
+ * const server = createHttpsServer(app);
+ * server.listen(12345, () => {
+ *   console.log('HTTPS server running on port 12345');
+ * });
  */
 function createHttpsServer(app) {
   const credentials = loadCertificate();
