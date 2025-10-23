@@ -213,8 +213,26 @@ export function showSettings(settings) {
 
   document.getElementById('autoDepartAll').checked = settings.autoDepartAll || false;
   document.getElementById('autoBulkRepair').checked = settings.autoBulkRepair || false;
+  document.getElementById('autoRepairInterval').value = settings.autoRepairInterval || '2-3';
   document.getElementById('autoCampaignRenewal').checked = settings.autoCampaignRenewal || false;
   document.getElementById('autoPilotNotifications').checked = settings.autoPilotNotifications || false;
+
+  // Intelligent Auto-Depart Settings
+  const useRouteDefaults = settings.autoDepartUseRouteDefaults !== undefined ? settings.autoDepartUseRouteDefaults : true;
+  document.getElementById('autoDepartUseRouteDefaults').checked = useRouteDefaults;
+
+  const customSettingsDiv = document.getElementById('autoDepartCustomSettings');
+  const minUtilInput = document.getElementById('minVesselUtilization');
+  const speedInput = document.getElementById('autoVesselSpeed');
+
+  if (useRouteDefaults) {
+    customSettingsDiv.style.display = 'none';
+  } else {
+    customSettingsDiv.style.display = 'block';
+    minUtilInput.value = settings.minVesselUtilization || 45;
+    speedInput.value = settings.autoVesselSpeed || 50;
+  }
+
   document.getElementById('settingsOverlay').style.display = 'flex';
 }
 

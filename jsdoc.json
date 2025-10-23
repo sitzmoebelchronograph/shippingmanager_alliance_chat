@@ -1,0 +1,33 @@
+{
+  "source": {
+    "include": [
+      "app.js",
+      "server",
+      "public/js/modules"
+    ],
+    "includePattern": ".+\\.js(doc|x)?$",
+    "excludePattern": "(node_modules|docs|for-claude)"
+  },
+  "opts": {
+    "destination": "./public/docs",
+    "recurse": true,
+    "readme": "./README.md",
+    "template": "./jsdoc-template/docdash",
+    "encoding": "utf8"
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "templates": {
+    "default": {
+      "outputSourceFiles": true,
+      "includeDate": true
+    },
+    "cleverLinks": false,
+    "monospaceLinks": false
+  },
+  "markdown": {
+    "hardwrap": false,
+    "idInHeadings": true
+  }
+}

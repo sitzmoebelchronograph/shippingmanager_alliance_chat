@@ -69,6 +69,14 @@ import {
   showAnchorInfo
 } from './modules/ui-dialogs.js';
 
+// Import coop management
+import {
+  updateCoopBadge,
+  showCoopOverlay,
+  closeCoopOverlay,
+  sendCoopMax
+} from './modules/coop.js';
+
 // Import chat functionality
 import {
   loadMessages,
@@ -333,8 +341,6 @@ window.triggerAutoRebuyChecks = triggerAutoRebuyChecks;
  * window.handleSettingsUpdate(data);
  */
 window.handleSettingsUpdate = (newSettings) => {
-  console.log('[Settings] Received update from another client:', newSettings);
-
   // Update local settings object
   settings = newSettings;
 
@@ -419,8 +425,6 @@ window.handleSettingsUpdate = (newSettings) => {
 
   // Update repair count if maintenance threshold changed
   debouncedUpdateRepairCount(500);
-
-  console.log('[Settings] UI updated successfully');
 };
 
 // =============================================================================
@@ -504,6 +508,17 @@ window.buyCampaign = (campaignId, typeName, duration, price) => {
     updateCampaignsStatus: () => updateCampaignsStatus(),
     updateBunkerStatus: () => debouncedUpdateBunkerStatus(500)
   });
+};
+
+/**
+ * Global wrapper for sendCoopMax function.
+ * Allows HTML onclick handlers to call the coop send function.
+ *
+ * @global
+ * @param {number} userId - Target user ID to send coop vessels to
+ */
+window.sendCoopMax = (userId) => {
+  sendCoopMax(userId);
 };
 
 /**
@@ -591,7 +606,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ===== STEP 1: Load Settings =====
   // CRITICAL: Must happen first as other modules depend on settings state
   settings = await loadSettings();
-  console.log('[Settings] Loaded from server:', settings);
+
+  // ===== STEP 1.5: Load User Settings (CEO Level & Points) =====
+  try {
+    const userResponse = await fetch('/api/user/get-settings');
+    if (userResponse.ok) {
+      const userData = await userResponse.json();
+
+      // CEO Level
+      const ceoLevel = userData.user?.ceo_level || userData.data?.settings?.ceo_level || 0;
+      if (ceoLevel > 0) {
+        const ceoLevelBadge = document.getElementById('ceoLevelBadge');
+        const ceoLevelNumber = document.getElementById('ceoLevelNumber');
+        if (ceoLevelBadge && ceoLevelNumber) {
+          ceoLevelNumber.textContent = ceoLevel;
+          ceoLevelBadge.style.display = 'inline-block';
+        }
+      }
+
+      // Points (Premium Currency)
+      const points = userData.user?.points || 0;
+      const pointsDisplay = document.getElementById('pointsDisplay');
+      if (pointsDisplay) {
+        pointsDisplay.textContent = points.toLocaleString();
+      }
+    }
+  } catch (error) {
+    console.error('[User Settings] Failed to load:', error);
+  }
 
   // ===== STEP 2: Register Service Worker =====
   // Enables background notifications on mobile devices
@@ -680,11 +722,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Close settings dialog
   document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
 
+  // Open documentation in new tab
+  document.getElementById('docsBtn').addEventListener('click', () => {
+    window.open('/docs/index.html', '_blank');
+  });
+
   // Open campaigns overlay
   document.getElementById('campaignsBtn').addEventListener('click', showCampaignsOverlay);
 
   // Close campaigns overlay
   document.getElementById('closeCampaignsBtn').addEventListener('click', closeCampaignsOverlay);
+
+  // Open coop overlay
+  document.getElementById('coopBtn').addEventListener('click', showCoopOverlay);
+
+  // Close coop overlay
+  document.getElementById('closeCoopBtn').addEventListener('click', closeCoopOverlay);
 
   // Test notification button in settings
   document.getElementById('testAlertBtn').addEventListener('click', testBrowserNotification);
@@ -856,6 +909,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     updatePageTitle(settings);
   });
 
+  // Auto-repair interval
+  document.getElementById('autoRepairInterval').addEventListener('change', function() {
+    settings.autoRepairInterval = this.value;
+    saveSettings(settings);
+  });
+
   // Auto-renew expiring campaigns
   document.getElementById('autoCampaignRenewal').addEventListener('change', function() {
     settings.autoCampaignRenewal = this.checked;
@@ -866,6 +925,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Enable/disable AutoPilot action notifications
   document.getElementById('autoPilotNotifications').addEventListener('change', function() {
     settings.autoPilotNotifications = this.checked;
+    saveSettings(settings);
+  });
+
+  // --- Intelligent Auto-Depart Settings ---
+  // Toggle between using route defaults vs custom settings
+  document.getElementById('autoDepartUseRouteDefaults').addEventListener('change', function() {
+    settings.autoDepartUseRouteDefaults = this.checked;
+    const customSettingsDiv = document.getElementById('autoDepartCustomSettings');
+
+    if (this.checked) {
+      // Use route defaults: hide custom settings
+      customSettingsDiv.style.display = 'none';
+    } else {
+      // Use custom settings: show inputs
+      customSettingsDiv.style.display = 'block';
+    }
+
+    saveSettings(settings);
+  });
+
+  // Minimum vessel utilization percentage for auto-depart (only used when not using route defaults)
+  document.getElementById('minVesselUtilization').addEventListener('change', function() {
+    settings.minVesselUtilization = parseInt(this.value);
+    saveSettings(settings);
+  });
+
+  // Vessel speed as percentage of max_speed (only used when not using route defaults)
+  document.getElementById('autoVesselSpeed').addEventListener('change', function() {
+    settings.autoVesselSpeed = parseInt(this.value);
     saveSettings(settings);
   });
 
@@ -946,6 +1034,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load campaign status (updates "Campaigns" badge)
   await updateCampaignsStatus();
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // Load coop status (updates "Coop" badge)
+  await updateCoopBadge();
   await new Promise(resolve => setTimeout(resolve, 500));
 
   // ===== STEP 6: Initialize WebSocket =====

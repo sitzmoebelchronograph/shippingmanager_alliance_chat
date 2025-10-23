@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>public/js/modules/automation.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_config.html">server/config</a></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showFeedback">showFeedback</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showPriceAlert">showPriceAlert</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.repairAllVessels">repairAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li></ul></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">public/js/modules/automation.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview AutoPilot Automation System for Shipping Manager
+ *
+ * Provides intelligent automation features with anti-detection mechanisms:
+ *
+ * **Features:**
+ * 1. **Auto-Rebuy Fuel** - Monitors fuel prices and automatically purchases when at/below threshold
+ * 2. **Auto-Rebuy CO2** - Monitors CO2 prices and automatically purchases when at/below threshold
+ * 3. **Auto-Depart All** - Continuously departs all vessels in port when fuel is available
+ * 4. **Auto Bulk Repair** - Repairs all vessels with wear > 0 when affordable
+ * 5. **Auto Campaign Renewal** - Renews expired campaigns (reputation, awareness, green)
+ *
+ * **Auto-Rebuy Strategy:**
+ * Simple price-driven logic - whenever price is at or below the configured threshold,
+ * the system attempts to purchase. Continues buying every 30-35 seconds (when prices
+ * update) until bunker is full or funds are depleted. No time windows - purely price-based.
+ *
+ * **Rate Limiting &amp; Anti-Detection:**
+ * - Fuel/CO2 rebuy: Event-driven (triggered by price updates every 30-35s)
+ * - Auto-depart checks: Random 1-2 minute intervals
+ * - Auto-repair checks: Random 1-2 minute intervals
+ * - Campaign renewal checks: Random 2-3 minute intervals
+ * - Global automation loop: Random 1-3 minute intervals
+ *
+ * **Event-Driven Architecture:**
+ * Bunker price updates from bunker-management.js trigger rebuy checks via
+ * triggerAutoRebuyChecks(). This ensures fuel/CO2 purchases happen immediately
+ * when prices drop, without constant API polling.
+ *
+ * @module automation
+ * @requires api - purchaseFuel, purchaseCO2, departAllVessels, fetchVessels, getMaintenanceCost, doWearMaintenanceBulk, fetchCampaigns, activateCampaign
+ * @requires utils - showFeedback, formatNumber, showNotification
+ * @requires bunker-management - getCurrentBunkerState
+ */
+
+import { purchaseFuel, purchaseCO2, departAllVessels, fetchVessels, getMaintenanceCost, doWearMaintenanceBulk, fetchCampaigns, activateCampaign, departVessel, fetchAssignedPorts } from './api.js';
+import { showFeedback, formatNumber, showNotification, showPriceAlert } from './utils.js';
+import { getCurrentBunkerState } from './bunker-management.js';
+
+/**
+ * Sends feedback message to UI and optionally displays browser notification.
+ * Notifications are only shown if autoPilotNotifications setting is enabled
+ * and browser notification permission has been granted.
+ *
+ * HTML tags are automatically stripped from notification body text.
+ *
+ * @async
+ * @param {string} message - Message to display (may contain HTML)
+ * @param {string} [type='success'] - Feedback type ('success', 'error', 'info')
+ * @returns {Promise&lt;void>}
+ */
+async function sendAutoPilotFeedback(message, type = 'success') {
+  const settings = window.getSettings ? window.getSettings() : {};
+
+  showFeedback(message, type);
+
+  if (settings.autoPilotNotifications &amp;&amp; Notification.permission === 'granted') {
+    // Strip HTML tags for notification
+    const plainMessage = message.replace(/&lt;[^>]*>/g, '');
+    await showNotification('🤖 Auto-Pilot Action', {
+      body: plainMessage,
+      icon: '/favicon.ico',
+      tag: 'auto-pilot',
+      silent: false
+    });
+  }
+}
+
+// ============================================================================
+// State Variables
+// ============================================================================
+
+/**
+ * Prevents concurrent purchase operations to avoid race conditions.
+ * Set to true while fuel/CO2 purchase is in progress.
+ * @type {boolean}
+ */
+let isAutoBuying = false;
+
+/**
+ * Timestamp (Date.now()) of last vessel departure check.
+ * Used to enforce random 1-2 minute intervals between checks.
+ * @type {number}
+ */
+let lastVesselCheck = 0;
+
+/**
+ * Timestamp (Date.now()) of last campaign renewal check.
+ * Used to enforce random 2-3 minute intervals between checks.
+ * @type {number}
+ */
+let lastCampaignCheck = 0;
+
+// ============================================================================
+// Auto-Rebuy Fuel
+// ============================================================================
+
+/**
+ * Checks if automatic fuel purchase should be triggered based on current price.
+ * This function is called by bunker-management.js whenever prices update (every 30-35s).
+ *
+ * **Simple Logic:**
+ * - Whenever price is at or below threshold, attempts to purchase fuel
+ * - Continues purchasing every price update until bunker is full or funds depleted
+ * - No time windows - purely price-driven
+ *
+ * **Threshold Selection:**
+ * - Uses settings.fuelThreshold if autoRebuyFuelUseAlert is enabled
+ * - Otherwise uses settings.autoRebuyFuelThreshold
+ *
+ * @async
+ * @param {Object} settings - User settings object from window.getSettings()
+ * @param {boolean} settings.autoRebuyFuel - Whether auto-rebuy is enabled
+ * @param {boolean} settings.autoRebuyFuelUseAlert - Whether to use alert threshold
+ * @param {number} settings.fuelThreshold - Alert threshold price ($/ton)
+ * @param {number} settings.autoRebuyFuelThreshold - Auto-rebuy threshold price ($/ton)
+ * @returns {Promise&lt;void>}
+ */
+async function checkAutoRebuyFuel(settings) {
+  if (!settings.autoRebuyFuel) return;
+  if (isAutoBuying) return; // Prevent concurrent purchases
+
+  try {
+    const bunkerState = getCurrentBunkerState();
+    const fuelPrice = bunkerState.fuelPrice;
+
+    if (!fuelPrice) return;
+
+    // Determine which threshold to use
+    const threshold = settings.autoRebuyFuelUseAlert
+      ? settings.fuelThreshold
+      : settings.autoRebuyFuelThreshold;
+
+    // If price is at or below threshold, try to buy
+    if (fuelPrice &lt;= threshold) {
+      await performAutoRebuyFuel(bunkerState, fuelPrice);
+    }
+  } catch (error) {
+    console.error('[Auto-Rebuy Fuel] Error:', error);
+  }
+}
+
+/**
+ * Executes automatic fuel purchase when price is favorable.
+ * Calculates optimal purchase amount based on available bunker space and cash.
+ *
+ * **Purchase Logic:**
+ * - Calculates available bunker space (maxFuel - currentFuel)
+ * - Calculates maximum affordable amount (cash / fuelPrice)
+ * - Purchases the lesser of available space or affordable amount
+ * - Skips purchase if bunker full or insufficient funds
+ *
+ * **Side Effects:**
+ * - Sets isAutoBuying lock during operation
+ * - Triggers UI update via window.debouncedUpdateBunkerStatus()
+ * - Sends notification if autoPilotNotifications enabled
+ *
+ * @async
+ * @param {Object} bunkerState - Current bunker state from getCurrentBunkerState()
+ * @param {number} bunkerState.currentFuel - Current fuel in bunker (tons)
+ * @param {number} bunkerState.maxFuel - Maximum bunker capacity (tons)
+ * @param {number} bunkerState.currentCash - Available cash ($)
+ * @param {number} fuelPrice - Current fuel price ($/ton)
+ * @returns {Promise&lt;void>}
+ */
+async function performAutoRebuyFuel(bunkerState, fuelPrice) {
+  isAutoBuying = true;
+
+  try {
+    // Use bunkerState which already has correct values
+    const currentFuel = bunkerState.currentFuel;
+    const maxFuel = bunkerState.maxFuel;
+    const availableSpace = maxFuel - currentFuel;
+
+    if (availableSpace &lt;= 0) {
+      isAutoBuying = false;
+      return;
+    }
+
+    const cash = bunkerState.currentCash;
+    const maxAffordable = Math.floor(cash / fuelPrice);
+    const amountToBuy = Math.min(availableSpace, maxAffordable);
+
+    if (amountToBuy &lt;= 0) {
+      isAutoBuying = false;
+      return;
+    }
+
+    const result = await purchaseFuel(amountToBuy);
+
+    if (result.success || result.data) {
+      showFeedback(`🔄 Auto-bought ${amountToBuy.toFixed(0)} tons of fuel at $${fuelPrice}/ton`, 'success');
+
+      // Send compact notification
+      const settings = window.getSettings ? window.getSettings() : {};
+      if (settings.autoPilotNotifications &amp;&amp; Notification.permission === 'granted') {
+        await showNotification('🤖 Auto-Rebuy: Fuel', {
+          body: `Bought ${formatNumber(amountToBuy)}t @ $${fuelPrice}/t`,
+          icon: "data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>&lt;text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽&lt;/text>&lt;/svg>",
+          tag: 'auto-rebuy-fuel',
+          silent: false
+        });
+      }
+
+      // Trigger UI update
+      if (window.debouncedUpdateBunkerStatus) {
+        window.debouncedUpdateBunkerStatus(500);
+      }
+    }
+  } catch (error) {
+    console.error('[Auto-Rebuy Fuel] Purchase failed:', error);
+    showFeedback(`❌ Auto-rebuy fuel failed: ${error.message}`, 'error');
+  } finally {
+    isAutoBuying = false;
+  }
+}
+
+// ============================================================================
+// Auto-Rebuy CO2
+// ============================================================================
+
+/**
+ * Checks if automatic CO2 purchase should be triggered based on current price.
+ * This function is called by bunker-management.js whenever prices update (every 30-35s).
+ *
+ * **Simple Logic:**
+ * - Whenever price is at or below threshold, attempts to purchase CO2
+ * - Continues purchasing every price update until bunker is full or funds depleted
+ * - No time windows - purely price-driven
+ *
+ * **Threshold Selection:**
+ * - Uses settings.co2Threshold if autoRebuyCO2UseAlert is enabled
+ * - Otherwise uses settings.autoRebuyCO2Threshold
+ *
+ * @async
+ * @param {Object} settings - User settings object from window.getSettings()
+ * @param {boolean} settings.autoRebuyCO2 - Whether auto-rebuy is enabled
+ * @param {boolean} settings.autoRebuyCO2UseAlert - Whether to use alert threshold
+ * @param {number} settings.co2Threshold - Alert threshold price ($/ton)
+ * @param {number} settings.autoRebuyCO2Threshold - Auto-rebuy threshold price ($/ton)
+ * @returns {Promise&lt;void>}
+ */
+async function checkAutoRebuyCO2(settings) {
+  if (!settings.autoRebuyCO2) return;
+  if (isAutoBuying) return; // Prevent concurrent purchases
+
+  try {
+    const bunkerState = getCurrentBunkerState();
+    const co2Price = bunkerState.co2Price;
+
+    if (!co2Price) return;
+
+    // Determine which threshold to use
+    const threshold = settings.autoRebuyCO2UseAlert
+      ? settings.co2Threshold
+      : settings.autoRebuyCO2Threshold;
+
+    // If price is at or below threshold, try to buy
+    if (co2Price &lt;= threshold) {
+      await performAutoRebuyCO2(bunkerState, co2Price);
+    }
+  } catch (error) {
+    console.error('[Auto-Rebuy CO2] Error:', error);
+  }
+}
+
+/**
+ * Executes automatic CO2 purchase when price is favorable.
+ * Calculates optimal purchase amount based on available bunker space and cash.
+ *
+ * **Purchase Logic:**
+ * - Calculates available bunker space (maxCO2 - currentCO2)
+ * - Calculates maximum affordable amount (cash / co2Price)
+ * - Purchases the lesser of available space or affordable amount
+ * - Skips purchase if bunker full or insufficient funds
+ *
+ * **Side Effects:**
+ * - Sets isAutoBuying lock during operation
+ * - Triggers UI update via window.debouncedUpdateBunkerStatus()
+ * - Sends notification if autoPilotNotifications enabled
+ *
+ * @async
+ * @param {Object} bunkerState - Current bunker state from getCurrentBunkerState()
+ * @param {number} bunkerState.currentCO2 - Current CO2 in bunker (tons)
+ * @param {number} bunkerState.maxCO2 - Maximum bunker capacity (tons)
+ * @param {number} bunkerState.currentCash - Available cash ($)
+ * @param {number} co2Price - Current CO2 price ($/ton)
+ * @returns {Promise&lt;void>}
+ */
+async function performAutoRebuyCO2(bunkerState, co2Price) {
+  isAutoBuying = true;
+
+  try {
+    // Use bunkerState which already has correct values
+    const currentCO2 = bunkerState.currentCO2;
+    const maxCO2 = bunkerState.maxCO2;
+    const availableSpace = maxCO2 - currentCO2;
+
+    if (availableSpace &lt;= 0) {
+      isAutoBuying = false;
+      return;
+    }
+
+    const cash = bunkerState.currentCash;
+    const maxAffordable = Math.floor(cash / co2Price);
+    const amountToBuy = Math.min(availableSpace, maxAffordable);
+
+    if (amountToBuy &lt;= 0) {
+      isAutoBuying = false;
+      return;
+    }
+
+    const result = await purchaseCO2(amountToBuy);
+
+    if (result.success || result.data) {
+      showFeedback(`🔄 Auto-bought ${amountToBuy.toFixed(0)} tons of CO2 at $${co2Price}/ton`, 'success');
+
+      // Send compact notification
+      const settings = window.getSettings ? window.getSettings() : {};
+      if (settings.autoPilotNotifications &amp;&amp; Notification.permission === 'granted') {
+        await showNotification('🤖 Auto-Rebuy: CO2', {
+          body: `Bought ${formatNumber(amountToBuy)}t @ $${co2Price}/t`,
+          icon: "data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>&lt;text y='50%' x='50%' text-anchor='middle' font-size='80'>💨&lt;/text>&lt;/svg>",
+          tag: 'auto-rebuy-co2',
+          silent: false
+        });
+      }
+
+      // Trigger UI update
+      if (window.debouncedUpdateBunkerStatus) {
+        window.debouncedUpdateBunkerStatus(500);
+      }
+    }
+  } catch (error) {
+    console.error('[Auto-Rebuy CO2] Purchase failed:', error);
+    showFeedback(`❌ Auto-rebuy CO2 failed: ${error.message}`, 'error');
+  } finally {
+    isAutoBuying = false;
+  }
+}
+
+// ============================================================================
+// Auto-Depart All Vessels
+// ============================================================================
+
+/**
+ * Checks if vessels should be automatically departed and executes departure.
+ * Runs in an endless loop with randomized intervals for anti-detection.
+ *
+ * **Throttling Strategy:**
+ * - Randomized interval between 1-2 minutes between checks
+ * - Uses lastVesselCheck timestamp to enforce minimum intervals
+ * - Random timing prevents predictable patterns that could trigger anti-bot
+ *
+ * **Departure Logic:**
+ * - Only departs vessels with status 'port' and not parked (is_parked = false)
+ * - Requires fuel > 0 in bunker to proceed
+ * - Skips if no vessels in port or no fuel available
+ *
+ * **Side Effects:**
+ * - Triggers UI updates via window.debouncedUpdateVesselCount()
+ * - Triggers UI updates via window.debouncedUpdateBunkerStatus()
+ * - Sends notification if autoPilotNotifications enabled
+ *
+ * @async
+ * @param {Object} settings - User settings object from window.getSettings()
+ * @param {boolean} settings.autoDepartAll - Whether auto-depart is enabled
+ * @returns {Promise&lt;void>}
+ */
+async function checkAutoDepartAll(settings) {
+  if (!settings.autoDepartAll) {
+    return;
+  }
+
+  // Throttle checks - random between 1-2 minutes
+  const now = Date.now();
+  const minInterval = 60000; // 1 minute
+  const maxInterval = 120000; // 2 minutes
+  const randomInterval = minInterval + Math.random() * (maxInterval - minInterval);
+
+  if (now - lastVesselCheck &lt; randomInterval) {
+    return;
+  }
+  lastVesselCheck = now;
+
+  try {
+    // 1. Get current bunker state
+    const bunkerState = getCurrentBunkerState();
+    const fuelPrice = bunkerState.fuelPrice;
+    const currentFuel = bunkerState.currentFuel;
+
+    if (currentFuel &lt;= 0) {
+      return; // No fuel available
+    }
+
+    // 2. Fetch all vessels and assigned ports
+    const vesselsData = await fetchVessels();
+    const assignedPorts = await fetchAssignedPorts();
+
+    if (!vesselsData?.vessels || !assignedPorts) {
+      console.error('[Auto-Depart] Missing vessel or port data');
+      return;
+    }
+
+    const allVessels = vesselsData.vessels;
+    const harbourVessels = allVessels.filter(v => v.status === 'port' &amp;&amp; !v.is_parked);
+
+    if (harbourVessels.length === 0) {
+      return; // No vessels in harbor
+    }
+
+    // Track departed and failed vessels
+    let departedCount = 0;
+    const departedVessels = [];
+    const failedVessels = [];
+
+    // 3. Group vessels by destination and type
+    const vesselsByDestinationAndType = {};
+
+    for (const vessel of harbourVessels) {
+      // Check if vessel has a route assigned (route_destination is set when in harbor)
+      if (!vessel.route_destination) {
+        continue;
+      }
+
+      // Skip delivery vessels (newly purchased vessels being delivered)
+      if (vessel.delivery_price !== null &amp;&amp; vessel.delivery_price > 0) {
+        continue;
+      }
+
+      const destination = vessel.route_destination;
+      const type = vessel.capacity_type; // 'container' or 'tanker'
+      const key = `${destination}_${type}`;
+
+      if (!vesselsByDestinationAndType[key]) {
+        vesselsByDestinationAndType[key] = [];
+      }
+      vesselsByDestinationAndType[key].push(vessel);
+    }
+
+    // 4. For each destination+type combination, decide which vessels to depart
+    for (const key in vesselsByDestinationAndType) {
+      const vessels = vesselsByDestinationAndType[key];
+      const firstVessel = vessels[0];
+      const destination = firstVessel.route_destination; // Use route_destination (set when in harbor)
+      const vesselType = firstVessel.capacity_type;
+
+      // Find port data
+      const port = assignedPorts.find(p => p.code === destination);
+      if (!port) {
+        continue;
+      }
+
+      // Calculate remaining demand
+      const remainingDemand = calculateRemainingDemand(port, vesselType);
+
+      // Find all vessels already en-route to this port
+      const vesselsEnroute = allVessels.filter(v =>
+        v.status === 'enroute' &amp;&amp;
+        v.route_destination === destination &amp;&amp;
+        v.capacity_type === vesselType
+      );
+
+      // Calculate capacity already en-route
+      const capacityEnroute = vesselsEnroute.reduce((sum, v) => {
+        return sum + getTotalCapacity(v);
+      }, 0);
+
+      // Effective demand = Remaining - Already en-route
+      let effectiveDemand = Math.max(0, remainingDemand - capacityEnroute);
+
+      // Sort vessels by capacity (largest first = most efficient)
+      const sortedVessels = vessels.sort((a, b) => {
+        return getTotalCapacity(b) - getTotalCapacity(a);
+      });
+
+      // Decide for each vessel
+      for (const vessel of sortedVessels) {
+        const vesselCapacity = getTotalCapacity(vessel);
+        // Utilization = How much of the vessel will be filled
+        // Example: effectiveDemand=100, vesselCapacity=200 → 50% utilization (half full)
+        const cargoToLoad = Math.min(effectiveDemand, vesselCapacity);
+        const utilizationRate = vesselCapacity > 0 ? cargoToLoad / vesselCapacity : 0;
+        const minUtilization = (settings.minVesselUtilization || 45) / 100;
+
+        // Check if vessel utilization is above minimum threshold
+        const utilizationCheck = utilizationRate >= minUtilization;
+
+        // Debug logging for low utilization
+        if (utilizationCheck) {
+          // Determine speed and guards based on settings
+          let speed, guards;
+
+          if (settings.autoDepartUseRouteDefaults) {
+            // Use route defaults (values set when route was created)
+            speed = vessel.route_speed || vessel.max_speed;
+            guards = vessel.route_guards || 0;
+          } else {
+            // Use custom settings
+            const speedPercent = settings.autoVesselSpeed || 50;
+            speed = Math.round(vessel.max_speed * (speedPercent / 100));
+            // Guards are always from route settings (set when route was created)
+            guards = vessel.route_guards || 0;
+          }
+
+          try {
+            const result = await departVessel(vessel.id, speed, guards);
+
+            // Extract financial data from API response
+            const departInfo = result.data?.depart_info || {};
+            const income = departInfo.depart_income || 0;
+            const harborFee = departInfo.harbor_fee || 0;
+            const fuelUsage = (departInfo.fuel_usage || 0) / 1000; // Convert to tons
+            const co2Emission = (departInfo.co2_emission || 0) / 1000; // Convert to tons
+            const netIncome = income - harborFee;
+
+            // Check if departure was actually successful
+            // API returns $0 income when vessel couldn't depart (e.g., no fuel)
+            if (income === 0 &amp;&amp; fuelUsage === 0 &amp;&amp; co2Emission === 0) {
+              console.error(`[Auto-Depart] ✗ ${vessel.name} failed to depart (no fuel/CO2 or API error)`);
+
+              // Track as failed departure
+              failedVessels.push({
+                name: vessel.name,
+                reason: 'Insufficient fuel or CO2 in bunker'
+              });
+
+              continue; // Skip this vessel, don't count as departed
+            }
+
+            // Successfully departed
+            departedCount++;
+
+            // Track departed vessel info
+            departedVessels.push({
+              name: vessel.name,
+              destination: destination,
+              capacity: vesselCapacity,
+              utilization: utilizationRate,
+              cargoLoaded: cargoToLoad,
+              speed: speed,
+              guards: guards,
+              income: income,
+              harborFee: harborFee,
+              netIncome: netIncome,
+              fuelUsage: fuelUsage,
+              co2Emission: co2Emission
+            });
+
+            // Update effective demand for next vessel in loop
+            effectiveDemand -= cargoToLoad;
+
+          } catch (error) {
+            console.error(`[Auto-Depart] Failed to depart ${vessel.name}:`, error);
+
+            // Track as failed departure
+            failedVessels.push({
+              name: vessel.name,
+              reason: error.message || 'Unknown error'
+            });
+          }
+        }
+      }
+    }
+
+    // Show error feedback for failed vessels
+    if (failedVessels.length > 0) {
+      showFeedback('&lt;strong>🤖 Auto-Depart&lt;/strong>&lt;br>No fuel - no vessels sent', 'error');
+    }
+
+    if (departedCount > 0) {
+      // Calculate totals
+      const totalIncome = departedVessels.reduce((sum, v) => sum + v.income, 0);
+      const totalHarborFee = departedVessels.reduce((sum, v) => sum + v.harborFee, 0);
+      const totalNetIncome = departedVessels.reduce((sum, v) => sum + v.netIncome, 0);
+      const totalFuelUsage = departedVessels.reduce((sum, v) => sum + v.fuelUsage, 0);
+      const totalCO2Emission = departedVessels.reduce((sum, v) => sum + v.co2Emission, 0);
+
+      // Create compact one-line vessel list (focus on cargo and money)
+      let vesselList = departedVessels.map(v =>
+        `&lt;div style="font-size: 0.8em; opacity: 0.85; padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+          🚢 &lt;strong>${v.name}&lt;/strong> | ${formatNumber(v.cargoLoaded)}/${formatNumber(v.capacity)} TEU (${(v.utilization * 100).toFixed(0)}%) | 💰 $${formatNumber(v.netIncome)}
+        &lt;/div>`
+      ).join('');
+
+      const message = `
+        &lt;div style="margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid rgba(255,255,255,0.3);">
+          &lt;strong style="font-size: 1.1em;">🤖 Auto-Depart: ${departedCount} vessel${departedCount > 1 ? 's' : ''} departed&lt;/strong>
+        &lt;/div>
+        &lt;div style="margin: 12px 0; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; font-family: monospace;">
+          &lt;div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            &lt;span style="color: #9ca3af;">Revenue:&lt;/span>
+            &lt;span style="color: #10b981; font-weight: bold;">+ $${formatNumber(totalIncome)}&lt;/span>
+          &lt;/div>
+          &lt;div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+            &lt;span style="color: #9ca3af;">Harbor Fees:&lt;/span>
+            &lt;span style="color: #ef4444; font-weight: bold;">- $${formatNumber(totalHarborFee)}&lt;/span>
+          &lt;/div>
+          &lt;div style="height: 1px; background: rgba(255,255,255,0.2); margin: 8px 0;">&lt;/div>
+          &lt;div style="display: flex; justify-content: space-between; font-size: 1.1em;">
+            &lt;span style="color: #fff; font-weight: bold;">Total:&lt;/span>
+            &lt;span style="color: #10b981; font-weight: bold;">$${formatNumber(totalNetIncome)}&lt;/span>
+          &lt;/div>
+          &lt;div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9em; color: #9ca3af;">
+            ⛽ ${formatNumber(totalFuelUsage)}t Fuel | 💨 ${formatNumber(totalCO2Emission)}t CO2
+          &lt;/div>
+        &lt;/div>
+        &lt;div style="max-height: 240px; overflow-y: auto; margin-bottom: 10px; padding-right: 8px;">
+          ${vesselList}
+        &lt;/div>`;
+
+      // Use showPriceAlert for longer visibility (stays visible until user closes)
+      showPriceAlert(message, 'success');
+
+      // Send compact browser notification
+      const settings = window.getSettings ? window.getSettings() : {};
+      if (settings.autoPilotNotifications &amp;&amp; Notification.permission === 'granted') {
+        await showNotification(`🤖 Auto-Depart: ${departedCount} vessel${departedCount > 1 ? 's' : ''}`, {
+          body: `💰 Net: $${formatNumber(totalNetIncome)} | ⛽ ${formatNumber(totalFuelUsage)}t fuel | 💨 ${formatNumber(totalCO2Emission)}t CO2`,
+          icon: "data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>&lt;text y='50%' x='50%' text-anchor='middle' font-size='80'>🚢&lt;/text>&lt;/svg>",
+          tag: 'auto-depart',
+          silent: false
+        });
+      }
+
+      // Trigger immediate UI update (vessel count badge must update right away)
+      if (window.debouncedUpdateVesselCount) {
+        window.debouncedUpdateVesselCount(0);
+      }
+      if (window.debouncedUpdateBunkerStatus) {
+        window.debouncedUpdateBunkerStatus(1000);
+      }
+    }
+  } catch (error) {
+    console.error('[Auto-Depart] Error:', error);
+  }
+}
+
+/**
+ * Calculates remaining demand at a port (demand - consumed).
+ * Sums both cargo types for containers (dry + refrigerated) and tankers (fuel + crude_oil).
+ *
+ * @param {Object} port - Port object from fetchAssignedPorts()
+ * @param {string} vesselType - 'container' or 'tanker'
+ * @returns {number} Remaining demand in TEU or tons
+ */
+function calculateRemainingDemand(port, vesselType) {
+  if (vesselType === 'container') {
+    const dryDemand = port.demand?.container?.dry || 0;
+    const dryConsumed = port.consumed?.container?.dry || 0;
+    const refDemand = port.demand?.container?.refrigerated || 0;
+    const refConsumed = port.consumed?.container?.refrigerated || 0;
+
+    return (dryDemand - dryConsumed) + (refDemand - refConsumed);
+  } else if (vesselType === 'tanker') {
+    const fuelDemand = port.demand?.tanker?.fuel || 0;
+    const fuelConsumed = port.consumed?.tanker?.fuel || 0;
+    const crudeDemand = port.demand?.tanker?.crude_oil || 0;
+    const crudeConsumed = port.consumed?.tanker?.crude_oil || 0;
+
+    return (fuelDemand - fuelConsumed) + (crudeDemand - crudeConsumed);
+  }
+
+  return 0;
+}
+
+/**
+ * Calculates total capacity of a vessel.
+ * Sums both cargo types for containers (dry + refrigerated) and tankers (fuel + crude_oil).
+ *
+ * @param {Object} vessel - Vessel object from fetchVessels()
+ * @returns {number} Total capacity in TEU or tons
+ */
+function getTotalCapacity(vessel) {
+  if (vessel.capacity_type === 'container') {
+    return (vessel.capacity?.dry || 0) + (vessel.capacity?.refrigerated || 0);
+  } else if (vessel.capacity_type === 'tanker') {
+    return (vessel.capacity?.fuel || 0) + (vessel.capacity?.crude_oil || 0);
+  }
+  return 0;
+}
+
+// ============================================================================
+// Auto Bulk Repair - MOVED TO BACKEND (server/automation.js)
+// ============================================================================
+// Auto-repair now runs on the backend with configurable intervals from settings.
+// The backend broadcasts 'auto_repair_complete' events via WebSocket.
+// Frontend handles these events in the WebSocket message handler (chat.js).
+
+// ============================================================================
+// Auto Campaign Renewal
+// ============================================================================
+
+/**
+ * Checks if marketing campaigns need renewal and automatically activates
+ * the most expensive affordable campaign for each inactive type.
+ * Runs with randomized intervals for anti-detection.
+ *
+ * **Throttling Strategy:**
+ * - Randomized interval between 2-3 minutes between checks
+ * - Uses lastCampaignCheck timestamp to enforce minimum intervals
+ * - Random timing prevents predictable patterns that could trigger anti-bot
+ *
+ * **Campaign Types:**
+ * Monitors three campaign types: 'reputation', 'awareness', 'green'
+ *
+ * **Renewal Logic:**
+ * - Checks which of the three campaign types are currently inactive
+ * - For each inactive type, finds the most expensive campaign that can be afforded
+ * - Activates campaigns sequentially, updating cash after each purchase
+ * - Skips if all campaigns active or no affordable options
+ *
+ * **Best Campaign Selection:**
+ * - Filters campaigns by type (reputation/awareness/green)
+ * - Filters by affordability (price &lt;= currentCash)
+ * - Sorts by price descending to get most expensive
+ * - Selects first (most expensive) affordable campaign
+ *
+ * **Side Effects:**
+ * - Triggers UI updates via window.debouncedUpdateBunkerStatus()
+ * - Sends notification if autoPilotNotifications enabled
+ * - Updates local currentCash tracker after each purchase
+ *
+ * @async
+ * @param {Object} settings - User settings object from window.getSettings()
+ * @param {boolean} settings.autoCampaignRenewal - Whether auto-renewal is enabled
+ * @returns {Promise&lt;void>}
+ */
+async function checkAutoCampaignRenewal(settings) {
+  if (!settings.autoCampaignRenewal) return;
+
+  // Throttle checks - random between 2-3 minutes
+  const now = Date.now();
+  const minInterval = 120000; // 2 minutes
+  const maxInterval = 180000; // 3 minutes
+  const randomInterval = minInterval + Math.random() * (maxInterval - minInterval);
+
+  if (now - lastCampaignCheck &lt; randomInterval) return;
+  lastCampaignCheck = now;
+
+  try {
+    const data = await fetchCampaigns();
+    const allCampaigns = data.data.marketing_campaigns || [];
+    const activeCampaigns = data.data.active_campaigns || [];
+    const activeTypes = new Set(activeCampaigns.map(c => c.option_name));
+
+    const requiredTypes = ['reputation', 'awareness', 'green'];
+    const inactiveTypes = requiredTypes.filter(type => !activeTypes.has(type));
+
+    if (inactiveTypes.length === 0) return; // All campaigns active
+
+    const bunkerState = getCurrentBunkerState();
+    let currentCash = bunkerState.currentCash;
+
+    // For each inactive type, find the most expensive campaign we can afford
+    for (const type of inactiveTypes) {
+      const typeCampaigns = allCampaigns
+        .filter(c => c.option_name === type)
+        .filter(c => c.price &lt;= currentCash)
+        .sort((a, b) => b.price - a.price); // Sort by price descending
+
+      if (typeCampaigns.length === 0) {
+        continue;
+      }
+
+      const bestCampaign = typeCampaigns[0];
+
+      try {
+        const result = await activateCampaign(bestCampaign.id);
+
+        if (result.success || result.data) {
+          const typeName = type.charAt(0).toUpperCase() + type.slice(1);
+          const efficiency = `${bestCampaign.min_efficiency}-${bestCampaign.max_efficiency}%`;
+          const duration = bestCampaign.campaign_duration;
+
+          showFeedback(`🔄 Auto-activated ${typeName} campaign: ${duration}h | Efficiency: ${efficiency} | $${formatNumber(bestCampaign.price)}`, 'success');
+
+          // Send compact notification
+          const settings = window.getSettings ? window.getSettings() : {};
+          if (settings.autoPilotNotifications &amp;&amp; Notification.permission === 'granted') {
+            await showNotification(`🤖 Auto-Campaign: ${typeName}`, {
+              body: `${duration}h | Efficiency: ${efficiency} | Cost: $${formatNumber(bestCampaign.price)}`,
+              icon: "data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>&lt;text y='50%' x='50%' text-anchor='middle' font-size='80'>📊&lt;/text>&lt;/svg>",
+              tag: 'auto-campaign',
+              silent: false
+            });
+          }
+
+          // Trigger UI update
+          if (window.debouncedUpdateBunkerStatus) {
+            window.debouncedUpdateBunkerStatus(500);
+          }
+
+          // Update current cash after purchase
+          currentCash -= bestCampaign.price;
+        }
+      } catch (error) {
+        console.error(`[Auto-Campaign] Failed to activate ${type} campaign:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('[Auto-Campaign] Error:', error);
+  }
+}
+
+// ============================================================================
+// Exported Functions
+// ============================================================================
+
+/**
+ * Triggers auto-rebuy checks for fuel and CO2 based on current prices.
+ * Called by bunker-management.js whenever prices update (every 30-35 seconds).
+ *
+ * This is the event-driven entry point for price-dependent automation.
+ * Fuel/CO2 rebuy logic executes immediately when prices drop, without
+ * waiting for the global automation loop.
+ *
+ * @async
+ * @param {Object} settings - User settings object from window.getSettings()
+ * @param {boolean} settings.autoRebuyFuel - Whether fuel auto-rebuy is enabled
+ * @param {boolean} settings.autoRebuyCO2 - Whether CO2 auto-rebuy is enabled
+ * @returns {Promise&lt;void>}
+ * @public
+ */
+export async function triggerAutoRebuyChecks(settings) {
+  try {
+    await Promise.all([
+      checkAutoRebuyFuel(settings),
+      checkAutoRebuyCO2(settings)
+    ]);
+  } catch (error) {
+    console.error('[Auto-Rebuy] Error:', error);
+  }
+}
+
+/**
+ * Main automation loop that runs non-price-dependent checks.
+ * Executes vessel departure, repair, and campaign renewal automation.
+ *
+ * This function is called by the global automation scheduler (initAutomation)
+ * at random 1-3 minute intervals. Price-dependent features (fuel/CO2 rebuy)
+ * are NOT included here - they use triggerAutoRebuyChecks() instead.
+ *
+ * **Features Checked:**
+ * - Auto-Depart All Vessels (with 1-2 min throttling)
+ * - Auto Bulk Repair (with 1-2 min throttling)
+ * - Auto Campaign Renewal (with 2-3 min throttling)
+ *
+ * @async
+ * @returns {Promise&lt;void>}
+ * @public
+ */
+export async function runAutomationChecks() {
+  try {
+    // Get current settings dynamically
+    const settings = window.getSettings ? window.getSettings() : {};
+
+    // Run non-price-dependent checks
+    // Note: Auto-repair now runs on backend (server/automation.js)
+    await Promise.all([
+      checkAutoDepartAll(settings),
+      checkAutoCampaignRenewal(settings)
+    ]);
+  } catch (error) {
+    console.error('[Automation] Error in automation loop:', error);
+  }
+}
+
+/**
+ * Initializes the AutoPilot automation system with randomized scheduling.
+ *
+ * **Scheduling Strategy:**
+ * - Initial check runs after 5 seconds (warmup delay)
+ * - Subsequent checks run at random intervals between 1-3 minutes
+ * - Each interval is randomly generated to prevent predictable patterns
+ * - Uses recursive setTimeout to schedule next check after current completes
+ *
+ * **What Gets Scheduled:**
+ * Only non-price-dependent features (depart/repair/campaign) are scheduled here.
+ * Fuel/CO2 rebuy runs event-driven via triggerAutoRebuyChecks() when prices update.
+ *
+ * This function should be called once on application startup.
+ *
+ * @returns {void}
+ * @public
+ */
+export function initAutomation() {
+  // Run checks with random interval between 1-3 minutes
+  function scheduleNextCheck() {
+    const minInterval = 60000; // 1 minute
+    const maxInterval = 180000; // 3 minutes
+    const randomInterval = minInterval + Math.random() * (maxInterval - minInterval);
+
+    setTimeout(() => {
+      runAutomationChecks();
+      scheduleNextCheck(); // Schedule next check
+    }, randomInterval);
+  }
+
+  // Run initial check after 5 seconds
+  setTimeout(() => {
+    runAutomationChecks();
+    scheduleNextCheck(); // Start the loop
+  }, 5000);
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

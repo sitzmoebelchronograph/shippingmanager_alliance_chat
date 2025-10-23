@@ -450,6 +450,67 @@ function registerUsernameClickEvents() {
 }
 
 /**
+ * Handles backend auto-repair completion events from WebSocket.
+ * Displays notification with vessel wear percentages and threshold info.
+ *
+ * The backend (server/automation.js) broadcasts 'auto_repair_complete' events
+ * after successfully repairing vessels. This handler:
+ * - Shows in-app feedback notification
+ * - Displays individual vessel wear percentages
+ * - Shows maintenance threshold from settings
+ * - Sends browser notification if enabled
+ * - Triggers UI updates for vessel and cash displays
+ *
+ * @param {Object} data - Repair completion data from backend
+ * @param {number} data.count - Number of vessels repaired
+ * @param {number} data.totalCost - Total repair cost
+ * @param {Array<Object>} data.repairs - Array of repair details per vessel
+ * @param {string} data.repairs[].name - Vessel name
+ * @param {number} data.repairs[].wear - Vessel wear percentage
+ * @param {number} data.repairs[].cost - Repair cost for this vessel
+ * @param {string} data.message - Formatted message for display
+ */
+function handleBackendAutoRepairComplete(data) {
+  const { count, totalCost, repairs, message } = data;
+
+  // Get current settings for threshold
+  const settings = window.getSettings ? window.getSettings() : {};
+  const threshold = settings.maintenanceThreshold || 10;
+
+  // Build detailed feedback message
+  let feedbackMsg = `🔧 Backend Auto-Repair: ${count} vessel(s) repaired for $${totalCost.toLocaleString()}`;
+  if (repairs && repairs.length > 0) {
+    feedbackMsg += '\n\nRepaired vessels:';
+    repairs.forEach(repair => {
+      feedbackMsg += `\n• ${repair.name}: ${repair.wear}% wear → $${repair.cost.toLocaleString()}`;
+    });
+    feedbackMsg += `\n\n(Threshold: ${threshold}%)`;
+  }
+
+  // Show in-app notification
+  showFeedback(feedbackMsg, 'success');
+
+  // Send browser notification if enabled
+  if (settings.autoPilotNotifications && Notification.permission === 'granted') {
+    const body = `${count} vessel${count > 1 ? 's' : ''} repaired - Cost: $${totalCost.toLocaleString()}\nThreshold: ${threshold}%`;
+    showNotification('🤖 Backend Auto-Repair', {
+      body: body,
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>🔧</text></svg>",
+      tag: 'backend-auto-repair',
+      silent: false
+    });
+  }
+
+  // Trigger UI updates
+  if (window.debouncedUpdateRepairCount) {
+    window.debouncedUpdateRepairCount(500);
+  }
+  if (window.debouncedUpdateBunkerStatus) {
+    window.debouncedUpdateBunkerStatus(500);
+  }
+}
+
+/**
  * Initializes WebSocket connection for real-time chat updates.
  * Establishes WSS connection and handles incoming message broadcasts from server.
  *
@@ -457,6 +518,7 @@ function registerUsernameClickEvents() {
  * - 'chat_update': Server broadcasts new messages every 25 seconds
  * - 'message_sent': Immediate update when any user sends a message
  * - 'settings_update': Broadcasts when settings change (triggers global callback)
+ * - 'auto_repair_complete': Backend auto-repair completion notification
  *
  * Connection Strategy:
  * - Uses WSS for HTTPS pages, WS for HTTP
@@ -468,6 +530,7 @@ function registerUsernameClickEvents() {
  * - Registers onmessage event handler
  * - Triggers loadMessages() on chat updates
  * - Calls global handleSettingsUpdate() callback if available
+ * - Calls handleBackendAutoRepairComplete() for repair events
  *
  * @example
  * // Called once on page load
@@ -487,6 +550,8 @@ export function initWebSocket() {
         if (window.handleSettingsUpdate) {
           window.handleSettingsUpdate(data);
         }
+      } else if (type === 'auto_repair_complete') {
+        handleBackendAutoRepairComplete(data);
       }
     };
   } catch (e) {

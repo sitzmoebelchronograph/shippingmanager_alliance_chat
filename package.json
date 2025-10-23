@@ -1,13 +1,15 @@
 {
   "name": "shippingmanager-copilot",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Standalone web interface for Shipping Manager chat and game management",
   "main": "app.js",
   "engines": {
     "node": ">=22.0.0"
   },
   "scripts": {
-    "start": "node run.js"
+    "start": "node run.js",
+    "docs": "jsdoc -c jsdoc.json",
+    "prepare": "husky"
   },
   "dependencies": {
     "axios": "^1.12.2",
@@ -21,7 +23,10 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
+    "docdash": "^2.0.2",
     "eslint": "^9.38.0",
-    "eslint-plugin-security": "^3.0.1"
+    "eslint-plugin-security": "^3.0.1",
+    "husky": "^9.1.7",
+    "jsdoc": "^4.0.5"
   }
 }

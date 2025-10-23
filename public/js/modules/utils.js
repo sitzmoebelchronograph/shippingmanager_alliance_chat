@@ -97,6 +97,7 @@ export function showFeedback(message, type) {
   const hasPriceAlert = globalFeedback.querySelector('#priceAlertMessage');
 
   if (hasPriceAlert) {
+    // Price alert exists - add feedback message below it without clearing anything
     const feedbackDiv = document.createElement('div');
     feedbackDiv.className = `global-feedback-message ${type}`;
     feedbackDiv.style.position = 'relative';
@@ -107,25 +108,34 @@ export function showFeedback(message, type) {
     `;
     globalFeedback.appendChild(feedbackDiv);
 
+    // Auto-remove only this feedback message after 6 seconds
     setTimeout(() => {
       if (feedbackDiv.parentNode) {
         feedbackDiv.remove();
       }
     }, 6000);
   } else {
-    globalFeedback.innerHTML = `
-      <div class="global-feedback-message ${type}" style="position: relative;">
-        ${message}
-        <button onclick="document.getElementById('globalFeedback').classList.remove('show'); setTimeout(() => { document.getElementById('globalFeedback').innerHTML = ''; }, 300);" style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; padding: 0; width: 20px; height: 20px; line-height: 18px; transition: color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">×</button>
-      </div>
+    // No price alert - show feedback as usual
+    const feedbackDiv = document.createElement('div');
+    feedbackDiv.className = `global-feedback-message ${type}`;
+    feedbackDiv.style.position = 'relative';
+    feedbackDiv.innerHTML = `
+      ${message}
+      <button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: none; border: none; color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer; padding: 0; width: 20px; height: 20px; line-height: 18px; transition: color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">×</button>
     `;
-    globalFeedback.classList.add('show');
+    globalFeedback.innerHTML = '';
+    globalFeedback.appendChild(feedbackDiv);
+    globalFeedback.style.display = 'block';
 
+    // Auto-remove after 6 seconds
     setTimeout(() => {
-      globalFeedback.classList.remove('show');
-      setTimeout(() => {
-        globalFeedback.innerHTML = '';
-      }, 300);
+      if (feedbackDiv.parentNode) {
+        feedbackDiv.remove();
+        // Hide container if empty
+        if (globalFeedback.children.length === 0) {
+          globalFeedback.style.display = 'none';
+        }
+      }
     }, 6000);
   }
 }
@@ -164,7 +174,6 @@ let priceAlertTimeout = null;
  * showPriceAlert('⛽ Fuel price dropped to $350/ton!', 'warning');
  */
 export function showPriceAlert(message, type = 'warning') {
-  console.log('[showPriceAlert] Called with type:', type, 'message:', message.substring(0, 50) + '...');
   const globalFeedback = document.getElementById('globalFeedback');
 
   if (!globalFeedback) {
@@ -213,10 +222,46 @@ export function showPriceAlert(message, type = 'warning') {
     });
   }
 
-  priceAlertTimeout = setTimeout(() => {
-    globalFeedback.style.display = 'none';
-    globalFeedback.innerHTML = '';
-  }, 1740000);
+  // Auto-dismiss after 30 seconds, but pause timer when mouse is over the message
+  let timeRemaining = 30000; // 30 seconds
+  let lastTimestamp = Date.now();
+  let isMouseOver = false;
+
+  const startAutoDismissTimer = () => {
+    if (timeRemaining <= 0) {
+      // Timer expired while mouse was over - don't restart
+      return;
+    }
+    priceAlertTimeout = setTimeout(() => {
+      if (!isMouseOver) {
+        dismissPriceAlert();
+      }
+    }, timeRemaining);
+  };
+
+  messageEl.addEventListener('mouseenter', () => {
+    isMouseOver = true;
+    // Pause timer - calculate remaining time
+    if (priceAlertTimeout) {
+      clearTimeout(priceAlertTimeout);
+      const elapsed = Date.now() - lastTimestamp;
+      timeRemaining -= elapsed;
+      if (timeRemaining < 0) timeRemaining = 0; // Stop at 0
+    }
+  });
+
+  messageEl.addEventListener('mouseleave', () => {
+    isMouseOver = false;
+    // Resume timer with remaining time (only if time remaining > 0)
+    if (timeRemaining > 0) {
+      lastTimestamp = Date.now();
+      startAutoDismissTimer();
+    }
+  });
+
+  // Start initial timer
+  lastTimestamp = Date.now();
+  startAutoDismissTimer();
 }
 
 export function dismissPriceAlert() {
@@ -336,23 +381,17 @@ export async function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     try {
       swRegistration = await navigator.serviceWorker.register('/sw.js');
-      console.log('[Service Worker] Registered successfully:', swRegistration);
 
       if (swRegistration.installing) {
-        console.log('[Service Worker] Waiting for activation...');
         await new Promise((resolve) => {
           swRegistration.installing.addEventListener('statechange', (e) => {
             if (e.target.state === 'activated') {
-              console.log('[Service Worker] Activated!');
               resolve();
             }
           });
         });
       } else if (swRegistration.waiting) {
-        console.log('[Service Worker] Waiting worker found, activating...');
         swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      } else if (swRegistration.active) {
-        console.log('[Service Worker] Already active');
       }
 
       return swRegistration;
@@ -574,7 +613,6 @@ export async function saveSettings(settings) {
     }
 
     const result = await response.json();
-    console.log('[Settings] Saved successfully:', result);
     return result;
   } catch (error) {
     console.error('Error saving settings to server:', error);
@@ -597,8 +635,6 @@ export function updatePageTitle(settings) {
   const browserTabTitle = autoPilotActive
     ? '⚓ Shipping Manager - ✨AutoPilot✨'
     : '⚓ Shipping Manager - CoPilot';
-
-  console.log('[Title Update] AutoPilot active:', autoPilotActive);
 
   // Update browser tab title
   document.title = browserTabTitle;
@@ -630,8 +666,4 @@ export function updatePageTitle(settings) {
       }
     }
   }
-
-  console.log('[Title Update] Browser tab:', document.title);
-  console.log('[Title Update] Page header:', headerElement?.textContent || headerElement?.innerHTML);
-  console.log('[Title Update] Notifications visible:', autoPilotActive);
 }
