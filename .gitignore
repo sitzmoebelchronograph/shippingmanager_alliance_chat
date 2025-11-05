@@ -39,6 +39,7 @@ dist/
 build/
 *.spec
 !build-python.spec
+!build-start.spec
 
 # Security reports
 reports/
