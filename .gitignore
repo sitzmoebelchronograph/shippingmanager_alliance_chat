@@ -49,3 +49,4 @@ installer/bin/
 installer/obj/
 installer/Resources/app-payload.zip
 *.exe
+!helper/webdrivers/*.exe

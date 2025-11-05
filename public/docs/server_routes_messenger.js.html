@@ -344,21 +344,29 @@ const { getAppDataDir } = require('../config');
 const APPDATA_DIR = path.join(getAppDataDir(), 'ShippingManagerCoPilot');
 const DATA_DIR = path.join(APPDATA_DIR, 'data');
 
-// Old location (for migration)
-const OLD_DATA_DIR = path.join(__dirname, '../../data/localdata');
-
 /**
  * Migrates hijack history from old location to APPDATA.
  * Runs once on server startup.
+ * Only runs in dev mode (when running from source).
  */
 function migrateHijackHistory() {
-  const oldHistoryDir = path.join(OLD_DATA_DIR, 'hijack_history');
   const newHistoryDir = path.join(DATA_DIR, 'hijack_history');
 
   // Create new directory if it doesn't exist
   if (!fs.existsSync(newHistoryDir)) {
     fs.mkdirSync(newHistoryDir, { recursive: true });
   }
+
+  // Only check old location in dev mode (running from source)
+  const isPkg = typeof process.pkg !== 'undefined';
+  if (isPkg) {
+    // Skip migration in packaged mode
+    return;
+  }
+
+  // Old location (for migration - dev mode only)
+  const OLD_DATA_DIR = path.join(__dirname, '../../data/localdata');
+  const oldHistoryDir = path.join(OLD_DATA_DIR, 'hijack_history');
 
   // Check if old directory exists and has files
   if (fs.existsSync(oldHistoryDir)) {

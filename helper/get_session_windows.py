@@ -748,11 +748,29 @@ def detect_browser():
     try:
         from selenium import webdriver
         from selenium.webdriver.chrome.options import Options as ChromeOptions
+        from selenium.webdriver.chrome.service import Service as ChromeService
         from selenium.webdriver.firefox.options import Options as FirefoxOptions
+        from selenium.webdriver.firefox.service import Service as FirefoxService
         from selenium.webdriver.edge.options import Options as EdgeOptions
+        from selenium.webdriver.edge.service import Service as EdgeService
     except ImportError:
         print("[-] ERROR: Selenium not installed. Please run: pip install selenium", file=sys.stderr)
         sys.exit(1)
+
+    # Determine if running as PyInstaller bundle
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable
+        bundle_dir = sys._MEIPASS
+        webdriver_dir = os.path.join(bundle_dir, 'webdrivers')
+    else:
+        # Running as script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        webdriver_dir = os.path.join(script_dir, 'webdrivers')
+
+    # WebDriver paths
+    chromedriver_path = os.path.join(webdriver_dir, 'chromedriver.exe')
+    edgedriver_path = os.path.join(webdriver_dir, 'msedgedriver.exe')
+    geckodriver_path = os.path.join(webdriver_dir, 'geckodriver.exe')
 
     # Get default browser if possible
     default_browser = None
@@ -805,7 +823,14 @@ def detect_browser():
                 options.add_argument("--disable-blink-features=AutomationControlled")
                 options.add_experimental_option("excludeSwitches", ["enable-automation"])
                 options.add_experimental_option('useAutomationExtension', False)
-                driver = webdriver.Chrome(options=options)
+
+                # Use bundled ChromeDriver if available
+                if os.path.exists(chromedriver_path):
+                    service = ChromeService(executable_path=chromedriver_path)
+                    driver = webdriver.Chrome(service=service, options=options)
+                else:
+                    driver = webdriver.Chrome(options=options)
+
                 print(f"[+] Using Chrome browser", file=sys.stderr)
                 return driver
 
@@ -817,7 +842,14 @@ def detect_browser():
                 options.add_argument("--disable-blink-features=AutomationControlled")
                 options.add_experimental_option("excludeSwitches", ["enable-automation"])
                 options.add_experimental_option('useAutomationExtension', False)
-                driver = webdriver.Chrome(options=options)
+
+                # Use bundled ChromeDriver if available
+                if os.path.exists(chromedriver_path):
+                    service = ChromeService(executable_path=chromedriver_path)
+                    driver = webdriver.Chrome(service=service, options=options)
+                else:
+                    driver = webdriver.Chrome(options=options)
+
                 print(f"[+] Using Chromium browser", file=sys.stderr)
                 return driver
 
@@ -825,7 +857,14 @@ def detect_browser():
                 print(f"[*] Trying Firefox...", file=sys.stderr)
                 options = FirefoxOptions()
                 options.set_preference("dom.webdriver.enabled", False)
-                driver = webdriver.Firefox(options=options)
+
+                # Use bundled GeckoDriver if available
+                if os.path.exists(geckodriver_path):
+                    service = FirefoxService(executable_path=geckodriver_path)
+                    driver = webdriver.Firefox(service=service, options=options)
+                else:
+                    driver = webdriver.Firefox(options=options)
+
                 print(f"[+] Using Firefox browser", file=sys.stderr)
                 return driver
 
@@ -834,7 +873,14 @@ def detect_browser():
                 options = EdgeOptions()
                 options.add_argument("--start-maximized")
                 options.add_experimental_option("excludeSwitches", ["enable-automation"])
-                driver = webdriver.Edge(options=options)
+
+                # Use bundled EdgeDriver if available
+                if os.path.exists(edgedriver_path):
+                    service = EdgeService(executable_path=edgedriver_path)
+                    driver = webdriver.Edge(service=service, options=options)
+                else:
+                    driver = webdriver.Edge(options=options)
+
                 print(f"[+] Using Edge browser", file=sys.stderr)
                 return driver
 
