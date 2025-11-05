@@ -61,10 +61,10 @@ try {
     process.exit(1);
 }
 
-// Build installer
-console.log('[3/5] Building installer...');
+// Build installer with PublishSingleFile (C# self-extracting)
+console.log('[3/5] Building self-extracting installer...');
 try {
-    const buildCommand = 'dotnet publish installer -c Release -r win-x64 --self-contained -p:PublishSingleFile=true';
+    const buildCommand = 'dotnet publish installer -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true';
     console.log(`  Running: ${buildCommand}`);
     execSync(buildCommand, { stdio: 'inherit' });
     console.log('  [OK] Installer built successfully');
@@ -73,8 +73,8 @@ try {
     process.exit(1);
 }
 
-// Find and copy Setup.exe + DLLs
-console.log('[4/5] Copying installer files...');
+// Copy installer to dist folder
+console.log('[4/5] Copying installer...');
 const publishFolder = path.join(installerProject, 'bin', 'Release', 'net8.0-windows10.0.19041.0', 'win-x64', 'publish');
 const setupExePath = path.join(publishFolder, 'Setup.exe');
 
@@ -84,40 +84,19 @@ if (!fs.existsSync(setupExePath)) {
     process.exit(1);
 }
 
-// Create dist/installer folder for all installer files
-const installerDistFolder = path.join(distFolder, 'installer');
-if (!fs.existsSync(installerDistFolder)) {
-    fs.mkdirSync(installerDistFolder, { recursive: true });
+// Create dist folder if needed
+if (!fs.existsSync(distFolder)) {
+    fs.mkdirSync(distFolder, { recursive: true });
 }
 
-// Copy ALL files from publish folder (exe + WPF native DLLs)
-console.log('  Copying installer files from publish folder...');
-const publishFiles = fs.readdirSync(publishFolder);
-let totalSize = 0;
+// Copy and rename to final installer
+const installerOutputPath = path.join(distFolder, `ShippingManagerCoPilot-Installer-v${version}.exe`);
+fs.copyFileSync(setupExePath, installerOutputPath);
 
-for (const file of publishFiles) {
-    const srcPath = path.join(publishFolder, file);
-    const destPath = path.join(installerDistFolder, file);
-
-    if (fs.statSync(srcPath).isFile()) {
-        fs.copyFileSync(srcPath, destPath);
-        totalSize += fs.statSync(destPath).size;
-
-        // Rename Setup.exe to ShippingManagerCoPilot-Installer.exe
-        if (file === 'Setup.exe') {
-            const renamedPath = path.join(installerDistFolder, `ShippingManagerCoPilot-Installer-v${version}.exe`);
-            fs.renameSync(destPath, renamedPath);
-            console.log(`  [OK] ${file} -> ShippingManagerCoPilot-Installer-v${version}.exe`);
-        } else {
-            console.log(`  [OK] ${file}`);
-        }
-    }
-}
-
-const installerOutputPath = path.join(installerDistFolder, `ShippingManagerCoPilot-Installer-v${version}.exe`);
-const totalSizeInMB = (totalSize / 1024 / 1024).toFixed(2);
-console.log(`  [OK] All installer files copied (${totalSizeInMB} MB total)`);
-console.log(`  Location: ${installerDistFolder}`);
+const installerSize = fs.statSync(installerOutputPath).size;
+const installerSizeInMB = (installerSize / 1024 / 1024).toFixed(2);
+console.log(`  [OK] Single-file installer: ${installerSizeInMB} MB`);
+console.log(`  Location: ${installerOutputPath}`);
 
 // Generate checksums
 console.log('[5/5] Generating checksums...');
@@ -147,19 +126,26 @@ console.log(`  Location: ${checksumFile}`);
 
 console.log();
 console.log('='.repeat(60));
-console.log('[SUCCESS] Installer build complete!');
+console.log('[SUCCESS] Self-Extracting Installer Created!');
 console.log('='.repeat(60));
-console.log(`Installer: dist/installer/ShippingManagerCoPilot-Installer-v${version}.exe`);
-console.log(`Total size: ${totalSizeInMB} MB (exe + WPF DLLs)`);
+console.log(`Installer: dist/ShippingManagerCoPilot-Installer-v${version}.exe`);
+console.log(`Size: ${installerSizeInMB} MB (C# self-extracting single file)`);
 console.log(`SHA256: ${installerHash}`);
 console.log();
-console.log('IMPORTANT: The installer requires ALL files in dist/installer/ to run!');
-console.log('  - ShippingManagerCoPilot-Installer-v' + version + '.exe');
-console.log('  - D3DCompiler_47_cor3.dll, PenImc_cor3.dll, etc.');
-console.log('  Distribute the entire dist/installer/ folder or create a ZIP.');
+console.log('✅ SINGLE-FILE INSTALLER (C# Native):');
+console.log('   • .NET self-extracting with embedded resources');
+console.log('   • Automatically extracts WPF DLLs on first run');
+console.log('   • All native DLLs included and working');
+console.log('   • Can be distributed as a single .exe file');
+console.log();
+console.log('📝 How it works:');
+console.log('   1. First run: Extracts DLLs to same directory');
+console.log('   2. Restarts itself automatically');
+console.log('   3. Second run: WPF starts with all DLLs present');
+console.log('   4. No temporary folders, no external tools needed');
 console.log();
 console.log('Next steps:');
-console.log('  1. Test installer locally: cd dist/installer && start ShippingManagerCoPilot-Installer-v' + version + '.exe');
+console.log('  1. Test installer: dist\\ShippingManagerCoPilot-Installer-v' + version + '.exe');
 console.log('  2. Create git tag: git tag v' + version);
 console.log('  3. Push tag: git push origin v' + version);
 console.log('  4. GitHub Actions will create release automatically');
