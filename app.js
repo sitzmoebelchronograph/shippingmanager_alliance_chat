@@ -30,14 +30,51 @@
 
 const express = require('express');
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 // Server modules
+const logger = require('./server/utils/logger');
 const config = require('./server/config');
 const { setupMiddleware } = require('./server/middleware');
 const { initializeAlliance } = require('./server/utils/api');
 const { createHttpsServer } = require('./server/certificate');
-const { initWebSocket, startChatAutoRefresh } = require('./server/websocket');
+const { initWebSocket, broadcastToUser, startChatAutoRefresh, startMessengerAutoRefresh } = require('./server/websocket');
+const { initScheduler } = require('./server/scheduler');
+const autopilot = require('./server/autopilot');
+const sessionManager = require('./server/utils/session-manager');
+
+// Parent process monitoring - auto-shutdown if parent (Python) dies
+if (process.ppid) {
+  const checkParentInterval = setInterval(() => {
+    try {
+      // Check if parent process still exists
+      process.kill(process.ppid, 0); // Signal 0 just checks existence
+    } catch (err) {
+      // Parent process is dead, shut down immediately
+      console.error('[SM-CoPilot] Parent process died, shutting down...');
+      clearInterval(checkParentInterval);
+      process.exit(0);
+    }
+  }, 1000); // Check every second
+}
+
+// Setup file logging - create new log file on each startup
+// Use APPDATA for logs when running as .exe (pkg sets process.pkg)
+const LOG_DIR = process.pkg
+  ? path.join(config.getAppDataDir(), 'ShippingManagerCoPilot')
+  : __dirname;
+
+// Ensure log directory exists
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true });
+}
+
+const LOG_FILE = path.join(LOG_DIR, 'server.log');
+
+// Winston handles file logging automatically with timestamps
+logger.log(`[Logging] Server logs will be written to: ${LOG_FILE}`);
 
 // Route modules
 const allianceRoutes = require('./server/routes/alliance');
@@ -45,7 +82,9 @@ const messengerRoutes = require('./server/routes/messenger');
 const gameRoutes = require('./server/routes/game');
 const settingsRoutes = require('./server/routes/settings');
 const coopRoutes = require('./server/routes/coop');
-const demoRoutes = require('./server/routes/demo');
+const forecastRoutes = require('./server/routes/forecast');
+const anchorRoutes = require('./server/routes/anchor');
+const healthRoutes = require('./server/routes/health');
 
 // Initialize Express app
 const app = express();
@@ -65,9 +104,9 @@ setupMiddleware(app);
  * @returns {void} Downloads the CA certificate file or sends 404 error
  */
 app.get('/ca-cert.pem', (req, res) => {
-  res.download('./ca-cert.pem', 'ShippingManager-CA.pem', (err) => {
+  res.download('./data/localdata/certs/ca-cert.pem', 'ShippingManager-CA.pem', (err) => {
     if (err) {
-      console.error('Error downloading CA certificate:', err);
+      logger.error('Error downloading CA certificate:', err);
       res.status(404).send('CA certificate not found');
     }
   });
@@ -79,9 +118,29 @@ app.use('/api', messengerRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', settingsRoutes);
 app.use('/api', coopRoutes);
+app.use('/api/forecast', forecastRoutes);
+app.use('/api', anchorRoutes);
+app.use('/health', healthRoutes);
 
-// Demo API (provides dummy data for recordings)
-app.use('/api/demo', demoRoutes);
+// Autopilot pause/resume endpoint
+app.post('/api/autopilot/toggle', (req, res) => {
+  const autopilot = require('./server/autopilot');
+  const isPaused = autopilot.isAutopilotPaused();
+
+  if (isPaused) {
+    autopilot.resumeAutopilot();
+    res.json({ success: true, paused: false });
+  } else {
+    autopilot.pauseAutopilot();
+    res.json({ success: true, paused: true });
+  }
+});
+
+// Get autopilot status endpoint
+app.get('/api/autopilot/status', (req, res) => {
+  const autopilot = require('./server/autopilot');
+  res.json({ paused: autopilot.isAutopilotPaused() });
+});
 
 // Create HTTPS server
 const server = createHttpsServer(app);
@@ -96,16 +155,181 @@ server.on('upgrade', (request, socket, head) => {
   });
 });
 
-// Start server
-server.listen(config.PORT, config.HOST, async () => {
-  await initializeAlliance();
+// Settings initialization (will be done after user is loaded)
+const { initializeSettings } = require('./server/settings-schema');
+const chatBot = require('./server/chatbot');
 
-  // Start chat auto-refresh
+(async () => {
+  // Start server
+  server.listen(config.PORT, config.HOST, async () => {
+    // Load session cookie from encrypted storage FIRST
+    logger.log('[Session] Loading sessions from encrypted storage...');
+
+    try {
+      const availableSessions = await sessionManager.getAvailableSessions();
+
+      // Debug: Show all available sessions
+      logger.log(`[Session] Found ${availableSessions.length} session(s) in storage`);
+      availableSessions.forEach((s, idx) => {
+        logger.log(`[Session]   [${idx}] User ID: ${s.userId} (${typeof s.userId}), Company: ${s.companyName}, Method: ${s.loginMethod}`);
+      });
+
+      if (availableSessions.length === 0) {
+        logger.error('[FATAL] No sessions found. Please run start.py to log in.');
+        process.exit(1);
+      }
+
+      let selectedSession;
+
+      // User selection ONLY via ENV (from start.py) - NO persistence
+      const selectedUserId = process.env.SELECTED_USER_ID;
+      logger.log(`[Session] ENV SELECTED_USER_ID: ${selectedUserId} (${typeof selectedUserId})`);
+
+      if (selectedUserId) {
+        // User was selected via start.py - use that specific session
+        logger.log(`[Session] Searching for user ID: ${selectedUserId} in ${availableSessions.length} sessions...`);
+        selectedSession = availableSessions.find(s => s.userId === selectedUserId);
+
+        if (!selectedSession) {
+          logger.error(`[FATAL] Selected user ${selectedUserId} not found in available sessions.`);
+          logger.error('[FATAL] Available user IDs:');
+          availableSessions.forEach(s => {
+            logger.error(`[FATAL]   - ${s.userId} (type: ${typeof s.userId}) - ${s.companyName}`);
+            logger.error(`[FATAL]     Match result: ${s.userId} === ${selectedUserId} ? ${s.userId === selectedUserId}`);
+            logger.error(`[FATAL]     String match: "${String(s.userId)}" === "${String(selectedUserId)}" ? ${String(s.userId) === String(selectedUserId)}`);
+          });
+          logger.error('[FATAL] Please run start.py again to select a valid session.');
+          process.exit(1);
+        }
+
+        logger.log(`[Session] Match found! Using session for user ${selectedSession.userId} (${selectedSession.companyName})`);
+      } else if (availableSessions.length === 1) {
+        // Only one session available - use it automatically
+        selectedSession = availableSessions[0];
+        logger.log(`[Session] Using session for user ${selectedSession.userId} (${selectedSession.companyName})`);
+      } else {
+        // Multiple sessions but no selection - error out
+        logger.error('[FATAL] Multiple sessions found but no session selected.');
+        logger.error('[FATAL] Please run start.py to select which session to use.');
+        logger.error('[FATAL] Available sessions:');
+        availableSessions.forEach(s => {
+          logger.error(`[FATAL]   - User ${s.userId}: ${s.companyName} (${s.loginMethod})`);
+        });
+        process.exit(1);
+      }
+
+      // Set the session cookie in config
+      config.setSessionCookie(selectedSession.cookie);
+      logger.log('[Session] Session cookie loaded and decrypted');
+
+    } catch (error) {
+      logger.error('[FATAL] Failed to load session:', error.message);
+      process.exit(1);
+    }
+
+    // Initialize alliance and user data
+    await initializeAlliance();
+
+    // Migrate any plaintext sessions to encrypted storage
+    try {
+      logger.log('[Security] Checking for plaintext sessions to encrypt...');
+      const migratedCount = await sessionManager.migrateToEncrypted();
+      if (migratedCount > 0) {
+        logger.log(`[Security] ✓ Successfully encrypted ${migratedCount} session(s)`);
+      }
+    } catch (error) {
+      logger.error('[Security] Session migration failed:', error.message);
+      logger.error('[Security] Sessions will remain in current format');
+    }
+
+    const state = require('./server/state');
+    const { getUserId } = require('./server/utils/api');
+    const userId = getUserId();
+
+    if (!userId) {
+      logger.error('[FATAL] Cannot load user ID. Please check session cookie.');
+      process.exit(1);
+    }
+
+    logger.debug(`[Settings] Detected User ID: ${userId}`);
+    logger.log(`[Settings] Loading user settings...`);
+
+    // NOW load user-specific settings
+    const settings = await initializeSettings(userId);
+
+    // Load validated settings into state BEFORE initializing scheduler
+    state.updateSettings(userId, settings);
+    logger.log('[Autopilot] Settings loaded and validated:');
+    logger.log(`[Autopilot] Interval: ${settings.autopilotInterval / 60}min`);
+    if (settings.autoRebuyFuel) logger.log(`[Autopilot] Barrel Boss enabled`);
+    if (settings.autoRebuyCO2) logger.log(`[Autopilot] Atmosphere Broker enabled`);
+    if (settings.autoDepartAll) logger.log(`[Autopilot] Cargo Marshal enabled`);
+    if (settings.autoAnchorPointEnabled) logger.log(`[Autopilot] Harbormaster enabled`);
+    if (settings.autoBulkRepair) logger.log(`[Autopilot] Yard Foreman enabled`);
+    if (settings.autoCampaignRenewal) logger.log(`[Autopilot] Reputation Chief enabled`);
+    if (settings.autoCoopEnabled) logger.log(`[Autopilot] Fair Hand enabled`);
+    if (settings.autoNegotiateHijacking) logger.log(`[Autopilot] Cap'n Blackbeard enabled`);
+
+  // Initialize autopilot system (AFTER settings are loaded)
+  autopilot.setBroadcastFunction(broadcastToUser);
+  initScheduler();
+  logger.log('[Autopilot] Backend autopilot system initialized');
+
+  // Initialize Chat Bot with current settings
+  const chatBotSettings = {
+    enabled: settings.chatbotEnabled,
+    commandPrefix: settings.chatbotPrefix,
+    allianceCommands: {
+      enabled: settings.chatbotAllianceCommandsEnabled,
+      cooldownSeconds: settings.chatbotCooldownSeconds || 30
+    },
+    commands: {
+      forecast: {
+        enabled: settings.chatbotForecastCommandEnabled,
+        responseType: 'dm',
+        adminOnly: false
+      },
+      help: {
+        enabled: settings.chatbotHelpCommandEnabled,
+        responseType: 'dm',
+        adminOnly: false
+      }
+    },
+    scheduledMessages: {
+      dailyForecast: {
+        enabled: settings.chatbotDailyForecastEnabled,
+        timeUTC: settings.chatbotDailyForecastTime,
+        dayOffset: 1
+      }
+    },
+    dmCommands: {
+      enabled: settings.chatbotDMCommandsEnabled,
+      deleteAfterReply: settings.chatbotDeleteDMAfterReply
+    },
+    customCommands: settings.chatbotCustomCommands || []
+  };
+
+  await chatBot.initialize(chatBotSettings);
+  logger.log('[ChatBot] Chat Bot initialized with settings:');
+  logger.log(`[ChatBot] Enabled: ${settings.chatbotEnabled ? 'true' : 'false'}`);
+  logger.log(`[ChatBot] Command Prefix "${settings.chatbotPrefix}"`);
+  if (settings.chatbotDailyForecastEnabled) {
+    logger.log(`[ChatBot] Daily Forecast enabled at ${settings.chatbotDailyForecastTime} UTC`);
+  }
+  if (settings.chatbotAllianceCommandsEnabled) {
+    logger.log(`[ChatBot] Alliance Commands enabled`);
+  }
+  if (settings.chatbotDMCommandsEnabled) {
+    logger.log(`[ChatBot] DM Commands enabled`);
+  }
+
+  // Start chat and messenger polling (both synchronized at 20 seconds)
   startChatAutoRefresh();
+  startMessengerAutoRefresh();
+  logger.log('[Alliance Chat] Started 20-second chat polling');
+  logger.log('[Messenger] Started 20-second messenger polling');
 
-  // Start backend automation (auto-repair with interval)
-  const backendAutomation = require('./server/automation');
-  backendAutomation.initialize();
+  // All automation runs via scheduler.js and autopilot.js
 
   // Display network addresses
   const networkInterfaces = os.networkInterfaces();
@@ -119,12 +343,17 @@ server.listen(config.PORT, config.HOST, async () => {
     }
   }
 
-  console.log(`\n🚀 ShippingManager CoPilot Frontend - (HTTPS) running on:`);
-  console.log(`   Local:   https://localhost:${config.PORT}`);
-  if (addresses.length > 0) {
-    addresses.forEach(addr => {
-      console.log(`   Network: https://${addr}:${config.PORT}`);
-    });
+  // Only show network addresses if server is listening on all interfaces (0.0.0.0)
+  const isNetworkAccessible = config.HOST === '0.0.0.0';
+
+  if (isNetworkAccessible) {
+    // Show all URLs in single line
+    const urls = [`https://localhost:${config.PORT}`, ...addresses.map(addr => `https://${addr}:${config.PORT}`)];
+    logger.log(`[Frontend] ShippingManager CoPilot Frontend running on: ${urls.join(', ')}`);
+  } else {
+    // Show only the configured specific IP
+    logger.log(`[Frontend] ShippingManager CoPilot Frontend running on: https://${config.HOST}:${config.PORT}`);
   }
-  console.log(`\n⚠ Self-signed certificate - you need to accept the security warning in your browser\n`);
-});
+  logger.warn(`[Frontend] Self-signed certificate - accept security warning in browser`);
+  });
+})();

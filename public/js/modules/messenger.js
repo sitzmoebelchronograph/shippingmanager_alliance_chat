@@ -30,9 +30,27 @@
  * @requires ui-dialogs - Confirmation dialogs
  */
 
-import { escapeHtml } from './utils.js';
-import { fetchMessengerChats, fetchMessengerMessages, sendPrivateMessage as apiSendPrivateMessage, deleteChat as apiDeleteChat } from './api.js';
+import { escapeHtml, showSideNotification } from './utils.js';
+import { fetchMessengerChats, fetchMessengerMessages, sendPrivateMessage as apiSendPrivateMessage, deleteChat as apiDeleteChat, markChatAsRead as apiMarkChatAsRead, fetchContacts, searchUsers } from './api.js';
 import { showConfirmDialog } from './ui-dialogs.js';
+
+/**
+ * Formats timestamp using browser locale without timezone.
+ * @param {number} unixTimestamp - Unix timestamp in seconds
+ * @returns {string} Formatted date/time (e.g., "Oct 28, 2025, 18:00:23")
+ */
+function formatTimestamp(unixTimestamp) {
+  const date = new Date(unixTimestamp * 1000);
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+}
 
 /**
  * Current active private chat state.
@@ -70,6 +88,13 @@ let allPrivateChats = [];
 let userChatsForSelection = [];
 
 /**
+ * Polling interval for active hijacking negotiations.
+ * Checks for pirate responses every 5 seconds.
+ * @type {number|null}
+ */
+let hijackingPollingInterval = null;
+
+/**
  * Opens messenger interface for a specific user or system notifications.
  * Fetches all conversations and displays selection overlay or system message list.
  *
@@ -96,6 +121,15 @@ let userChatsForSelection = [];
  * openMessenger("Gameplay", null);
  */
 export async function openMessenger(targetCompanyName, targetUserId) {
+  // Reset hijacking inbox flag when opening messenger normally
+  window.cameFromHijackingInbox = false;
+
+  // Remove hijacking case view class when opening normally
+  const messengerOverlay = document.getElementById('messengerOverlay');
+  if (messengerOverlay) {
+    messengerOverlay.classList.remove('hijacking-case-view');
+  }
+
   try {
     const data = await fetchMessengerChats();
     allPrivateChats = data.chats;
@@ -120,7 +154,10 @@ export async function openMessenger(targetCompanyName, targetUserId) {
 }
 
 function showSystemMessagesSelection(allChats, ownUserId) {
-  const systemChats = allChats.filter(chat => chat.system_chat);
+  // Filter system chats but exclude hijacking messages (they go to Phone Booth)
+  const systemChats = allChats.filter(chat =>
+    chat.system_chat && chat.body !== 'vessel_got_hijacked'
+  );
   const sortedChats = systemChats.sort((a, b) => (b.time_last_message || 0) - (a.time_last_message || 0));
   userChatsForSelection = sortedChats;
 
@@ -132,18 +169,16 @@ function showSystemMessagesSelection(allChats, ownUserId) {
   } else {
     listContainer.innerHTML = sortedChats.map((chat, index) => {
       const title = getSystemMessageTitle(chat.body, chat.values);
-      const date = new Date(chat.time_last_message * 1000);
-      const dateStr = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
-      const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const timestamp = formatTimestamp(chat.time_last_message);
       const unreadIndicator = chat.new ? '<span class="unread-indicator"></span>' : '';
 
       return `
         <div class="chat-selection-item" data-chat-index="${index}" style="position: relative; padding-right: 40px;">
           <div style="flex: 1;">
             <h3>${title}${unreadIndicator}</h3>
-            <p>${dateStr} ${timeStr}</p>
+            <p>${timestamp}</p>
           </div>
-          <button class="delete-chat-btn" data-chat-index="${index}" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #ef4444; padding: 4px; cursor: pointer; font-size: 20px;" onmouseover="this.style.animation='shake-trash 0.5s ease-in-out infinite'" onmouseout="this.style.animation='none'">🗑️</button>
+          <button class="delete-chat-btn" data-chat-index="${index}">🗑️</button>
         </div>
       `;
     }).join('');
@@ -154,7 +189,7 @@ function showSystemMessagesSelection(allChats, ownUserId) {
         chatItem.addEventListener('click', () => {
           const chatIndex = parseInt(item.dataset.chatIndex);
           const selectedChat = userChatsForSelection[chatIndex];
-          document.getElementById('chatSelectionOverlay').style.display = 'none';
+          document.getElementById('chatSelectionOverlay').classList.add('hidden');
           openExistingChat('Gameplay', null, selectedChat, ownUserId);
         });
       }
@@ -172,7 +207,7 @@ function showSystemMessagesSelection(allChats, ownUserId) {
     });
   }
 
-  document.getElementById('chatSelectionOverlay').style.display = 'flex';
+  document.getElementById('chatSelectionOverlay').classList.remove('hidden');
 }
 
 function showChatSelection(targetCompanyName, targetUserId, chats, ownUserId) {
@@ -187,19 +222,29 @@ function showChatSelection(targetCompanyName, targetUserId, chats, ownUserId) {
 
   let html = `
     <div class="chat-selection-item" data-is-new="true" style="border-color: #4ade80;">
-      <h3 style="color: #4ade80;">+ Start New Conversation</h3>
-      <p>Create a new conversation with a custom subject</p>
+      <div style="flex: 1;">
+        <h3 style="color: #4ade80;">+ Start New Conversation</h3>
+        <p>Create a new conversation with a custom subject</p>
+      </div>
     </div>
   `;
 
   html += sortedChats.map((chat, index) => {
     const lastMsg = chat.last_message ? escapeHtml(chat.last_message.substring(0, 60)) + '...' : 'No messages';
     const subject = chat.subject || 'No subject';
+    const unreadIndicator = chat.new ? '<span class="unread-indicator"></span>' : '';
+
+    // Format timestamp
+    const timestamp = formatTimestamp(chat.time_last_message);
 
     return `
-      <div class="chat-selection-item" data-chat-index="${index}">
-        <h3>${escapeHtml(subject)}</h3>
-        <p>${lastMsg}</p>
+      <div class="chat-selection-item" data-chat-index="${index}" style="position: relative; padding-right: 40px;">
+        <div style="flex: 1;">
+          <h3>${escapeHtml(targetCompanyName)} - ${escapeHtml(subject)}${unreadIndicator}</h3>
+          <p>${lastMsg}</p>
+          <p style="font-size: 11px; opacity: 0.7; margin-top: 4px;">${timestamp}</p>
+        </div>
+        <button class="delete-chat-btn" data-chat-index="${index}">🗑️</button>
       </div>
     `;
   }).join('');
@@ -207,23 +252,45 @@ function showChatSelection(targetCompanyName, targetUserId, chats, ownUserId) {
   listContainer.innerHTML = html;
 
   listContainer.querySelectorAll('.chat-selection-item').forEach(item => {
-    item.addEventListener('click', async () => {
-      if (item.dataset.isNew === 'true') {
-        document.getElementById('chatSelectionOverlay').style.display = 'none';
-        openNewChat(targetCompanyName, targetUserId);
-      } else {
-        const chatIndex = parseInt(item.dataset.chatIndex);
-        const selectedChat = userChatsForSelection[chatIndex];
-        document.getElementById('chatSelectionOverlay').style.display = 'none';
-        openExistingChat(targetCompanyName, targetUserId, selectedChat, ownUserId);
-      }
+    const chatItem = item.querySelector('div[style*="flex: 1"]');
+    if (chatItem) {
+      chatItem.addEventListener('click', async () => {
+        if (item.dataset.isNew === 'true') {
+          document.getElementById('chatSelectionOverlay').classList.add('hidden');
+          openNewChat(targetCompanyName, targetUserId);
+        } else {
+          const chatIndex = parseInt(item.dataset.chatIndex);
+          const selectedChat = userChatsForSelection[chatIndex];
+          document.getElementById('chatSelectionOverlay').classList.add('hidden');
+          openExistingChat(targetCompanyName, targetUserId, selectedChat, ownUserId);
+        }
+      });
+    }
+  });
+
+  // Add delete button handlers
+  listContainer.querySelectorAll('.delete-chat-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const chatIndex = parseInt(btn.dataset.chatIndex);
+      const chatToDelete = sortedChats[chatIndex];
+
+      await deleteChatWithConfirmation(chatToDelete);
+      // Refresh the list
+      const data = await fetchMessengerChats();
+      allPrivateChats = data.chats;
+      const userChats = allPrivateChats.filter(chat => {
+        if (chat.system_chat) return false;
+        return chat.participants_string === targetCompanyName;
+      });
+      showChatSelection(targetCompanyName, targetUserId, userChats, ownUserId);
     });
   });
 
-  document.getElementById('chatSelectionOverlay').style.display = 'flex';
+  document.getElementById('chatSelectionOverlay').classList.remove('hidden');
 }
 
-async function openExistingChat(targetCompanyName, targetUserId, chat, ownUserId) {
+export async function openExistingChat(targetCompanyName, targetUserId, chat, ownUserId) {
   const isSystemChat = chat.system_chat || false;
 
   currentPrivateChat = {
@@ -233,33 +300,59 @@ async function openExistingChat(targetCompanyName, targetUserId, chat, ownUserId
     targetUserId: targetUserId,
     messages: [],
     isNewChat: false,
-    isSystemChat: isSystemChat
+    isSystemChat: isSystemChat,
+    body: chat.body || null,
+    values: chat.values || null
   };
 
-  document.getElementById('messengerOverlay').style.display = 'flex';
+  document.getElementById('messengerOverlay').classList.remove('hidden');
+
+  // Set window size based on chat type
+  const messengerWindow = document.querySelector('#messengerOverlay .messenger-window');
+  if (isSystemChat && chat.body === 'vessel_got_hijacked') {
+    // Pirate Demands = narrow template (400px)
+    messengerWindow.classList.add('messenger-window-narrow');
+  } else {
+    // Private chats = normal template (wide with min-height)
+    messengerWindow.classList.remove('messenger-window-narrow');
+  }
 
   // Set title based on chat type
   if (isSystemChat) {
-    document.getElementById('messengerTitle').textContent = `${targetCompanyName} - 📢 System Notification`;
+    if (chat.body === 'vessel_got_hijacked') {
+      document.getElementById('messengerTitle').textContent = `☠️ Pirate Demands`;
+    } else {
+      document.getElementById('messengerTitle').textContent = `📢 ${targetCompanyName} - System Notification`;
+    }
   } else {
-    document.getElementById('messengerTitle').textContent = `${targetCompanyName} - ${chat.subject || 'Chat'}`;
+    document.getElementById('messengerTitle').textContent = `🗣️ ${targetCompanyName} - ${chat.subject || 'Chat'}`;
   }
 
-  document.getElementById('subjectInputWrapper').style.display = 'none';
+  document.getElementById('subjectInputWrapper').classList.add('hidden');
   document.getElementById('messengerFeed').innerHTML = '<div class="empty-message">Loading...</div>';
 
   // System chats are single notifications, not conversations
   if (isSystemChat) {
-    displaySystemMessage(chat);
+    await displaySystemMessage(chat);
     // Hide input area for system messages
-    document.getElementById('messengerInput').style.display = 'none';
-    document.getElementById('sendPrivateMessageBtn').style.display = 'none';
+    document.getElementById('messengerInput').classList.add('hidden');
+    document.getElementById('sendPrivateMessageBtn').classList.add('hidden');
   } else {
-    await loadPrivateMessages(chat.id);
+    await loadPrivateMessages(chat.id, ownUserId);
     // Show input area for regular chats
-    document.getElementById('messengerInput').style.display = 'block';
-    document.getElementById('sendPrivateMessageBtn').style.display = 'block';
+    document.getElementById('messengerInput').classList.remove('hidden');
+    document.getElementById('sendPrivateMessageBtn').classList.remove('hidden');
     document.getElementById('messengerInput').focus();
+  }
+
+  // Mark as read after displaying the message (if it was unread)
+  if (chat.new) {
+    try {
+      await apiMarkChatAsRead(chat.id, isSystemChat);
+      console.log(`[Messenger] Marked chat ${chat.id} as read (system: ${isSystemChat})`);
+    } catch (error) {
+      console.error('[Messenger] Failed to mark chat as read:', error);
+    }
   }
 
   if (window.debouncedUpdateUnreadBadge) {
@@ -294,9 +387,14 @@ export function openNewChat(targetCompanyName, targetUserId) {
     isNewChat: true
   };
 
-  document.getElementById('messengerOverlay').style.display = 'flex';
-  document.getElementById('messengerTitle').textContent = `New conversation with ${targetCompanyName}`;
-  document.getElementById('subjectInputWrapper').style.display = 'block';
+  document.getElementById('messengerOverlay').classList.remove('hidden');
+
+  // New conversation = normal template (wide with min-height)
+  const messengerWindow = document.querySelector('#messengerOverlay .messenger-window');
+  messengerWindow.classList.remove('messenger-window-narrow');
+
+  document.getElementById('messengerTitle').textContent = `🗣️ ${targetCompanyName} - New Conversation`;
+  document.getElementById('subjectInputWrapper').classList.remove('hidden');
   document.getElementById('subjectInput').value = '';
   document.getElementById('messengerFeed').innerHTML =
     '<div class="empty-message">New conversation. Enter a subject and send your first message.</div>';
@@ -335,20 +433,24 @@ function displayPrivateMessages(messages, ownUserId) {
     const isOwn = msg.user_id === ownUserId;
     const bubble = document.createElement('div');
 
-    const date = new Date(msg.created_at * 1000);
-    const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const day = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+    const timestamp = formatTimestamp(msg.created_at);
 
     bubble.className = `message-bubble ${isOwn ? 'own' : 'other'}`;
     bubble.innerHTML = `
       ${escapeHtml(msg.body || '').replace(/\n/g, '<br>')}
-      <div style="font-size:10px; opacity:0.7; margin-top:5px; text-align:${isOwn ? 'right' : 'left'};">${day} ${time}</div>
+      <div style="font-size:10px; opacity:0.7; margin-top:5px; text-align:${isOwn ? 'right' : 'left'};">${timestamp}</div>
     `;
 
     feed.appendChild(bubble);
   });
 
   feed.scrollTop = feed.scrollHeight;
+
+  // Show input footer for private messages
+  const inputContainer = document.querySelector('.messenger-input');
+  if (inputContainer) {
+    inputContainer.classList.remove('hidden');
+  }
 }
 
 function getSystemMessageTitle(body, values) {
@@ -356,43 +458,155 @@ function getSystemMessageTitle(body, values) {
 
   const v = values || {};
 
-  if (body === 'vessel_got_hijacked') return '⚠️ Vessel Hijacked';
+  if (body === 'vessel_got_hijacked') return '☠️ Vessel Hijacked';
   if (body === 'user_bought_stock') return '📈 Stock Purchase';
   if (body === 'user_sold_stock') return '📉 Stock Sale';
   if (body.includes('alliance') && body.includes('donation')) return '💰 Alliance Donation';
   if (body.includes('accepted_to_join_alliance')) return '🤝 Alliance Joined';
   if (body.startsWith('intro_pm_')) return '📚 Tutorial Message';
 
-  // Fallback: format the body text
-  return body.replace(/_/g, ' ').replace(/\//g, ' ');
+  // Fallback: format the body text (replace underscores, capitalize words)
+  return body
+    .replace(/_/g, ' ')
+    .replace(/\//g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
-function displaySystemMessage(chat) {
+async function displaySystemMessage(chat) {
   const feed = document.getElementById('messengerFeed');
   feed.innerHTML = '';
 
   const bubble = document.createElement('div');
-  bubble.className = 'message-bubble system';
-  bubble.style.background = 'rgba(59, 130, 246, 0.1)';
-  bubble.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+  bubble.className = 'message-bubble system message-bubble-system';
 
-  const date = new Date(chat.time_last_message * 1000);
-  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const day = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+  const timestamp = formatTimestamp(chat.time_last_message);
+
+  // Check if this is a hijacking notification - fetch case details first
+  let caseDetails = null;
+  let autopilotResolved = false;
+
+  if (chat.body === 'vessel_got_hijacked' && chat.values?.case_id) {
+    try {
+      const response = await fetch('/api/hijacking/get-case', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_id: chat.values.case_id })
+      });
+      const data = await response.json();
+      if (response.ok && data.data) {
+        caseDetails = data.data;
+        console.log('[Hijacking] Case details loaded:', caseDetails);
+
+        // Load negotiation history from server
+        let negotiationHistory = [];
+        let resolvedAt = null;
+        try {
+          const historyResponse = await fetch(`/api/hijacking/history/${chat.values.case_id}`);
+          const historyData = await historyResponse.json();
+          negotiationHistory = historyData.history || [];
+          autopilotResolved = historyData.autopilot_resolved || false;
+          resolvedAt = historyData.resolved_at || null;
+        } catch (error) {
+          console.error('Error loading hijack history:', error);
+        }
+
+        // Add initial demand if not in history
+        if (negotiationHistory.length === 0 && chat.values.requested_amount) {
+          negotiationHistory.push({
+            type: 'pirate',
+            amount: chat.values.requested_amount,
+            timestamp: chat.time_last_message
+          });
+        }
+
+        // Check if we need to add user proposal
+        if (caseDetails.user_proposal &&
+            !negotiationHistory.find(h => h.type === 'user' && h.amount === caseDetails.user_proposal)) {
+          negotiationHistory.push({
+            type: 'user',
+            amount: caseDetails.user_proposal,
+            timestamp: Date.now() / 1000
+          });
+        }
+
+        // Check if pirates counter-offered (requested amount changed)
+        const lastPirateOffer = negotiationHistory.filter(h => h.type === 'pirate').pop();
+        if (lastPirateOffer && caseDetails.requested_amount !== lastPirateOffer.amount) {
+          negotiationHistory.push({
+            type: 'pirate',
+            amount: caseDetails.requested_amount,
+            timestamp: Date.now() / 1000
+          });
+        }
+
+        // Save updated history to server
+        try {
+          // Preserve autopilot_resolved flag if it exists
+          const dataToSave = autopilotResolved ? {
+            history: negotiationHistory,
+            autopilot_resolved: true,
+            resolved_at: resolvedAt
+          } : { history: negotiationHistory };
+
+          await fetch(`/api/hijacking/history/${chat.values.case_id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dataToSave)
+          });
+        } catch (error) {
+          console.error('Error saving hijack history:', error);
+        }
+
+        caseDetails.offers = negotiationHistory;
+      }
+    } catch (error) {
+      console.error('Error fetching hijacking case:', error);
+    }
+  }
+
+  // Store chat data for later use
+  bubble.dataset.chatBody = chat.body;
+  bubble.dataset.chatValues = JSON.stringify(chat.values);
+  if (caseDetails) {
+    bubble.dataset.caseDetails = JSON.stringify(caseDetails);
+  }
 
   // Format the system message based on body type
-  let messageContent = formatSystemMessage(chat.body, chat.values, chat.subject);
+  let messageContent = formatSystemMessage(chat.body, chat.values, chat.subject, caseDetails, chat.time_last_message, autopilotResolved);
 
   bubble.innerHTML = `
     ${messageContent}
-    <div style="font-size:10px; opacity:0.7; margin-top:10px;">${day} ${time}</div>
+    <div style="font-size:10px; opacity:0.7; margin-top:10px;">${timestamp}</div>
   `;
 
   feed.appendChild(bubble);
   feed.scrollTop = feed.scrollHeight;
+
+  // Add click handlers for hijacking offer buttons (if any)
+  document.querySelectorAll('.hijacking-offer-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const caseId = this.dataset.caseId;
+      // Deselect all buttons for this case
+      document.querySelectorAll(`.hijacking-offer-btn[data-case-id="${caseId}"]`).forEach(b => {
+        b.classList.remove('selected', 'hijacking-offer-btn-selected');
+        b.classList.add('hijacking-offer-btn-unselected');
+      });
+      // Select this button
+      this.classList.add('selected', 'hijacking-offer-btn-selected');
+      this.classList.remove('hijacking-offer-btn-unselected');
+    });
+  });
+
+  // Hide input footer for system messages
+  const inputContainer = document.querySelector('.messenger-input');
+  if (inputContainer) {
+    inputContainer.classList.add('hidden');
+  }
 }
 
-function formatSystemMessage(body, values, subject) {
+function formatSystemMessage(body, values, subject, caseDetails, messageTimestamp, autopilotResolved = false) {
   // Handle different system message types
   if (!body) return '<div style="color: #94a3b8;">System notification (no details)</div>';
 
@@ -400,14 +614,203 @@ function formatSystemMessage(body, values, subject) {
 
   // Vessel hijacked
   if (body === 'vessel_got_hijacked' && v.vessel_name) {
+    const caseId = v.case_id;
+
+    // Use case details if available, otherwise fall back to message values
+    const requestedAmount = caseDetails?.requested_amount || v.requested_amount || 0;
+    const userProposal = caseDetails?.user_proposal || null;
+    const paidAmount = caseDetails?.paid_amount || null;
+    const caseStatus = caseDetails?.status || null;
+    const initialAmount = v.requested_amount || 0; // Original demand from message
+    const registeredAt = caseDetails?.registered_at || messageTimestamp || null;
+
+    let actionsHTML = '';
+    let statusHTML = '';
+    let negotiationHistoryHTML = '';
+
+    // Use negotiation history from caseDetails if available (loaded from server)
+    // Otherwise build it from current API data
+    let negotiationHistory = caseDetails?.offers || [];
+
+    // If no stored history, build from current data (first time)
+    if (negotiationHistory.length === 0) {
+      // Add initial pirate demand
+      if (initialAmount > 0) {
+        negotiationHistory.push({
+          type: 'pirate',
+          amount: initialAmount,
+          timestamp: registeredAt
+        });
+      }
+
+      // Add user proposal if exists
+      if (userProposal && userProposal > 0) {
+        negotiationHistory.push({
+          type: 'user',
+          amount: userProposal,
+          timestamp: null
+        });
+      }
+
+      // Add pirate counter-offer if they changed the price
+      if (requestedAmount !== initialAmount && requestedAmount > 0) {
+        negotiationHistory.push({
+          type: 'pirate',
+          amount: requestedAmount,
+          timestamp: null
+        });
+      }
+    }
+
+    // Build negotiation history HTML
+    if (negotiationHistory.length > 0) {
+      negotiationHistoryHTML = `
+        <div style="margin: 12px -15px 0 -15px; padding: 10px 15px; background: rgba(156, 163, 175, 0.1); border-radius: 4px; width: calc(100% + 30px);">
+          <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #9ca3af;">📝 Negotiation History:</div>
+          <div style="font-size: 12px; line-height: 1.6;">
+      `;
+
+      negotiationHistory.forEach((offer, index) => {
+        const isUserOffer = offer.type === 'user';
+        const amount = offer.amount;
+
+        negotiationHistoryHTML += `
+          <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(156, 163, 175, 0.2);">
+            <span style="color: ${isUserOffer ? '#60a5fa' : '#ef4444'};">
+              ${isUserOffer ? '👤 You offered' : '☠️ Pirates demanded'}:
+            </span>
+            <span style="font-weight: bold; color: ${isUserOffer ? '#60a5fa' : '#ef4444'};">
+              $${amount.toLocaleString()}
+            </span>
+          </div>
+        `;
+      });
+
+      negotiationHistoryHTML += `
+          </div>
+        </div>
+      `;
+    }
+
+    // Check if case is actually resolved (paid OR status = 'solved')
+    const isResolved = paidAmount !== null || caseStatus === 'solved';
+
+    if (isResolved) {
+      // Case is resolved (paid) - if paid_amount is null but status is 'solved', use requested_amount
+      const finalAmount = paidAmount || requestedAmount;
+
+      // Captain Blackbeard signature if autopilot-resolved
+      const signatureHTML = autopilotResolved ? `
+        <div style="position: absolute; right: -8px; top: calc(35% + 50px); transform: translateY(-50%); text-align: right;">
+          <div style="font-family: 'Segoe Script', 'Lucida Handwriting', 'Brush Script MT', cursive; font-size: 24px; font-weight: 900; color: #8b4513; opacity: 0.7; transform: rotate(-15deg); letter-spacing: 1px;">
+            Blackbeard
+          </div>
+        </div>
+      ` : '';
+
+      actionsHTML = `
+        ${negotiationHistoryHTML}
+        <div style="margin-top: 16px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 4px; position: relative;">
+          <div style="color: #4ade80; font-weight: bold;">✓ Case Resolved</div>
+          <div style="margin-top: 8px;">
+            Final Amount Paid: <strong>$${finalAmount.toLocaleString()}</strong>
+          </div>
+          ${signatureHTML}
+        </div>
+      `;
+    } else {
+      // Case is still active - show negotiation status and buttons
+      if (userProposal) {
+        statusHTML = `
+          <div style="margin-top: 12px; padding: 10px; background: rgba(251, 146, 60, 0.1); border-left: 3px solid #fbbf24; border-radius: 4px;">
+            <div style="font-size: 12px; opacity: 0.9;">
+              <strong>Your Last Offer:</strong> $${userProposal.toLocaleString()}<br>
+              <strong>Current Demand:</strong> $${requestedAmount.toLocaleString()}
+            </div>
+          </div>
+        `;
+      }
+
+      // CRITICAL: Stop negotiating if price is under $20,000
+      // Below this threshold, accept the deal - you've reached a good price!
+      const canNegotiate = requestedAmount >= 20000;
+
+      if (canNegotiate) {
+        actionsHTML = `
+          ${statusHTML}
+          ${negotiationHistoryHTML}
+          <div id="hijacking-actions-${caseId}" style="margin-top: 16px; display: flex; gap: 8px;">
+            <button class="btn-primary" onclick="window.acceptHijackingPrice(${caseId}, ${requestedAmount})" style="flex: 1; padding: 8px 16px; background: #4ade80; border: none; color: white; border-radius: 4px; cursor: pointer;">Accept Price ($${requestedAmount.toLocaleString()})</button>
+            <button class="btn-secondary" onclick="window.showNegotiateOptions(${caseId}, ${requestedAmount})" style="flex: 1; padding: 8px 16px; background: #3b82f6; border: none; color: white; border-radius: 4px; cursor: pointer;">Negotiate Price</button>
+          </div>
+          <div id="hijacking-negotiate-${caseId}" style="display: none; margin-top: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 4px;">
+            <div style="margin-bottom: 12px; font-weight: bold; text-align: center;">Choose your counter-offer:</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+              <button class="hijacking-offer-btn" data-case-id="${caseId}" data-percentage="0.01">
+                <div style="font-weight: bold; margin-bottom: 4px;">A Copper Jot</div>
+                <div style="font-size: 11px; opacity: 0.8;">$${Math.floor(requestedAmount * 0.01).toLocaleString()}</div>
+              </button>
+              <button class="hijacking-offer-btn" data-case-id="${caseId}" data-percentage="0.25">
+                <div style="font-weight: bold; margin-bottom: 4px;">A Tattered Patch</div>
+                <div style="font-size: 11px; opacity: 0.8;">$${Math.floor(requestedAmount * 0.25).toLocaleString()}</div>
+              </button>
+            </div>
+            <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 12px 0;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+              <button class="hijacking-offer-btn" data-case-id="${caseId}" data-percentage="0.50">
+                <div style="font-weight: bold; margin-bottom: 4px;">A Fair Trade</div>
+                <div style="font-size: 11px; opacity: 0.8;">$${Math.floor(requestedAmount * 0.50).toLocaleString()}</div>
+              </button>
+              <button class="hijacking-offer-btn" data-case-id="${caseId}" data-percentage="0.75">
+                <div style="font-weight: bold; margin-bottom: 4px;">The Lion's Share</div>
+                <div style="font-size: 11px; opacity: 0.8;">$${Math.floor(requestedAmount * 0.75).toLocaleString()}</div>
+              </button>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: center;">
+              <button class="btn-primary" onclick="window.proposeHijackingPrice(${caseId}, ${requestedAmount})" style="padding: 8px 16px; background: #3b82f6; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: 500;">Propose Price</button>
+              <button class="btn-secondary" onclick="window.cancelNegotiate(${caseId})" style="padding: 8px 16px; background: #6b7280; border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: 500;">Cancel</button>
+            </div>
+          </div>
+        `;
+      } else {
+        // Price is under $20,000 - only allow accept, no more negotiation
+        actionsHTML = `
+          ${statusHTML}
+          ${negotiationHistoryHTML}
+          <div style="margin-top: 12px; padding: 12px; background: rgba(34, 197, 94, 0.1); border-left: 3px solid #4ade80; border-radius: 4px;">
+            <div style="font-size: 13px; font-weight: bold; color: #4ade80; margin-bottom: 8px;">
+              ☠️ Goal achieved, won't get cheaper. Give them the few bucks
+            </div>
+            <div style="font-size: 12px; opacity: 0.8; font-style: italic; margin-top: 8px; color: #6b7280;">
+              "If you were waiting for the opportune moment, that was it."<br>
+              — Captain Blackbeard
+            </div>
+          </div>
+          <div id="hijacking-actions-${caseId}" style="margin-top: 16px;">
+            <button class="btn-primary" onclick="window.acceptHijackingPrice(${caseId}, ${requestedAmount})" style="padding: 12px 24px; background: #4ade80; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;">Pay Ransom ($${requestedAmount.toLocaleString()})</button>
+          </div>
+        `;
+      }
+    }
+
+    // Get original ransom demand (first pirate offer)
+    const originalDemand = negotiationHistory.find(h => h.type === 'pirate')?.amount || initialAmount || requestedAmount;
+
+    // Format location: remove underscores and capitalize first letters
+    const formattedLocation = (v.tr_danger_zone || 'Unknown')
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+
     return `
-      <div style="color: #ef4444; font-weight: bold;">⚠️ Vessel Hijacked!</div>
+      <div style="color: #ef4444; font-weight: bold;">☠️ Vessel Hijacked!</div>
       <div style="margin-top: 8px;">
         <strong>Vessel:</strong> ${escapeHtml(v.vessel_name)}<br>
-        <strong>Location:</strong> ${escapeHtml(v.tr_danger_zone || 'Unknown')}<br>
-        <strong>Ransom:</strong> $${(v.requested_amount || 0).toLocaleString()}<br>
-        <strong>Case ID:</strong> ${v.case_id || 'N/A'}
+        <strong>Location:</strong> ${escapeHtml(formattedLocation)}<br>
+        <strong>Ransom Demand:</strong> $${originalDemand.toLocaleString()}<br>
+        <strong>Case ID:</strong> ${caseId || 'N/A'}
       </div>
+      ${actionsHTML}
     `;
   }
 
@@ -425,7 +828,7 @@ function formatSystemMessage(body, values, subject) {
 
   if (body === 'user_sold_stock' && v.stockOwner) {
     return `
-      <div style="color: #fb923c;">📉 Stock Sale</div>
+      <div style="color: #fbbf24;">📉 Stock Sale</div>
       <div style="margin-top: 8px;">
         <strong>Company:</strong> ${escapeHtml(v.stockOwner)}<br>
         <strong>Shares:</strong> ${(v.stockAmount || 0).toLocaleString()}<br>
@@ -474,22 +877,39 @@ function formatSystemMessage(body, values, subject) {
 }
 
 export function closeMessenger() {
-  document.getElementById('messengerOverlay').style.display = 'none';
+  // Reset hijacking inbox flag
+  window.cameFromHijackingInbox = false;
+
+  // Stop hijacking polling when closing messenger
+  stopHijackingPolling();
+
+  // Clear any active hijacking timers
+  Object.keys(window).forEach(key => {
+    if (key.startsWith('hijackTimer_')) {
+      clearInterval(window[key]);
+      delete window[key];
+    }
+  });
+
+  const messengerOverlay = document.getElementById('messengerOverlay');
+  messengerOverlay.classList.add('hidden');
+  // Remove hijacking case view class
+  messengerOverlay.classList.remove('hijacking-case-view');
   currentPrivateChat = { chatId: null, subject: null, targetCompanyName: null, targetUserId: null, messages: [], isNewChat: false, isSystemChat: false };
   document.getElementById('messengerFeed').innerHTML = '';
   document.getElementById('messengerInput').value = '';
   document.getElementById('subjectInput').value = '';
-  document.getElementById('subjectInputWrapper').style.display = 'none';
+  document.getElementById('subjectInputWrapper').classList.add('hidden');
   // Restore input area visibility
-  document.getElementById('messengerInput').style.display = 'block';
-  document.getElementById('sendPrivateMessageBtn').style.display = 'block';
+  document.getElementById('messengerInput').classList.remove('hidden');
+  document.getElementById('sendPrivateMessageBtn').classList.remove('hidden');
 }
 
 /**
  * Closes chat selection overlay and clears selection state.
  */
 export function closeChatSelection() {
-  document.getElementById('chatSelectionOverlay').style.display = 'none';
+  document.getElementById('chatSelectionOverlay').classList.add('hidden');
   userChatsForSelection = [];
 }
 
@@ -519,7 +939,36 @@ export function closeChatSelection() {
 export async function showAllChats() {
   try {
     const data = await fetchMessengerChats();
-    const chats = data.chats;
+    // Exclude hijacking messages (they go to Phone Booth)
+    const chats = data.chats.filter(chat =>
+      !(chat.system_chat && chat.body === 'vessel_got_hijacked')
+    );
+
+    // Fetch contacts to build name-to-ID mapping
+    const contactsData = await fetchContacts();
+    const nameToIdMap = new Map();
+
+    // Add all contacts to the map
+    if (contactsData.contacts) {
+      contactsData.contacts.forEach(contact => {
+        if (contact.company_name && contact.id) {
+          nameToIdMap.set(contact.company_name, contact.id);
+        }
+      });
+    }
+
+    // Add all alliance contacts to the map
+    if (contactsData.alliance_contacts) {
+      contactsData.alliance_contacts.forEach(contact => {
+        if (contact.company_name && contact.id) {
+          nameToIdMap.set(contact.company_name, contact.id);
+        }
+      });
+    }
+
+    if (window.DEBUG_MODE) {
+      console.log('[MESSENGER DEBUG] Built name-to-ID map with', nameToIdMap.size, 'entries');
+    }
 
     const sortedChats = chats.sort((a, b) => (b.time_last_message || 0) - (a.time_last_message || 0));
 
@@ -536,10 +985,7 @@ export async function showAllChats() {
         const unreadIndicator = chat.new ? '<span class="unread-indicator"></span>' : '';
 
         // Format timestamp
-        const date = new Date(chat.time_last_message * 1000);
-        const dateStr = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
-        const timeStr = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        const timestamp = `${dateStr} ${timeStr}`;
+        const timestamp = formatTimestamp(chat.time_last_message);
 
         return `
           <div class="chat-selection-item" data-chat-index="${index}" style="position: relative; padding-right: 40px;">
@@ -548,7 +994,7 @@ export async function showAllChats() {
               <p>${lastMsg}</p>
               <p style="font-size: 11px; opacity: 0.7; margin-top: 4px;">${timestamp}</p>
             </div>
-            <button class="delete-chat-btn" data-chat-index="${index}" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #ef4444; padding: 4px; cursor: pointer; font-size: 20px;" onmouseover="this.style.animation='shake-trash 0.5s ease-in-out infinite'" onmouseout="this.style.animation='none'">🗑️</button>
+            <button class="delete-chat-btn" data-chat-index="${index}">🗑️</button>
           </div>
         `;
       }).join('');
@@ -556,14 +1002,58 @@ export async function showAllChats() {
       listContainer.querySelectorAll('.chat-selection-item').forEach(item => {
         const chatItem = item.querySelector('div[style*="flex: 1"]');
         if (chatItem) {
-          chatItem.addEventListener('click', () => {
+          chatItem.addEventListener('click', async () => {
             const chatIndex = parseInt(item.dataset.chatIndex);
             const selectedChat = sortedChats[chatIndex];
 
-            const targetUserId = selectedChat.participant_ids?.find(id => id !== data.own_user_id);
-            const targetCompanyName = selectedChat.participants_string;
+            if (window.DEBUG_MODE) {
+              console.log('[MESSENGER DEBUG] Opening chat from showAllChats:');
+              console.log('  selectedChat:', selectedChat);
+              console.log('  participants_string:', selectedChat.participants_string);
+              console.log('  own_user_id:', data.own_user_id);
+            }
 
-            document.getElementById('allChatsOverlay').style.display = 'none';
+            const targetCompanyName = selectedChat.participants_string;
+            let targetUserId = nameToIdMap.get(targetCompanyName);
+
+            if (window.DEBUG_MODE) {
+              console.log('  targetUserId from map:', targetUserId, 'type:', typeof targetUserId);
+              console.log('  targetCompanyName:', targetCompanyName);
+            }
+
+            // If not found in contact list and not a system chat, try user search
+            if (!targetUserId && !selectedChat.system_chat && targetCompanyName) {
+              if (window.DEBUG_MODE) {
+                console.log('[MESSENGER DEBUG] User not in contacts, searching via /user/search...');
+              }
+              try {
+                const searchResults = await searchUsers(targetCompanyName);
+                if (searchResults.data && searchResults.data.companies && searchResults.data.companies.length > 0) {
+                  // Find exact match
+                  const exactMatch = searchResults.data.companies.find(c => c.company_name === targetCompanyName);
+                  if (exactMatch) {
+                    targetUserId = exactMatch.id;
+                    if (window.DEBUG_MODE) {
+                      console.log('[MESSENGER DEBUG] Found user via search:', targetUserId);
+                    }
+                  } else if (window.DEBUG_MODE) {
+                    console.warn('[MESSENGER DEBUG] No exact match in search results');
+                  }
+                }
+              } catch (error) {
+                if (window.DEBUG_MODE) {
+                  console.error('[MESSENGER DEBUG] User search failed:', error);
+                }
+              }
+            }
+
+            if (!targetUserId && !selectedChat.system_chat) {
+              if (window.DEBUG_MODE) {
+                console.warn('[MESSENGER DEBUG] Could not resolve user ID for:', targetCompanyName);
+              }
+            }
+
+            document.getElementById('allChatsOverlay').classList.add('hidden');
             openExistingChat(targetCompanyName, targetUserId, selectedChat, data.own_user_id);
           });
         }
@@ -576,11 +1066,13 @@ export async function showAllChats() {
           const chatToDelete = sortedChats[chatIndex];
 
           await deleteChatWithConfirmation(chatToDelete);
+          // Refresh the list after deletion
+          showAllChats();
         });
       });
     }
 
-    document.getElementById('allChatsOverlay').style.display = 'flex';
+    document.getElementById('allChatsOverlay').classList.remove('hidden');
 
   } catch (error) {
     console.error('Error loading all chats:', error);
@@ -592,7 +1084,7 @@ export async function showAllChats() {
  * Closes the all chats overlay.
  */
 export function closeAllChats() {
-  document.getElementById('allChatsOverlay').style.display = 'none';
+  document.getElementById('allChatsOverlay').classList.add('hidden');
 }
 
 /**
@@ -611,20 +1103,87 @@ export function closeAllChats() {
  * @async
  * @returns {Promise<void>}
  */
-export async function updateUnreadBadge() {
+export async function updateUnreadBadge(retryCount = 0) {
   try {
     const data = await fetchMessengerChats();
-    const unreadCount = data.chats.filter(chat => !chat.system_chat && chat.new).length;
+    // Filter out hijacking messages - they go to Blackbeard's Phone Booth now
+    const unreadCount = data.chats.filter(chat => {
+      if (!chat.new) return false;
+      // Exclude hijacking system messages
+      if (chat.system_chat && chat.body === 'vessel_got_hijacked') {
+        return false;
+      }
+      return true;
+    }).length;
+
+    // Get previous count from per-user cache
+    const cacheKey = window.CACHE_KEY || 'badgeCache';
+    const previousCache = localStorage.getItem(cacheKey);
+    const previousCount = previousCache ? JSON.parse(previousCache).messages || 0 : 0;
 
     const badge = document.getElementById('unreadBadge');
     if (unreadCount > 0) {
       badge.textContent = unreadCount;
-      badge.style.display = 'block';
+      badge.classList.remove('hidden');
+
+      // Show browser notification if count increased and notifications are enabled
+      if (unreadCount > previousCount && window.settings?.enableInboxNotifications) {
+        // Find new unread messages
+        const unreadChats = data.chats.filter(chat => chat.new);
+        const systemMessages = unreadChats.filter(chat => chat.system_chat);
+        const userMessages = unreadChats.filter(chat => !chat.system_chat);
+
+        let notificationTitle = `📬 ${unreadCount} unread message${unreadCount === 1 ? '' : 's'}`;
+        let notificationBody = '';
+
+        if (systemMessages.length > 0 && userMessages.length > 0) {
+          notificationBody = `${userMessages.length} private message${userMessages.length === 1 ? '' : 's'}, ${systemMessages.length} system notification${systemMessages.length === 1 ? '' : 's'}`;
+        } else if (systemMessages.length > 0) {
+          // Check if any are hijack messages
+          const hijackMessages = systemMessages.filter(chat => chat.body === 'vessel_got_hijacked');
+          if (hijackMessages.length > 0) {
+            notificationTitle = '☠️ Vessel Hijacked!';
+            notificationBody = `${hijackMessages.length} vessel${hijackMessages.length === 1 ? ' has' : 's have'} been hijacked! Check your inbox immediately.`;
+          } else {
+            notificationBody = `${systemMessages.length} system notification${systemMessages.length === 1 ? '' : 's'}`;
+          }
+        } else {
+          notificationBody = `${userMessages.length} new private message${userMessages.length === 1 ? '' : 's'}`;
+        }
+
+        // Show desktop notification
+        if (window.showNotification && Notification.permission === 'granted') {
+          window.showNotification(notificationTitle, {
+            body: notificationBody,
+            icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>📬</text></svg>",
+            tag: "shipping-manager-inbox",
+            requireInteraction: systemMessages.some(chat => chat.body === 'vessel_got_hijacked'), // Keep hijack notifications visible
+            data: { action: 'open-inbox' }
+          });
+        }
+      }
     } else {
-      badge.style.display = 'none';
+      badge.classList.add('hidden');
+    }
+
+    // Save to cache for next page load
+    if (window.saveBadgeCache) {
+      window.saveBadgeCache({ messages: unreadCount });
     }
   } catch (error) {
-    console.error('Error checking unread messages:', error);
+    // Check if it's a network error (ERR_NETWORK_CHANGED, Failed to fetch, etc.)
+    const isNetworkError = error.message.includes('fetch') ||
+                          error.message.includes('network') ||
+                          error.name === 'TypeError';
+
+    // Retry up to 2 times with exponential backoff
+    if (isNetworkError && retryCount < 2) {
+      const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s
+      console.log(`[Messenger] Network error, retrying in ${delay}ms (attempt ${retryCount + 1}/2)`);
+      setTimeout(() => updateUnreadBadge(retryCount + 1), delay);
+    } else {
+      console.error('Error checking unread messages:', error);
+    }
   }
 }
 
@@ -651,11 +1210,17 @@ export async function sendPrivateMessage() {
     subject = currentPrivateChat.subject;
   }
 
+  // Show "Sending..." feedback
+  const originalBtnText = sendBtn.textContent;
+  sendBtn.textContent = 'Sending...';
   sendBtn.disabled = true;
   messageInput.disabled = true;
 
   try {
     await apiSendPrivateMessage(currentPrivateChat.targetUserId, subject, message);
+
+    // Show success notification
+    showSideNotification(`📬 <strong>Message sent</strong><br><br>Sent to ${escapeHtml(currentPrivateChat.targetCompanyName)}`, 'success', 3000);
 
     messageInput.value = '';
     messageInput.style.height = 'auto';
@@ -663,14 +1228,26 @@ export async function sendPrivateMessage() {
     if (window.debouncedUpdateUnreadBadge) {
       window.debouncedUpdateUnreadBadge();
     }
-    closeMessenger();
-    setTimeout(() => {
-      openMessenger(currentPrivateChat.targetCompanyName, currentPrivateChat.targetUserId);
-    }, 500);
+
+    // Reload messages to show the new message in the chat
+    if (currentPrivateChat.chatId) {
+      // Existing chat - reload messages
+      const ownUserId = currentPrivateChat.targetUserId; // Will be corrected by loadPrivateMessages
+      await loadPrivateMessages(currentPrivateChat.chatId);
+    } else {
+      // New chat - refresh to get the chat ID
+      const savedCompanyName = currentPrivateChat.targetCompanyName;
+      const savedUserId = currentPrivateChat.targetUserId;
+      closeMessenger();
+      setTimeout(() => {
+        openMessenger(savedCompanyName, savedUserId);
+      }, 300); // Faster reload
+    }
 
   } catch (error) {
-    alert(`Error: ${error.message}`);
+    showSideNotification(`📬 <strong>Error</strong><br><br>${escapeHtml(error.message)}`, 'error', 5000);
   } finally {
+    sendBtn.textContent = originalBtnText;
     sendBtn.disabled = false;
     messageInput.disabled = false;
   }
@@ -682,8 +1259,13 @@ export function getCurrentPrivateChat() {
 
 async function deleteChatWithConfirmation(chat) {
   const participant = chat.participants_string || 'Unknown';
-  const subject = chat.subject || 'No subject';
   const isSystemChat = chat.system_chat || false;
+
+  // For system chats, use getSystemMessageTitle() to format subject
+  let subject = chat.subject || 'No subject';
+  if (isSystemChat && chat.body) {
+    subject = getSystemMessageTitle(chat.body, chat.values);
+  }
 
   const confirmed = await showConfirmDialog({
     title: '🗑️ Delete Chat',
@@ -699,7 +1281,12 @@ async function deleteChatWithConfirmation(chat) {
   if (!confirmed) return;
 
   try {
-    await apiDeleteChat(chat.id, isSystemChat);
+    // Extract case_id from values if this is a hijacking message
+    const caseId = (isSystemChat && chat.body === 'vessel_got_hijacked' && chat.values?.case_id)
+      ? chat.values.case_id
+      : null;
+
+    await apiDeleteChat(chat.id, isSystemChat, caseId);
     showAllChats();
 
     if (window.debouncedUpdateUnreadBadge) {
@@ -716,12 +1303,18 @@ export async function deleteCurrentChat() {
     return;
   }
 
+  // For system chats, use getSystemMessageTitle() to format subject
+  let subject = currentPrivateChat.subject || 'No subject';
+  if (currentPrivateChat.isSystemChat && currentPrivateChat.body) {
+    subject = getSystemMessageTitle(currentPrivateChat.body, currentPrivateChat.values);
+  }
+
   const confirmed = await showConfirmDialog({
     title: '🗑️ Delete Chat',
     message: `Do you want to delete this conversation?`,
     details: [
       { label: 'Participant', value: currentPrivateChat.targetCompanyName },
-      { label: 'Subject', value: currentPrivateChat.subject }
+      { label: 'Subject', value: subject }
     ],
     confirmText: 'Delete',
     cancelText: 'Cancel'
@@ -730,7 +1323,13 @@ export async function deleteCurrentChat() {
   if (!confirmed) return;
 
   try {
-    await apiDeleteChat(currentPrivateChat.chatId, currentPrivateChat.isSystemChat || false);
+    // Extract case_id from values if this is a hijacking message
+    const isSystemChat = currentPrivateChat.isSystemChat || false;
+    const caseId = (isSystemChat && currentPrivateChat.body === 'vessel_got_hijacked' && currentPrivateChat.values?.case_id)
+      ? currentPrivateChat.values.case_id
+      : null;
+
+    await apiDeleteChat(currentPrivateChat.chatId, isSystemChat, caseId);
     closeMessenger();
 
     if (window.debouncedUpdateUnreadBadge) {
@@ -738,5 +1337,461 @@ export async function deleteCurrentChat() {
     }
   } catch (error) {
     alert(`Error deleting chat: ${error.message}`);
+  }
+}
+
+/**
+ * Hijacking handler: Accept the full ransom price
+ */
+window.acceptHijackingPrice = async function(caseId, amount) {
+  // CRITICAL: ALWAYS get current price from API - NEVER trust cached values!
+  let actualAmount = amount;
+
+  try {
+    const caseResponse = await fetch('/api/hijacking/get-case', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId })
+    });
+
+    const caseData = await caseResponse.json();
+    if (caseResponse.ok && caseData.data) {
+      actualAmount = caseData.data.requested_amount;
+      console.log(`[Hijacking] Current price from API: $${actualAmount} (cached was: $${amount})`);
+    }
+  } catch (error) {
+    console.error('[Hijacking] Failed to get current price, using cached:', error);
+  }
+
+  // Get current cash from header display
+  const cashDisplay = document.getElementById('cashDisplay');
+  const cashText = cashDisplay?.textContent || '$0';
+  const currentCash = parseInt(cashText.replace(/[$,\s]/g, '')) || 0;
+
+  const confirmed = await showConfirmDialog({
+    title: '☠️ Accept Ransom',
+    message: `Accept the ransom demand and pay the full price?`,
+    details: [
+      { label: 'Case ID', value: caseId },
+      { label: 'Total Cost', value: `$${actualAmount.toLocaleString()}` },
+      { label: 'Available Cash', value: `$${currentCash.toLocaleString()}` }
+    ],
+    confirmText: 'Pay Ransom',
+    cancelText: 'Cancel'
+  });
+
+  if (!confirmed) return;
+
+  try {
+    // Pay the ransom (not submit offer!)
+    const response = await fetch('/api/hijacking/pay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId })
+    });
+
+    const data = await response.json();
+    console.log('[Hijacking] Pay ransom response:', data);
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to pay ransom');
+    }
+
+    // Reload the case details to get the REAL status from API
+    const caseResponse = await fetch('/api/hijacking/get-case', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId })
+    });
+
+    const caseData = await caseResponse.json();
+    console.log('[Hijacking] Get case after accept:', caseData);
+
+    if (!caseResponse.ok || !caseData.data) {
+      throw new Error('Failed to reload case details');
+    }
+
+    const updatedCase = caseData.data;
+
+    // Get the original chat values from the stored data
+    const feed = document.getElementById('messengerFeed');
+    const bubble = feed.querySelector('.message-bubble.system');
+
+    if (bubble) {
+      // Retrieve stored chat values
+      const storedValues = bubble.dataset.chatValues ? JSON.parse(bubble.dataset.chatValues) : {};
+
+      // Reconstruct chat with updated data
+      const chat = {
+        body: 'vessel_got_hijacked',
+        values: {
+          case_id: caseId,
+          vessel_name: storedValues.vessel_name || 'Unknown',
+          tr_danger_zone: storedValues.tr_danger_zone || 'Unknown',
+          requested_amount: updatedCase.requested_amount || 0
+        },
+        time_last_message: Date.now() / 1000
+      };
+
+      // Re-render the message with updated case details
+      await displaySystemMessage(chat);
+
+      // Check if payment was actually successful (paid_amount OR status = 'solved')
+      if (updatedCase.paid_amount !== null || updatedCase.status === 'solved') {
+        const finalAmount = updatedCase.paid_amount || updatedCase.requested_amount;
+        showSideNotification(
+          `<strong>✓ Ransom Paid!</strong><br><br>` +
+          `Amount: $${finalAmount.toLocaleString()}<br>` +
+          `Your vessel will be released.`,
+          'success',
+          5000
+        );
+      } else {
+        // Payment didn't go through - show current status
+        showSideNotification(
+          `<strong>Payment sent</strong><br><br>` +
+          `Your offer: $${amount.toLocaleString()}<br>` +
+          `Current demand: $${updatedCase.requested_amount.toLocaleString()}`,
+          'info',
+          5000
+        );
+      }
+    }
+
+  } catch (error) {
+    console.error('[Hijacking] Error:', error);
+    showSideNotification(`Error: ${error.message}`, 'error');
+  }
+};
+
+/**
+ * Hijacking handler: Show negotiation options
+ */
+window.showNegotiateOptions = function(caseId) {
+  const actionsDiv = document.getElementById(`hijacking-actions-${caseId}`);
+  const negotiateDiv = document.getElementById(`hijacking-negotiate-${caseId}`);
+
+  if (actionsDiv) actionsDiv.classList.add('hidden');
+  if (negotiateDiv) negotiateDiv.classList.remove('hidden');
+};
+
+/**
+ * Hijacking handler: Cancel negotiation and return to main actions
+ */
+window.cancelNegotiate = function(caseId) {
+  const actionsDiv = document.getElementById(`hijacking-actions-${caseId}`);
+  const negotiateDiv = document.getElementById(`hijacking-negotiate-${caseId}`);
+
+  if (actionsDiv) actionsDiv.classList.remove('hidden');
+  if (negotiateDiv) negotiateDiv.classList.add('hidden');
+
+  // Clear radio selection
+  const radios = document.querySelectorAll(`input[name="hijacking-offer-${caseId}"]`);
+  radios.forEach(radio => radio.checked = false);
+};
+
+/**
+ * Hijacking handler: Propose selected counter-offer
+ */
+window.proposeHijackingPrice = async function(caseId, requestedAmount) {
+  const selectedButton = document.querySelector(`.hijacking-offer-btn[data-case-id="${caseId}"].selected`);
+
+  if (!selectedButton) {
+    showSideNotification('Please select an offer option', 'warning');
+    return;
+  }
+
+  const percentage = parseFloat(selectedButton.dataset.percentage);
+  const offerAmount = Math.floor(requestedAmount * percentage);
+
+  // Get offer name from button
+  const offerName = selectedButton.querySelector('div:first-child').textContent;
+
+  // Get current cash from header display
+  const cashDisplay = document.getElementById('cashDisplay');
+  const cashText = cashDisplay?.textContent || '$0';
+  const currentCash = parseInt(cashText.replace(/[$,\s]/g, '')) || 0;
+
+  const confirmed = await showConfirmDialog({
+    title: '☠️ Submit Counter-Offer',
+    message: `Submit this counter-offer to the pirates?`,
+    details: [
+      { label: 'Case ID', value: caseId },
+      { label: 'Offer Type', value: offerName },
+      { label: 'Total Cost', value: `$${offerAmount.toLocaleString()}` },
+      { label: 'Available Cash', value: `$${currentCash.toLocaleString()}` }
+    ],
+    confirmText: 'Submit Offer',
+    cancelText: 'Cancel'
+  });
+
+  if (!confirmed) return;
+
+  try {
+    // Send the offer
+    const response = await fetch('/api/hijacking/submit-offer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, amount: offerAmount })
+    });
+
+    const data = await response.json();
+    console.log('[Hijacking] Submit offer response:', data);
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to submit offer');
+    }
+
+    // Save user's offer to history immediately
+    try {
+      // Load existing history
+      const historyResponse = await fetch(`/api/hijacking/history/${caseId}`);
+      const historyData = await historyResponse.json();
+      const negotiationHistory = historyData.history || [];
+
+      // Add user's offer to history
+      negotiationHistory.push({
+        type: 'user',
+        amount: offerAmount,
+        timestamp: Date.now() / 1000
+      });
+
+      // Save updated history (preserve autopilot_resolved flag if exists)
+      const dataToSave = historyData.autopilot_resolved ? {
+        history: negotiationHistory,
+        autopilot_resolved: historyData.autopilot_resolved,
+        resolved_at: historyData.resolved_at
+      } : { history: negotiationHistory };
+
+      await fetch(`/api/hijacking/history/${caseId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSave)
+      });
+
+      console.log('[Hijacking] User offer saved to history:', offerAmount);
+    } catch (error) {
+      console.error('[Hijacking] Failed to save user offer to history:', error);
+    }
+
+    // Show success notification
+    showSideNotification(`Offer submitted, waiting for confirmation...`, 'info');
+
+    // Start polling immediately to detect API confirmation and pirate response
+    startHijackingPolling(caseId);
+
+    // Hide negotiation options and show waiting status
+    const negotiateDiv = document.getElementById(`hijacking-negotiate-${caseId}`);
+    const actionsDiv = document.getElementById(`hijacking-actions-${caseId}`);
+
+    if (negotiateDiv) negotiateDiv.classList.add('hidden');
+    if (actionsDiv) {
+      // Show waiting status - Polling will update this automatically
+      actionsDiv.innerHTML = `
+        <div style="padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; text-align: center;">
+          <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">⏳ Offer submitted</div>
+          <div style="font-size: 14px; color: #9ca3af; margin-bottom: 12px;">Waiting for pirates to respond...</div>
+          <div style="font-size: 12px; color: #6b7280;">You'll be notified when they reply (usually within 2 minutes)</div>
+        </div>
+      `;
+    }
+
+    // NO local UI updates! Wait for polling to get real API data
+
+  } catch (error) {
+    console.error('[Hijacking] Error:', error);
+    showSideNotification(`Error: ${error.message}`, 'error');
+  }
+};
+
+/**
+ * Start polling for hijacking case updates.
+ * Checks every 5 seconds for pirate responses.
+ */
+function startHijackingPolling(caseId) {
+  // Stop any existing polling first
+  stopHijackingPolling();
+
+  console.log(`[Hijacking] Starting polling for case ${caseId}`);
+
+  // Store last known state locally in the polling function
+  let lastKnownState = null;
+
+  hijackingPollingInterval = setInterval(async () => {
+    try {
+      console.log(`[Hijacking] Polling case ${caseId}...`);
+
+      const response = await fetch('/api/hijacking/get-case', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ case_id: caseId })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.data) {
+        console.error('[Hijacking] Polling failed:', data);
+        return;
+      }
+
+      const caseData = data.data;
+
+      // Get stored chat values from message bubble
+      const feed = document.getElementById('messengerFeed');
+      const bubble = feed?.querySelector('.message-bubble.system');
+
+      if (!bubble) {
+        console.log('[Hijacking] Chat closed, stopping polling');
+        stopHijackingPolling();
+        return;
+      }
+
+      const storedValues = bubble.dataset.chatValues ? JSON.parse(bubble.dataset.chatValues) : {};
+
+      // Check if the message needs updating (compare with stored values in bubble)
+      const storedRequestedAmount = storedValues.requested_amount || 0;
+      const needsUpdate = caseData.requested_amount !== storedRequestedAmount ||
+                          caseData.user_proposal !== null;
+
+      // Use lastKnownState for notification comparison
+      if (!lastKnownState) {
+        // First poll - initialize state and update UI if needed
+        lastKnownState = {
+          requested_amount: caseData.requested_amount,
+          paid_amount: caseData.paid_amount,
+          user_proposal: caseData.user_proposal,
+          status: caseData.status
+        };
+        console.log('[Hijacking] Initial state saved:', lastKnownState);
+
+        // Update UI on first poll if data changed since message was created
+        if (needsUpdate) {
+          console.log('[Hijacking] Updating UI on first poll');
+          const chat = {
+            body: 'vessel_got_hijacked',
+            values: {
+              case_id: caseId,
+              vessel_name: storedValues.vessel_name || 'Unknown',
+              tr_danger_zone: storedValues.tr_danger_zone || 'Unknown',
+              requested_amount: caseData.requested_amount || 0
+            },
+            time_last_message: Date.now() / 1000
+          };
+          await displaySystemMessage(chat);
+        }
+        return; // Skip notification on first poll
+      }
+
+      // Check if anything changed since last poll
+      const hasChanged =
+        caseData.requested_amount !== lastKnownState.requested_amount ||
+        caseData.paid_amount !== lastKnownState.paid_amount ||
+        caseData.user_proposal !== lastKnownState.user_proposal ||
+        caseData.status !== lastKnownState.status;
+
+      if (hasChanged) {
+        console.log('[Hijacking] Case updated!', {
+          old: lastKnownState,
+          new: caseData
+        });
+
+        // Reconstruct chat with updated data
+        const chat = {
+          body: 'vessel_got_hijacked',
+          values: {
+            case_id: caseId,
+            vessel_name: storedValues.vessel_name || 'Unknown',
+            tr_danger_zone: storedValues.tr_danger_zone || 'Unknown',
+            requested_amount: caseData.requested_amount || 0
+          },
+          time_last_message: Date.now() / 1000
+        };
+
+        // Re-render the message
+        await displaySystemMessage(chat);
+
+        // Show notification based on what changed
+        if ((caseData.paid_amount !== null && lastKnownState.paid_amount === null) ||
+            (caseData.status === 'solved' && lastKnownState.status !== 'solved')) {
+          // Payment accepted or case solved!
+          const finalAmount = caseData.paid_amount || caseData.requested_amount;
+          showSideNotification(
+            `<strong>☠️ Hijacking Resolved!</strong><br><br>` +
+            `Final amount: $${finalAmount?.toLocaleString() || 'N/A'}<br>` +
+            `Your vessel will be released.`,
+            'success',
+            8000
+          );
+          stopHijackingPolling();
+        } else if (caseData.requested_amount !== lastKnownState.requested_amount) {
+          // Pirates made counter-offer - save to history
+          try {
+            const historyResponse = await fetch(`/api/hijacking/history/${caseId}`);
+            const historyData = await historyResponse.json();
+            const negotiationHistory = historyData.history || [];
+
+            // Add pirate counter-offer to history
+            negotiationHistory.push({
+              type: 'pirate',
+              amount: caseData.requested_amount,
+              timestamp: Date.now() / 1000
+            });
+
+            // Save updated history
+            const dataToSave = historyData.autopilot_resolved ? {
+              history: negotiationHistory,
+              autopilot_resolved: historyData.autopilot_resolved,
+              resolved_at: historyData.resolved_at
+            } : { history: negotiationHistory };
+
+            await fetch(`/api/hijacking/history/${caseId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(dataToSave)
+            });
+
+            console.log('[Hijacking] Pirate counter-offer saved to history:', caseData.requested_amount);
+          } catch (error) {
+            console.error('[Hijacking] Failed to save pirate counter to history:', error);
+          }
+
+          showSideNotification(
+            `<strong>☠️ Pirates Responded!</strong><br><br>` +
+            `Your offer: $${lastKnownState.user_proposal?.toLocaleString() || 'N/A'}<br>` +
+            `Pirates counter: $${caseData.requested_amount.toLocaleString()}`,
+            'warning',
+            8000
+          );
+        }
+
+        // Update last known state
+        lastKnownState = {
+          requested_amount: caseData.requested_amount,
+          paid_amount: caseData.paid_amount,
+          user_proposal: caseData.user_proposal,
+          status: caseData.status
+        };
+      }
+
+      // Stop polling if case is resolved (paid OR status = 'solved')
+      if (caseData.paid_amount !== null || caseData.status === 'solved') {
+        console.log('[Hijacking] Case resolved, stopping polling');
+        stopHijackingPolling();
+      }
+
+    } catch (error) {
+      console.error('[Hijacking] Polling error:', error);
+    }
+  }, 5000); // Poll every 5 seconds
+}
+
+/**
+ * Stop hijacking case polling.
+ */
+function stopHijackingPolling() {
+  if (hijackingPollingInterval) {
+    console.log('[Hijacking] Stopping polling');
+    clearInterval(hijackingPollingInterval);
+    hijackingPollingInterval = null;
   }
 }

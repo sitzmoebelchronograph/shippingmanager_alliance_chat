@@ -50,26 +50,110 @@ import {
   requestNotificationPermission,
   showNotification,
   showSideNotification,
-  updatePageTitle
+  updatePageTitle,
+  escapeHtml
 } from './modules/utils.js';
 
 // Import API functions
 import { fetchAllianceMembers } from './modules/api.js';
+import { initForecastCalendar, updateEventDiscount } from './modules/forecast-calendar.js';
+import { initEventInfo, updateEventData } from './modules/event-info.js';
 
-// ===== DEMO MODE DETECTION =====
-// If URL contains ?demo=true, use demo API instead of real API
+// Security: Block demo mode parameter in URL
 const urlParams = new URLSearchParams(window.location.search);
-const IS_DEMO_MODE = urlParams.get('demo') === 'true';
-const API_PREFIX = IS_DEMO_MODE ? '/api/demo' : '/api';
+if (urlParams.has('demo')) {
+  document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:monospace;font-size:18px;color:#ef4444;">⛔ Demo mode has been removed</div>';
+  throw new Error('Demo mode has been removed');
+}
 
-console.log(`[App] Running in ${IS_DEMO_MODE ? 'DEMO' : 'LIVE'} mode (API prefix: ${API_PREFIX})`);
-
-// Make API_PREFIX globally available for modules
+// API prefix for all requests
+const API_PREFIX = '/api';
 window.API_PREFIX = API_PREFIX;
-window.IS_DEMO_MODE = IS_DEMO_MODE;
+
+// Cache key for badge data
+const CACHE_KEY = 'badgeCache';
+window.CACHE_KEY = CACHE_KEY;
+
+// ===== PER-USER LOCALSTORAGE HELPERS =====
+/**
+ * Get user-specific localStorage key to prevent data leakage between accounts.
+ * Automatically prefixes key with userId when available.
+ * @param {string} key - Base key name (e.g., 'autopilotPaused')
+ * @returns {string} User-specific key (e.g., 'autopilotPaused_1234')
+ */
+function getUserStorageKey(key) {
+  // Use window.CACHE_KEY if it's for badge cache
+  if (key === 'badgeCache') {
+    return window.CACHE_KEY || 'badgeCache';
+  }
+  // For other keys, check if we have a userId from settings
+  if (window.USER_STORAGE_PREFIX) {
+    return `${key}_${window.USER_STORAGE_PREFIX}`;
+  }
+  // Fallback to non-prefixed key if userId not yet loaded
+  return key;
+}
 
 /**
- * Helper function to build API URLs with demo mode support
+ * Get item from localStorage with automatic per-user prefixing.
+ * @param {string} key - Storage key
+ * @returns {string|null} Stored value or null
+ */
+function getStorage(key) {
+  return localStorage.getItem(getUserStorageKey(key));
+}
+
+/**
+ * Set item in localStorage with automatic per-user prefixing.
+ * @param {string} key - Storage key
+ * @param {string} value - Value to store
+ */
+function setStorage(key, value) {
+  localStorage.setItem(getUserStorageKey(key), value);
+}
+
+// Expose globally for use in other modules
+window.getStorage = getStorage;
+window.setStorage = setStorage;
+
+// ===== DEBUG MODE =====
+// Set to true to see detailed console logs for development/troubleshooting
+// Can be toggled in browser console: window.DEBUG_MODE = true
+const DEBUG_MODE = false;
+window.DEBUG_MODE = DEBUG_MODE;
+
+// Helper to enable debug mode dynamically
+if (typeof window !== 'undefined') {
+  console.log('[Debug] To enable debug mode, run: window.DEBUG_MODE = true');
+}
+
+/**
+ * Format number with thousand separators (German notation: dot)
+ * Safe alternative to regex /\B(?=(\d{3})+(?!\d))/g that prevents ReDoS attacks.
+ *
+ * This function replaces the unsafe regex pattern that was flagged by ESLint
+ * security/detect-unsafe-regex due to nested quantifiers causing exponential
+ * backtracking (ReDoS vulnerability).
+ *
+ * @param {number|string} value - Number to format
+ * @returns {string} Formatted number with dots as thousand separators (e.g., "10.000")
+ *
+ * @example
+ * formatNumberWithSeparator(1000)      // "1.000"
+ * formatNumberWithSeparator("10000")   // "10.000"
+ * formatNumberWithSeparator(1234567)   // "1.234.567"
+ */
+function formatNumberWithSeparator(value) {
+  const num = Number(value);
+  if (isNaN(num)) return String(value);
+  return new Intl.NumberFormat('de-DE', {
+    useGrouping: true,
+    maximumFractionDigits: 0
+  }).format(num);
+}
+
+/**
+ * Helper function to build API URLs
  * @param {string} endpoint - API endpoint path (e.g., '/user/get-settings')
  * @returns {string} Full API URL with correct prefix
  */
@@ -123,16 +207,24 @@ import {
   deleteCurrentChat
 } from './modules/messenger.js';
 
+// Import hijacking functionality
+import {
+  openHijackingInbox,
+  closeHijackingInbox,
+  updateHijackingBadge,
+  updateHijackedVesselsDisplay
+} from './modules/hijacking.js';
+
 // Import bunker management
 import {
   updateBunkerStatus,
   updateCampaignsStatus,
   buyMaxFuel,
-  buyMaxCO2
+  buyMaxCO2,
+  setCapacityFromBunkerUpdate
 } from './modules/bunker-management.js';
 
-// Import automation
-import { initAutomation, triggerAutoRebuyChecks } from './modules/automation.js';
+// Automation moved to backend (server/autopilot.js + server/scheduler.js)
 
 // Import vessel management
 import {
@@ -147,8 +239,20 @@ import {
   closeEngineFilterOverlay,
   purchaseSingleVessel,
   purchaseBulk,
-  setVesselFilter
+  showShoppingCart,
+  setVesselFilter,
+  lockDepartButton,
+  unlockDepartButton
 } from './modules/vessel-management.js';
+
+// Import vessel selling functions
+import {
+  openSellVesselsOverlay,
+  closeSellVesselsOverlay,
+  setSellFilter,
+  bulkSellVessels,
+  showSellCart
+} from './modules/vessel-selling.js';
 
 // =============================================================================
 // Global State and DOM Element References
@@ -210,6 +314,657 @@ let updateBunkerTimeout = null;
 let updateVesselTimeout = null;
 let updateUnreadTimeout = null;
 let updateRepairTimeout = null;
+
+// =============================================================================
+// Badge Caching System
+// =============================================================================
+
+/**
+ * Updates COOP display in header with proper color coding.
+ * Centralized function called from multiple locations.
+ *
+ * @param {number} cap - Total COOP capacity
+ * @param {number} available - Available vessels to send
+ */
+function updateCoopDisplay(cap, available) {
+  const coopDisplay = document.getElementById('coopDisplay');
+  const coopContainer = coopDisplay?.parentElement;
+  const coopModalBtn = document.querySelector('button[onclick="openCoopModal()"]');
+  const coopActionBtn = document.getElementById('coopBtn');
+
+  // Hide if cap === 0 (user not in alliance)
+  if (cap === 0) {
+    if (coopContainer) coopContainer.classList.add('hidden');
+    if (coopModalBtn) coopModalBtn.style.display = 'none';
+    if (coopActionBtn) coopActionBtn.style.display = 'none';
+    return;
+  }
+
+  // Show if it was hidden
+  if (coopContainer) coopContainer.classList.remove('hidden');
+  if (coopModalBtn) coopModalBtn.style.display = '';
+  if (coopActionBtn) coopActionBtn.style.display = '';
+
+  if (coopDisplay) {
+    if (available > 0) {
+      // Red number with red available count in parentheses
+      coopDisplay.innerHTML = `<span class="coop-display-available">${cap} (${available})</span>`;
+    } else {
+      // Green number without parentheses when all vessels sent
+      coopDisplay.innerHTML = `<span class="coop-display-full">${cap}</span>`;
+    }
+  }
+}
+
+/**
+ * Load all cached data from localStorage and update UI.
+ * Loads: badges, prices, bunker levels, cash, campaigns, stock, COOP, anchor slots, etc.
+ * Does NOT load: messages (to prevent flicker), points (always fetched fresh)
+ * Called on page load to show last known values until WebSocket sends fresh data.
+ */
+function loadCache() {
+  try {
+    // CRITICAL: REFUSE to load cache if user ID not validated
+    if (!window.USER_STORAGE_PREFIX) {
+      console.log(`[Cache] REFUSE: window.USER_STORAGE_PREFIX not set - cannot validate cache`);
+      updateEventData(null);
+      return;
+    }
+
+    // Validation: CACHE_KEY must be set (no fallbacks!)
+    if (!window.CACHE_KEY) {
+      console.log(`[Cache] REFUSE: window.CACHE_KEY not set - cannot load cache`);
+      updateEventData(null);
+      return;
+    }
+
+    const cached = localStorage.getItem(window.CACHE_KEY);
+    if (!cached) {
+      console.log('[Cache] No cached badges found (key: ' + window.CACHE_KEY + ')');
+      // Ensure event banner stays hidden when no cache exists
+      updateEventData(null);
+      return;
+    }
+
+    const data = JSON.parse(cached);
+    if (window.DEBUG_MODE) {
+      console.log('[Cache] Loaded cached badges:', data);
+    }
+
+    // Vessel badges and button states
+    if (data.vessels) {
+      const { readyToDepart, atAnchor, pending } = data.vessels;
+
+      // Ready to depart badge
+      const vesselCountBadge = document.getElementById('vesselCount');
+      if (vesselCountBadge && readyToDepart !== undefined) {
+        vesselCountBadge.textContent = readyToDepart;
+        if (readyToDepart > 0) {
+          vesselCountBadge.classList.remove('hidden');
+        } else {
+          vesselCountBadge.classList.add('hidden');
+        }
+      }
+
+      // Depart button state
+      const departBtn = document.getElementById('departAllBtn');
+      if (departBtn && readyToDepart !== undefined) {
+        if (readyToDepart > 0) {
+          departBtn.disabled = false;
+          departBtn.title = `Depart all ${readyToDepart} vessel${readyToDepart === 1 ? '' : 's'} from harbor`;
+        } else {
+          departBtn.disabled = true;
+          departBtn.title = 'No vessels ready to depart';
+        }
+      }
+
+      // Anchor badge
+      const anchorCountBadge = document.getElementById('anchorCount');
+      if (anchorCountBadge && atAnchor !== undefined) {
+        anchorCountBadge.textContent = atAnchor;
+        if (atAnchor > 0) {
+          anchorCountBadge.classList.remove('hidden');
+        } else {
+          anchorCountBadge.classList.add('hidden');
+        }
+      }
+
+      // Anchor button - always enabled for purchasing anchor points
+      const anchorBtn = document.getElementById('anchorBtn');
+      if (anchorBtn && atAnchor !== undefined) {
+        if (atAnchor > 0) {
+          anchorBtn.title = `${atAnchor} vessel${atAnchor === 1 ? '' : 's'} at anchor - Click to purchase anchor points`;
+        } else {
+          anchorBtn.title = 'Purchase anchor points';
+        }
+      }
+
+      // Pending badge and button
+      const pendingBadge = document.getElementById('pendingVesselsBadge');
+      if (pendingBadge && pending !== undefined) {
+        pendingBadge.textContent = pending;
+        if (pending > 0) {
+          pendingBadge.classList.remove('hidden');
+        } else {
+          pendingBadge.classList.add('hidden');
+        }
+
+        // Update buyVesselsBtn tooltip to show pending count
+        const buyVesselsBtn = document.getElementById('buyVesselsBtn');
+        if (buyVesselsBtn) {
+          buyVesselsBtn.title = pending > 0 ? `Vessels in delivery: ${pending}` : 'Buy vessels';
+        }
+      }
+
+      const pendingBtn = document.getElementById('filterPendingBtn');
+      const pendingCountSpan = document.getElementById('pendingCount');
+      if (pendingBtn && pendingCountSpan && pending !== undefined) {
+        pendingCountSpan.textContent = pending;
+        if (pending > 0) {
+          pendingBtn.classList.remove('hidden');
+        } else {
+          pendingBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    // Repair badge and button state
+    if (data.repair !== undefined) {
+      const repairBadge = document.getElementById('repairCount');
+      if (repairBadge) {
+        repairBadge.textContent = data.repair;
+        if (data.repair > 0) {
+          repairBadge.classList.remove('hidden');
+        } else {
+          repairBadge.classList.add('hidden');
+        }
+      }
+
+      const repairBtn = document.getElementById('repairAllBtn');
+      if (repairBtn) {
+        if (data.repair > 0) {
+          repairBtn.disabled = false;
+          repairBtn.title = `Repair ${data.repair} vessel${data.repair === 1 ? '' : 's'} with high wear`;
+        } else {
+          repairBtn.disabled = true;
+          repairBtn.title = 'No vessels need repair';
+        }
+      }
+    }
+
+    // Campaigns badge
+    if (data.campaigns !== undefined) {
+      const campaignsBadge = document.getElementById('campaignsCount');
+      if (campaignsBadge) {
+        campaignsBadge.textContent = data.campaigns;
+        // Only show badge if < 3 campaigns
+        if (data.campaigns < 3) {
+          campaignsBadge.classList.remove('hidden');
+        } else {
+          campaignsBadge.classList.add('hidden');
+        }
+        campaignsBadge.classList.add('badge-red-bg');
+      }
+
+      // Update header display
+      const campaignsHeaderDisplay = document.getElementById('campaignsHeaderDisplay');
+      if (campaignsHeaderDisplay) {
+        campaignsHeaderDisplay.textContent = data.campaigns;
+        // Green if <= 3, red if > 3
+        if (data.campaigns <= 3) {
+          campaignsHeaderDisplay.classList.add('text-success');
+          campaignsHeaderDisplay.classList.remove('text-danger');
+        } else {
+          campaignsHeaderDisplay.classList.add('text-danger');
+          campaignsHeaderDisplay.classList.remove('text-success');
+        }
+      }
+    }
+
+    // Messages badge - SKIP loading from cache
+    // We always call updateUnreadBadge() immediately after loading,
+    // so loading from cache would cause flickering (cache shows 0, then API shows 1)
+    // Let updateUnreadBadge() handle the initial display
+
+    // Fuel and CO2 prices
+    if (data.prices) {
+      const { fuelPrice, co2Price, eventDiscount, regularFuel, regularCO2 } = data.prices;
+
+      const fuelPriceDisplay = document.getElementById('fuelPriceDisplay');
+      // Only update if we have a valid price (> 0), otherwise keep last known value
+      if (fuelPriceDisplay && fuelPrice !== undefined && fuelPrice > 0) {
+        // Build price text with optional discount badge
+        let priceText = `$${fuelPrice}/t`;
+        if (eventDiscount && eventDiscount.type === 'fuel') {
+          priceText += ` <span class="discount-badge">-${eventDiscount.percentage}%</span>`;
+        }
+        fuelPriceDisplay.innerHTML = priceText;
+
+        // Apply forecast color classes
+        fuelPriceDisplay.className = ''; // Clear existing classes
+
+        // Check if below alert threshold (pulse animation)
+        if (settings && settings.fuelThreshold && fuelPrice < settings.fuelThreshold) {
+          fuelPriceDisplay.className = 'price-pulse-alert';
+        } else {
+          // Apply standard color based on price ranges
+          if (fuelPrice >= 800) {
+            fuelPriceDisplay.className = 'fuel-red';
+          } else if (fuelPrice >= 600) {
+            fuelPriceDisplay.className = 'fuel-orange';
+          } else if (fuelPrice >= 400) {
+            fuelPriceDisplay.className = 'fuel-blue';
+          } else if (fuelPrice >= 1) {
+            fuelPriceDisplay.className = 'fuel-green';
+          }
+        }
+      }
+
+      const co2PriceDisplay = document.getElementById('co2PriceDisplay');
+      // Only update if we have a valid price (> 0), otherwise keep last known value
+      if (co2PriceDisplay && co2Price !== undefined && co2Price > 0) {
+        // Build price text with optional discount badge
+        let priceText = `$${co2Price}/t`;
+        if (eventDiscount && eventDiscount.type === 'co2') {
+          priceText += ` <span class="discount-badge">-${eventDiscount.percentage}%</span>`;
+        }
+        co2PriceDisplay.innerHTML = priceText;
+
+        // Apply forecast color classes
+        co2PriceDisplay.className = ''; // Clear existing classes
+
+        // Check if below alert threshold (pulse animation)
+        if (settings && settings.co2Threshold && co2Price < settings.co2Threshold) {
+          co2PriceDisplay.className = 'price-pulse-alert';
+        } else {
+          // Apply standard color based on price ranges
+          if (co2Price >= 20) {
+            co2PriceDisplay.className = 'co2-red';
+          } else if (co2Price >= 15) {
+            co2PriceDisplay.className = 'co2-orange';
+          } else if (co2Price >= 10) {
+            co2PriceDisplay.className = 'co2-blue';
+          } else if (co2Price >= 1) {
+            co2PriceDisplay.className = 'co2-green';
+          }
+        }
+      }
+
+      // Update forecast with cached event discount and event data
+      const eventData = data.prices.eventData || null;
+      if (eventDiscount) {
+        updateEventDiscount(eventDiscount, eventData);
+      } else {
+        updateEventDiscount(null, null);
+      }
+    }
+
+    // Event data (complete event info with name, ports, etc.)
+    if (data.eventData) {
+      updateEventData(data.eventData);
+    } else {
+      updateEventData(null);
+    }
+
+    // COOP data (alliance cooperation)
+    if (data.coop) {
+      const { available, cap, coop_boost } = data.coop;
+      // Only show if cap > 0 (user in alliance)
+      if (cap > 0) {
+        updateCoopDisplay(cap, available);
+      }
+    }
+
+    // Bunker status
+    if (data.bunker) {
+      const { fuel, co2, cash, maxFuel, maxCO2 } = data.bunker;
+
+      // Load capacity values from cache if available
+      if (maxFuel !== undefined && maxCO2 !== undefined) {
+        import('./modules/bunker-management.js').then(module => {
+          module.setCapacityFromBunkerUpdate(maxFuel, maxCO2);
+        });
+      }
+
+      // Capacity updates are handled by chat.js to avoid duplicate logs
+
+      const fuelDisplay = document.getElementById('fuelDisplay');
+      const fuelFill = document.getElementById('fuelFill');
+      const fuelBtn = document.getElementById('fuelBtn');
+      if (fuelDisplay && fuel !== undefined && maxFuel !== undefined && maxFuel > 0) {
+        fuelDisplay.innerHTML = `${Math.floor(fuel).toLocaleString('en-US')} <b>t</b> <b>/</b> ${Math.floor(maxFuel).toLocaleString('en-US')} <b>t</b>`;
+
+        // Update fill bar and button styling with CSS classes
+        if (fuelFill && fuelBtn) {
+          const fuelPercent = Math.min(100, Math.max(0, (fuel / maxFuel) * 100));
+          fuelFill.style.width = `${fuelPercent}%`;
+
+          // Determine fill level class based on tank percentage
+          let fillClass = '';
+          if (fuel <= 0) {
+            fillClass = 'fuel-btn-empty';
+            fuelFill.style.width = '0%';
+            fuelFill.style.background = 'transparent';
+          } else if (fuelPercent <= 20) {
+            fillClass = 'fuel-btn-low';
+            fuelFill.style.background = 'linear-gradient(to right, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.4))';
+          } else if (fuelPercent <= 70) {
+            fillClass = 'fuel-btn-medium';
+            fuelFill.style.background = 'linear-gradient(to right, rgba(96, 165, 250, 0.3), rgba(96, 165, 250, 0.5))';
+          } else if (fuelPercent <= 85) {
+            fillClass = 'fuel-btn-high';
+            fuelFill.style.background = 'linear-gradient(to right, rgba(251, 191, 36, 0.3), rgba(251, 191, 36, 0.5))';
+          } else {
+            fillClass = 'fuel-btn-full';
+            fuelFill.style.background = 'linear-gradient(to right, rgba(74, 222, 128, 0.3), rgba(74, 222, 128, 0.5))';
+          }
+
+          // Update fill-level class (controls background/border color and animation)
+          // These classes: fuel-btn-empty (red pulse), fuel-btn-low (red), fuel-btn-medium (blue), fuel-btn-high (yellow), fuel-btn-full (green)
+          fuelBtn.classList.remove('fuel-btn-empty', 'fuel-btn-low', 'fuel-btn-medium', 'fuel-btn-high', 'fuel-btn-full');
+          if (fillClass) fuelBtn.classList.add(fillClass);
+
+          // Update price-color class (controls TEXT color based on market price)
+          // These classes are SEPARATE from fill-level - both can coexist
+          // Price classes: fuel-red, fuel-orange, fuel-blue, fuel-green (text color only)
+          const fuelPrice = data.prices?.fuelPrice || data.prices?.fuel;
+          if (fuelPrice !== undefined && fuelPrice > 0) {
+            let priceClass = '';
+            if (fuelPrice >= 800) {
+              priceClass = 'fuel-red';
+            } else if (fuelPrice >= 600) {
+              priceClass = 'fuel-orange';
+            } else if (fuelPrice >= 400) {
+              priceClass = 'fuel-blue';
+            } else if (fuelPrice >= 1) {
+              priceClass = 'fuel-green';
+            }
+
+            // Remove ONLY price-color classes (do NOT remove fill-level classes!)
+            fuelBtn.classList.remove('fuel-red', 'fuel-orange', 'fuel-blue', 'fuel-green');
+            if (priceClass) fuelBtn.classList.add(priceClass);
+          }
+        }
+      }
+
+      const co2Display = document.getElementById('co2Display');
+      const co2Fill = document.getElementById('co2Fill');
+      const co2Btn = document.getElementById('co2Btn');
+      if (co2Display && co2 !== undefined && maxCO2 !== undefined && maxCO2 > 0) {
+        const co2Value = co2 < 0 ? `-${Math.floor(Math.abs(co2)).toLocaleString('en-US')}` : Math.floor(co2).toLocaleString('en-US');
+        co2Display.innerHTML = `${co2Value} <b>t</b> <b>/</b> ${Math.floor(maxCO2).toLocaleString('en-US')} <b>t</b>`;
+
+        // Update fill bar and button styling with CSS classes
+        if (co2Fill && co2Btn) {
+          const co2Percent = Math.min(100, Math.max(0, (co2 / maxCO2) * 100));
+          co2Fill.style.width = `${co2Percent}%`;
+
+          // Determine fill level class based on tank percentage
+          let fillClass = '';
+          if (co2 <= 0) {
+            fillClass = 'co2-btn-empty';
+            co2Fill.style.width = '0%';
+            co2Fill.style.background = 'transparent';
+          } else if (co2Percent <= 20) {
+            fillClass = 'co2-btn-low';
+            co2Fill.style.background = 'linear-gradient(to right, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.4))';
+          } else if (co2Percent <= 70) {
+            fillClass = 'co2-btn-medium';
+            co2Fill.style.background = 'linear-gradient(to right, rgba(96, 165, 250, 0.3), rgba(96, 165, 250, 0.5))';
+          } else if (co2Percent <= 85) {
+            fillClass = 'co2-btn-high';
+            co2Fill.style.background = 'linear-gradient(to right, rgba(251, 191, 36, 0.3), rgba(251, 191, 36, 0.5))';
+          } else {
+            fillClass = 'co2-btn-full';
+            co2Fill.style.background = 'linear-gradient(to right, rgba(74, 222, 128, 0.3), rgba(74, 222, 128, 0.5))';
+          }
+
+          // Update fill-level class (controls background/border color and animation)
+          // These classes: co2-btn-empty (red pulse), co2-btn-low (red), co2-btn-medium (blue), co2-btn-high (yellow), co2-btn-full (green)
+          co2Btn.classList.remove('co2-btn-empty', 'co2-btn-low', 'co2-btn-medium', 'co2-btn-high', 'co2-btn-full');
+          if (fillClass) co2Btn.classList.add(fillClass);
+
+          // Update price-color class (controls TEXT color based on market price)
+          // These classes are SEPARATE from fill-level - both can coexist
+          // Price classes: co2-negative, co2-red, co2-orange, co2-blue, co2-green (text color only)
+          const co2Price = data.prices?.co2Price || data.prices?.co2;
+          if (co2Price !== undefined && co2Price !== null) {
+            let priceClass = '';
+            if (co2Price <= 0) {
+              priceClass = 'co2-negative';
+            } else if (co2Price >= 20) {
+              priceClass = 'co2-red';
+            } else if (co2Price >= 15) {
+              priceClass = 'co2-orange';
+            } else if (co2Price >= 10) {
+              priceClass = 'co2-blue';
+            } else if (co2Price >= 1) {
+              priceClass = 'co2-green';
+            }
+
+            // Remove ONLY price-color classes (do NOT remove fill-level classes!)
+            co2Btn.classList.remove('co2-negative', 'co2-red', 'co2-orange', 'co2-blue', 'co2-green');
+            if (priceClass) co2Btn.classList.add(priceClass);
+          }
+        }
+      }
+
+      const cashDisplay = document.getElementById('cashDisplay');
+      if (cashDisplay && cash !== undefined) {
+        cashDisplay.innerHTML = `$ ${Math.floor(cash).toLocaleString('en-US')}`;
+      }
+
+      // Points (Premium Currency) with color coding
+      const points = data.bunker.points;
+      const pointsDisplay = document.getElementById('pointsDisplay');
+      if (pointsDisplay && points !== undefined) {
+        pointsDisplay.textContent = points.toLocaleString('en-US');
+        // Red if 0, yellow if < 600, green if >= 600
+        pointsDisplay.classList.remove('text-danger', 'text-warning', 'text-success');
+        if (points === 0) {
+          pointsDisplay.classList.add('text-danger');
+        } else if (points < 600) {
+          pointsDisplay.classList.add('text-warning');
+        } else {
+          pointsDisplay.classList.add('text-success');
+        }
+      }
+    }
+
+    // COOP (only show if user is in an alliance)
+    const coopContainer = document.getElementById('coopContainer');
+    const coopBtn = document.getElementById('coopBtn');
+    if (data.coop) {
+      const { available, cap, coop_boost } = data.coop;
+
+      // Show COOP container in header
+      if (coopContainer) {
+        coopContainer.classList.remove('hidden');
+      }
+
+      // Show COOP button in action menu
+      if (coopBtn) {
+        coopBtn.style.display = '';
+      }
+
+      // Update COOP badge (green if >= 3, red if < 3)
+      const coopBadge = document.getElementById('coopBadge');
+      if (coopBadge) {
+        if (available > 0) {
+          coopBadge.textContent = available;
+          coopBadge.classList.remove('hidden');
+          // Green if >= 3, red if < 3
+          if (available >= 3) {
+            coopBadge.classList.remove('badge-red-bg');
+            coopBadge.classList.add('badge-green-bg');
+            console.log(`[COOP Badge] Set to GREEN (available: ${available}), classes:`, coopBadge.className);
+          } else {
+            coopBadge.classList.remove('badge-green-bg');
+            coopBadge.classList.add('badge-red-bg');
+            console.log(`[COOP Badge] Set to RED (available: ${available}), classes:`, coopBadge.className);
+          }
+        } else {
+          coopBadge.classList.add('hidden');
+        }
+      }
+
+      // Update COOP header display
+      updateCoopDisplay(cap, available);
+    } else {
+      // Hide COOP container and button if not in alliance
+      if (coopContainer) {
+        coopContainer.classList.add('hidden');
+      }
+      if (coopBtn) {
+        coopBtn.style.display = 'none';
+      }
+    }
+
+    // Stock & Anchor
+    if (data.stock || data.anchor) {
+      if (data.stock) {
+        const stockDisplay = document.getElementById('stockDisplay');
+        const stockTrendElement = document.getElementById('stockTrend');
+        const stockContainer = document.getElementById('stockContainer');
+
+        // Only show stock if user has IPO active
+        if (data.stock.ipo === 1) {
+          if (stockContainer) {
+            stockContainer.classList.remove('hidden');
+          }
+          if (stockDisplay && data.stock.value !== undefined && data.stock.value !== null) {
+            stockDisplay.textContent = `$${data.stock.value.toFixed(2)}`;
+          }
+          if (stockTrendElement && data.stock.trend) {
+            if (data.stock.trend === 'up') {
+              stockTrendElement.textContent = '↑';
+              stockTrendElement.classList.add('text-success');
+              stockTrendElement.classList.remove('text-danger', 'text-neutral');
+              if (stockDisplay) {
+                stockDisplay.classList.add('text-success');
+                stockDisplay.classList.remove('text-danger', 'text-neutral');
+              }
+            } else if (data.stock.trend === 'down') {
+              stockTrendElement.textContent = '↓';
+              stockTrendElement.classList.add('text-danger');
+              stockTrendElement.classList.remove('text-success', 'text-neutral');
+              if (stockDisplay) {
+                stockDisplay.classList.add('text-danger');
+                stockDisplay.classList.remove('text-success', 'text-neutral');
+              }
+            } else {
+              stockTrendElement.textContent = '-';
+              stockTrendElement.classList.add('text-neutral');
+              stockTrendElement.classList.remove('text-success', 'text-danger');
+              if (stockDisplay) {
+                stockDisplay.classList.add('text-neutral');
+                stockDisplay.classList.remove('text-success', 'text-danger');
+              }
+            }
+          }
+        } else {
+          // Hide stock container if no IPO
+          if (stockContainer) {
+            stockContainer.classList.add('hidden');
+          }
+        }
+      }
+      if (data.anchor) {
+        const anchorDisplay = document.getElementById('anchorSlotsDisplay');
+        if (anchorDisplay) {
+          // Format: Total 114 ⚓ Free 1 ⚓ Pending 0
+          const total = data.anchor.max;
+          const free = data.anchor.available;
+          const pending = data.anchor.pending || 0;
+
+          // Build display string with labels
+          // Total: RED if free > 0 (slots available = bad), GREEN if free = 0 (all slots used = good)
+          const totalClass = free > 0 ? 'anchor-total-bad' : 'anchor-total-good';
+          let html = `Total <span class="${totalClass}">${total}</span>`;
+
+          // Free slots - only show if > 0, in red
+          if (free > 0) {
+            html += ` ⚓ Free <span class="anchor-free">${free}</span>`;
+          }
+
+          // Pending - only show if > 0, in orange
+          if (pending > 0) {
+            html += ` ⚓ Pending <span class="anchor-pending">${pending}</span>`;
+          }
+
+          anchorDisplay.innerHTML = html;
+        }
+      }
+    }
+
+    // Hijacking badge and button state
+    if (data.hijacking !== undefined) {
+      const { openCases, totalCases, hijackedCount } = data.hijacking;
+
+      // Update badge and button
+      const badge = document.getElementById('hijackingBadge');
+      const button = document.getElementById('hijackingBtn');
+
+      if (badge && button) {
+        // Button is always enabled
+        button.disabled = false;
+
+        // Badge only shows for OPEN cases
+        if (openCases > 0) {
+          badge.textContent = openCases;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+
+      // Update header display
+      const hijackedDisplay = document.getElementById('hijackedVesselsDisplay');
+      const hijackedCountEl = document.getElementById('hijackedCount');
+      const hijackedIcon = document.getElementById('hijackedIcon');
+
+      if (hijackedDisplay && hijackedCountEl && hijackedIcon && hijackedCount !== undefined) {
+        if (hijackedCount > 0) {
+          hijackedCountEl.textContent = hijackedCount;
+          hijackedDisplay.classList.remove('hidden');
+          hijackedIcon.classList.add('hijacked-glow');
+        } else {
+          hijackedDisplay.classList.add('hidden');
+          hijackedIcon.classList.remove('hijacked-glow');
+        }
+      }
+    }
+
+  } catch (error) {
+    console.error('[Cache] Failed to load cached badges:', error);
+  }
+}
+
+/**
+ * Saves badge values to localStorage for next page load.
+ * Called by WebSocket handlers when new data arrives.
+ */
+function saveBadgeCache(data) {
+  try {
+    const cacheKey = window.CACHE_KEY || 'badgeCache';
+    const currentCache = localStorage.getItem(cacheKey);
+    const cache = currentCache ? JSON.parse(currentCache) : {};
+
+    // Merge new data into cache
+    Object.assign(cache, data);
+
+    localStorage.setItem(cacheKey, JSON.stringify(cache));
+  } catch (error) {
+    console.error('[Cache] Failed to save badge cache:', error);
+  }
+}
+
+// Make cache and display functions available globally
+window.saveBadgeCache = saveBadgeCache;
+window.updateCoopDisplay = updateCoopDisplay;
+
+// Make bunker capacity setter available globally for chat.js
+window.setCapacityFromBunkerUpdate = setCapacityFromBunkerUpdate;
 
 // =============================================================================
 // Debounced Update Functions
@@ -295,6 +1050,8 @@ window.debouncedUpdateVesselCount = debouncedUpdateVesselCount;
 window.debouncedUpdateUnreadBadge = debouncedUpdateUnreadBadge;
 window.debouncedUpdateRepairCount = debouncedUpdateRepairCount;
 window.updateVesselCount = updateVesselCount;
+window.lockDepartButton = lockDepartButton;
+window.unlockDepartButton = unlockDepartButton;
 
 /**
  * Expose settings getter for automation module.
@@ -306,18 +1063,82 @@ window.updateVesselCount = updateVesselCount;
  */
 window.getSettings = () => settings;
 
+// =============================================================================
+// Settings Section Toggle (Collapsable Sections)
+// =============================================================================
+
 /**
- * Expose automation trigger for bunker-management module.
- * Called after manual fuel/CO2 purchases to check if AutoPilot should activate.
- *
- * @function
- * @global
+ * Toggles a collapsable section in the settings modal
+ * @param {string} contentId - ID of the content div to toggle
  */
-window.triggerAutoRebuyChecks = triggerAutoRebuyChecks;
+function toggleSection(contentId) {
+  const content = document.getElementById(contentId);
+  const toggleId = contentId.replace('Content', 'Toggle');
+  const toggle = document.getElementById(toggleId);
+
+  if (!content || !toggle) return;
+
+  const isHidden = content.classList.contains('hidden');
+
+  // Toggle display
+  if (isHidden) {
+    content.classList.remove('hidden');
+  } else {
+    content.classList.add('hidden');
+  }
+  toggle.textContent = isHidden ? '➖' : '➕';
+
+  // Save state to per-user localStorage
+  const sectionStates = JSON.parse(getStorage('settingsSectionStates') || '{}');
+  sectionStates[contentId] = isHidden ? 'open' : 'closed';
+  setStorage('settingsSectionStates', JSON.stringify(sectionStates));
+}
+
+// Make function globally available
+window.toggleSection = toggleSection;
 
 // =============================================================================
 // WebSocket Settings Synchronization Handler
 // =============================================================================
+
+/**
+ * Toggles the disabled state of individual autopilot agent notification checkboxes
+ * based on the master AutoPilot Notifications toggle.
+ *
+ * @function
+ * @global
+ * @param {boolean} masterEnabled - Whether the master toggle is enabled
+ */
+function toggleAutoPilotAgentCheckboxes(masterEnabled) {
+  const agentCheckboxes = document.querySelectorAll('.autopilot-agent-checkbox');
+
+  agentCheckboxes.forEach(checkbox => {
+    checkbox.disabled = !masterEnabled;
+    if (masterEnabled) {
+      checkbox.parentElement.classList.remove('checkbox-container-disabled');
+      checkbox.parentElement.classList.add('checkbox-container-enabled');
+    } else {
+      checkbox.parentElement.classList.remove('checkbox-container-enabled');
+      checkbox.parentElement.classList.add('checkbox-container-disabled');
+    }
+
+    // Find or create hint text
+    let hintText = checkbox.parentElement.parentElement.querySelector('.agent-notification-hint');
+    if (!hintText) {
+      hintText = document.createElement('p');
+      hintText.className = 'agent-notification-hint';
+      checkbox.parentElement.parentElement.appendChild(hintText);
+    }
+
+    // Show/hide hint based on master toggle
+    if (!masterEnabled) {
+      hintText.textContent = 'Disabled by master AutoPilot Notifications toggle';
+      hintText.classList.remove('hidden');
+    } else {
+      hintText.classList.add('hidden');
+    }
+  });
+}
 
 /**
  * Handles settings updates received from other browser tabs/devices via WebSocket.
@@ -380,6 +1201,7 @@ window.handleSettingsUpdate = (newSettings) => {
   const autoBulkRepairCheckbox = document.getElementById('autoBulkRepair');
   const autoCampaignRenewalCheckbox = document.getElementById('autoCampaignRenewal');
   const autoPilotNotificationsCheckbox = document.getElementById('autoPilotNotifications');
+  const autoNegotiateHijackingCheckbox = document.getElementById('autoNegotiateHijacking');
 
   if (fuelThresholdInput) fuelThresholdInput.value = newSettings.fuelThreshold;
   if (co2ThresholdInput) co2ThresholdInput.value = newSettings.co2Threshold;
@@ -389,7 +1211,7 @@ window.handleSettingsUpdate = (newSettings) => {
     autoRebuyFuelCheckbox.checked = newSettings.autoRebuyFuel;
     const fuelOptions = document.getElementById('autoRebuyFuelOptions');
     if (fuelOptions) {
-      fuelOptions.style.display = newSettings.autoRebuyFuel ? 'block' : 'none';
+      fuelOptions.classList.toggle('hidden', !newSettings.autoRebuyFuel);
     }
   }
   if (autoRebuyFuelUseAlertCheckbox) {
@@ -398,16 +1220,24 @@ window.handleSettingsUpdate = (newSettings) => {
 
     if (autoRebuyFuelThresholdInput) {
       if (fuelUseAlert) {
-        autoRebuyFuelThresholdInput.value = newSettings.fuelThreshold;
+        const value = String(newSettings.fuelThreshold);
+        autoRebuyFuelThresholdInput.value = formatNumberWithSeparator(value);
         autoRebuyFuelThresholdInput.disabled = true;
-        autoRebuyFuelThresholdInput.style.opacity = '0.5';
-        autoRebuyFuelThresholdInput.style.cursor = 'not-allowed';
+        autoRebuyFuelThresholdInput.classList.remove('input-enabled');
+        autoRebuyFuelThresholdInput.classList.add('input-disabled');
       } else {
-        autoRebuyFuelThresholdInput.value = newSettings.autoRebuyFuelThreshold;
+        const value = String(newSettings.autoRebuyFuelThreshold);
+        autoRebuyFuelThresholdInput.value = formatNumberWithSeparator(value);
         autoRebuyFuelThresholdInput.disabled = false;
-        autoRebuyFuelThresholdInput.style.opacity = '1';
-        autoRebuyFuelThresholdInput.style.cursor = 'text';
+        autoRebuyFuelThresholdInput.classList.remove('input-disabled');
+        autoRebuyFuelThresholdInput.classList.add('input-enabled');
       }
+    }
+
+    const autoRebuyFuelMinCashInput = document.getElementById('autoRebuyFuelMinCash');
+    if (autoRebuyFuelMinCashInput && newSettings.autoRebuyFuelMinCash !== undefined) {
+      const value = String(newSettings.autoRebuyFuelMinCash);
+      autoRebuyFuelMinCashInput.value = formatNumberWithSeparator(value);
     }
   }
 
@@ -415,7 +1245,7 @@ window.handleSettingsUpdate = (newSettings) => {
     autoRebuyCO2Checkbox.checked = newSettings.autoRebuyCO2;
     const co2Options = document.getElementById('autoRebuyCO2Options');
     if (co2Options) {
-      co2Options.style.display = newSettings.autoRebuyCO2 ? 'block' : 'none';
+      co2Options.classList.toggle('hidden', !newSettings.autoRebuyCO2);
     }
   }
   if (autoRebuyCO2UseAlertCheckbox) {
@@ -424,23 +1254,165 @@ window.handleSettingsUpdate = (newSettings) => {
 
     if (autoRebuyCO2ThresholdInput) {
       if (co2UseAlert) {
-        autoRebuyCO2ThresholdInput.value = newSettings.co2Threshold;
+        const value = String(newSettings.co2Threshold);
+        autoRebuyCO2ThresholdInput.value = formatNumberWithSeparator(value);
         autoRebuyCO2ThresholdInput.disabled = true;
-        autoRebuyCO2ThresholdInput.style.opacity = '0.5';
-        autoRebuyCO2ThresholdInput.style.cursor = 'not-allowed';
+        autoRebuyCO2ThresholdInput.classList.remove('input-enabled');
+        autoRebuyCO2ThresholdInput.classList.add('input-disabled');
       } else {
-        autoRebuyCO2ThresholdInput.value = newSettings.autoRebuyCO2Threshold;
+        const value = String(newSettings.autoRebuyCO2Threshold);
+        autoRebuyCO2ThresholdInput.value = formatNumberWithSeparator(value);
         autoRebuyCO2ThresholdInput.disabled = false;
-        autoRebuyCO2ThresholdInput.style.opacity = '1';
-        autoRebuyCO2ThresholdInput.style.cursor = 'text';
+        autoRebuyCO2ThresholdInput.classList.remove('input-disabled');
+        autoRebuyCO2ThresholdInput.classList.add('input-enabled');
+      }
+    }
+
+    const autoRebuyCO2MinCashInput = document.getElementById('autoRebuyCO2MinCash');
+    if (autoRebuyCO2MinCashInput && newSettings.autoRebuyCO2MinCash !== undefined) {
+      const value = String(newSettings.autoRebuyCO2MinCash);
+      autoRebuyCO2MinCashInput.value = formatNumberWithSeparator(value);
+    }
+  }
+
+  if (autoDepartAllCheckbox) {
+    autoDepartAllCheckbox.checked = newSettings.autoDepartAll;
+    const autoDepartOptions = document.getElementById('autoDepartOptions');
+    if (autoDepartOptions) {
+      autoDepartOptions.classList.toggle('hidden', !newSettings.autoDepartAll);
+    }
+  }
+
+  if (autoBulkRepairCheckbox) {
+    autoBulkRepairCheckbox.checked = newSettings.autoBulkRepair;
+    const autoBulkRepairOptions = document.getElementById('autoBulkRepairOptions');
+    if (autoBulkRepairOptions) {
+      autoBulkRepairOptions.classList.toggle('hidden', !newSettings.autoBulkRepair);
+    }
+  }
+
+  if (autoCampaignRenewalCheckbox) {
+    autoCampaignRenewalCheckbox.checked = newSettings.autoCampaignRenewal;
+    const autoCampaignRenewalOptions = document.getElementById('autoCampaignRenewalOptions');
+    if (autoCampaignRenewalOptions) {
+      autoCampaignRenewalOptions.classList.toggle('hidden', !newSettings.autoCampaignRenewal);
+    }
+  }
+
+  if (autoPilotNotificationsCheckbox) {
+    const notifValue = newSettings.autoPilotNotifications !== undefined ? newSettings.autoPilotNotifications : true;
+    autoPilotNotificationsCheckbox.checked = notifValue;
+    toggleAutoPilotAgentCheckboxes(notifValue);
+  }
+
+  // Update individual agent notification checkboxes (InApp + Desktop)
+  const agentNotifIds = [
+    'notifyBarrelBossInApp', 'notifyBarrelBossDesktop',
+    'notifyAtmosphereBrokerInApp', 'notifyAtmosphereBrokerDesktop',
+    'notifyCargoMarshalInApp', 'notifyCargoMarshalDesktop',
+    'notifyYardForemanInApp', 'notifyYardForemanDesktop',
+    'notifyReputationChiefInApp', 'notifyReputationChiefDesktop',
+    'notifyFairHandInApp', 'notifyFairHandDesktop',
+    'notifyHarbormasterInApp', 'notifyHarbormasterDesktop',
+    'notifyCaptainBlackbeardInApp', 'notifyCaptainBlackbeardDesktop'
+  ];
+  agentNotifIds.forEach(id => {
+    const checkbox = document.getElementById(id);
+    if (checkbox && newSettings[id] !== undefined) {
+      checkbox.checked = newSettings[id];
+    }
+  });
+
+  if (autoNegotiateHijackingCheckbox) autoNegotiateHijackingCheckbox.checked = newSettings.autoNegotiateHijacking;
+
+  const autoBulkRepairMinCashInput = document.getElementById('autoBulkRepairMinCash');
+  if (autoBulkRepairMinCashInput && newSettings.autoBulkRepairMinCash !== undefined) {
+    const value = String(newSettings.autoBulkRepairMinCash);
+    autoBulkRepairMinCashInput.value = formatNumberWithSeparator(value);
+  }
+
+  const autoCampaignRenewalMinCashInput = document.getElementById('autoCampaignRenewalMinCash');
+  if (autoCampaignRenewalMinCashInput && newSettings.autoCampaignRenewalMinCash !== undefined) {
+    const value = String(newSettings.autoCampaignRenewalMinCash);
+    autoCampaignRenewalMinCashInput.value = formatNumberWithSeparator(value);
+  }
+
+  // Update Chat Bot settings
+  const enableChatBotCheckbox = document.getElementById('enableChatBot');
+  if (enableChatBotCheckbox) {
+    enableChatBotCheckbox.checked = newSettings.chatbotEnabled || false;
+    // Enable/disable other chat bot settings based on main toggle
+    const isEnabled = newSettings.chatbotEnabled || false;
+    const chatBotSettingsElements = document.querySelectorAll('[id^="cmd"], #enableDailyForecast, #dailyForecastTime, #enableAllianceCommands, #enableDMCommands, #commandPrefix');
+    chatBotSettingsElements.forEach(el => {
+      if (el.closest('div')) {
+        if (isEnabled) {
+          el.closest('div').classList.remove('checkbox-container-disabled');
+          el.closest('div').classList.add('checkbox-container-enabled');
+        } else {
+          el.closest('div').classList.remove('checkbox-container-enabled');
+          el.closest('div').classList.add('checkbox-container-disabled');
+        }
+        if (el.type === 'checkbox' || el.type === 'text' || el.type === 'time') {
+          el.disabled = !isEnabled;
+        }
+      }
+    });
+  }
+
+  const commandPrefixInput = document.getElementById('commandPrefix');
+  if (commandPrefixInput && newSettings.chatbotPrefix !== undefined) commandPrefixInput.value = newSettings.chatbotPrefix;
+
+  const enableDailyForecastCheckbox = document.getElementById('enableDailyForecast');
+  if (enableDailyForecastCheckbox) {
+    enableDailyForecastCheckbox.checked = newSettings.chatbotDailyForecastEnabled || false;
+    const dailyForecastTime = document.getElementById('dailyForecastTime');
+    if (dailyForecastTime) {
+      dailyForecastTime.disabled = !newSettings.chatbotDailyForecastEnabled;
+      if (newSettings.chatbotDailyForecastEnabled) {
+        dailyForecastTime.closest('div').classList.remove('checkbox-container-disabled');
+        dailyForecastTime.closest('div').classList.add('checkbox-container-enabled');
+      } else {
+        dailyForecastTime.closest('div').classList.remove('checkbox-container-enabled');
+        dailyForecastTime.closest('div').classList.add('checkbox-container-disabled');
       }
     }
   }
 
-  if (autoDepartAllCheckbox) autoDepartAllCheckbox.checked = newSettings.autoDepartAll;
-  if (autoBulkRepairCheckbox) autoBulkRepairCheckbox.checked = newSettings.autoBulkRepair;
-  if (autoCampaignRenewalCheckbox) autoCampaignRenewalCheckbox.checked = newSettings.autoCampaignRenewal;
-  if (autoPilotNotificationsCheckbox) autoPilotNotificationsCheckbox.checked = newSettings.autoPilotNotifications;
+  const dailyForecastTimeInput = document.getElementById('dailyForecastTime');
+  if (dailyForecastTimeInput && newSettings.chatbotDailyForecastTime !== undefined) dailyForecastTimeInput.value = newSettings.chatbotDailyForecastTime;
+
+  const enableAllianceCommandsCheckbox = document.getElementById('enableAllianceCommands');
+  if (enableAllianceCommandsCheckbox) {
+    enableAllianceCommandsCheckbox.checked = newSettings.chatbotAllianceCommandsEnabled !== false;
+    const isAllianceEnabled = newSettings.chatbotAllianceCommandsEnabled !== false;
+    if (document.getElementById('cmdForecast')) document.getElementById('cmdForecast').disabled = !isAllianceEnabled;
+    if (document.getElementById('cmdHelp')) document.getElementById('cmdHelp').disabled = !isAllianceEnabled;
+  }
+
+  const cmdForecastCheckbox = document.getElementById('cmdForecast');
+  if (cmdForecastCheckbox) cmdForecastCheckbox.checked = newSettings.chatbotForecastCommandEnabled !== false;
+
+  const cmdForecastAllianceCheckbox = document.getElementById('cmdForecastAlliance');
+  if (cmdForecastAllianceCheckbox) cmdForecastAllianceCheckbox.checked = newSettings.chatbotForecastAllianceEnabled !== false;
+
+  const cmdForecastDMCheckbox = document.getElementById('cmdForecastDM');
+  if (cmdForecastDMCheckbox) cmdForecastDMCheckbox.checked = newSettings.chatbotForecastDMEnabled !== false;
+
+  const cmdHelpCheckbox = document.getElementById('cmdHelp');
+  if (cmdHelpCheckbox) cmdHelpCheckbox.checked = newSettings.chatbotHelpCommandEnabled !== false;
+
+  const cmdHelpAllianceCheckbox = document.getElementById('cmdHelpAlliance');
+  if (cmdHelpAllianceCheckbox) cmdHelpAllianceCheckbox.checked = newSettings.chatbotHelpAllianceEnabled !== false;
+
+  const cmdHelpDMCheckbox = document.getElementById('cmdHelpDM');
+  if (cmdHelpDMCheckbox) cmdHelpDMCheckbox.checked = newSettings.chatbotHelpDMEnabled === true;
+
+  const enableDMCommandsCheckbox = document.getElementById('enableDMCommands');
+  if (enableDMCommandsCheckbox) {
+    enableDMCommandsCheckbox.checked = newSettings.chatbotDMCommandsEnabled || false;
+    // Note: Delete DM checkbox doesn't exist in current HTML
+  }
 
   // Update page title (AutoPilot mode)
   updatePageTitle(settings);
@@ -561,6 +1533,24 @@ window.openMessengerFromChat = openMessenger;
  */
 window.openNewChatFromContact = openNewChat;
 
+/**
+ * Exposes hijacking badge update function for WebSocket updates.
+ * Updates the Blackbeard's Phone Booth button badge.
+ *
+ * @function
+ * @global
+ */
+window.updateHijackingBadge = updateHijackingBadge;
+
+/**
+ * Exposes hijacked vessels display update function for WebSocket updates.
+ * Updates the header pirate emoji with hijacked vessel count.
+ *
+ * @function
+ * @global
+ */
+window.updateHijackedVesselsDisplay = updateHijackedVesselsDisplay;
+
 // =============================================================================
 // DOMContentLoaded - Main Application Initialization
 // =============================================================================
@@ -629,28 +1619,348 @@ document.addEventListener('DOMContentLoaded', async () => {
   // CRITICAL: Must happen first as other modules depend on settings state
   settings = await loadSettings();
 
+  // Set global DEBUG_MODE from server settings (controlled by systray Debug Mode toggle)
+  if (settings.debugMode !== undefined) {
+    window.DEBUG_MODE = settings.debugMode;
+    if (window.DEBUG_MODE) {
+      console.log('[Debug] Debug Mode ENABLED - verbose logging active');
+    }
+  }
+
+  // CRITICAL: Set per-user storage prefix IMMEDIATELY before any cache access
+  if (settings.userId) {
+    // Set prefix and keys based on current userId
+    window.USER_STORAGE_PREFIX = settings.userId;
+    window.CACHE_KEY = `badgeCache_${settings.userId}`;
+
+    if (window.DEBUG_MODE) {
+      console.log(`[Storage] Per-user storage initialized for userId: ${settings.userId}`);
+      console.log(`[Cache] Using per-user cache key: ${window.CACHE_KEY}`);
+    }
+  }
+
+  // Initialize ALL UI elements with loaded settings
+  // NO DEFAULTS - if settings missing, server returns defaults from GET /api/settings
+  // Thresholds
+  if (document.getElementById('fuelThreshold')) {
+    const value = String(settings.fuelThreshold);
+    document.getElementById('fuelThreshold').value = formatNumberWithSeparator(value);
+  }
+  if (document.getElementById('co2Threshold')) {
+    const value = String(settings.co2Threshold);
+    document.getElementById('co2Threshold').value = formatNumberWithSeparator(value);
+  }
+  if (document.getElementById('maintenanceThreshold')) document.getElementById('maintenanceThreshold').value = settings.maintenanceThreshold;
+
+  // Auto-Rebuy Fuel
+  if (document.getElementById('autoRebuyFuel')) {
+    document.getElementById('autoRebuyFuel').checked = settings.autoRebuyFuel;
+    const autoRebuyFuelOptions = document.getElementById('autoRebuyFuelOptions');
+    if (autoRebuyFuelOptions) {
+      autoRebuyFuelOptions.classList.toggle('hidden', !settings.autoRebuyFuel);
+    }
+    const autoRebuyFuelMinCashSection = document.getElementById('autoRebuyFuelMinCashSection');
+    if (autoRebuyFuelMinCashSection) {
+      autoRebuyFuelMinCashSection.classList.toggle('hidden', !settings.autoRebuyFuel);
+    }
+  }
+  if (document.getElementById('autoRebuyFuelUseAlert')) document.getElementById('autoRebuyFuelUseAlert').checked = settings.autoRebuyFuelUseAlert;
+  if (document.getElementById('autoRebuyFuelThreshold')) {
+    const value = String(settings.autoRebuyFuelThreshold);
+    document.getElementById('autoRebuyFuelThreshold').value = formatNumberWithSeparator(value);
+  }
+  if (document.getElementById('autoRebuyFuelMinCash') && settings.autoRebuyFuelMinCash !== undefined) {
+    const value = String(settings.autoRebuyFuelMinCash);
+    document.getElementById('autoRebuyFuelMinCash').value = formatNumberWithSeparator(value);
+  }
+
+  // Auto-Rebuy CO2
+  if (document.getElementById('autoRebuyCO2')) {
+    document.getElementById('autoRebuyCO2').checked = settings.autoRebuyCO2;
+    const autoRebuyCO2Options = document.getElementById('autoRebuyCO2Options');
+    if (autoRebuyCO2Options) {
+      autoRebuyCO2Options.classList.toggle('hidden', !settings.autoRebuyCO2);
+    }
+    const autoRebuyCO2MinCashSection = document.getElementById('autoRebuyCO2MinCashSection');
+    if (autoRebuyCO2MinCashSection) {
+      autoRebuyCO2MinCashSection.classList.toggle('hidden', !settings.autoRebuyCO2);
+    }
+  }
+  if (document.getElementById('autoRebuyCO2UseAlert')) document.getElementById('autoRebuyCO2UseAlert').checked = settings.autoRebuyCO2UseAlert;
+  if (document.getElementById('autoRebuyCO2Threshold')) {
+    const value = String(settings.autoRebuyCO2Threshold);
+    document.getElementById('autoRebuyCO2Threshold').value = formatNumberWithSeparator(value);
+  }
+  if (document.getElementById('autoRebuyCO2MinCash') && settings.autoRebuyCO2MinCash !== undefined) {
+    const value = String(settings.autoRebuyCO2MinCash);
+    document.getElementById('autoRebuyCO2MinCash').value = formatNumberWithSeparator(value);
+  }
+
+  // Auto-Depart
+  if (document.getElementById('autoDepartAll')) {
+    document.getElementById('autoDepartAll').checked = settings.autoDepartAll;
+    const autoDepartOptions = document.getElementById('autoDepartOptions');
+    if (autoDepartOptions) {
+      autoDepartOptions.classList.toggle('hidden', !settings.autoDepartAll);
+    }
+  }
+  if (document.getElementById('autoDepartUseRouteDefaults')) {
+    document.getElementById('autoDepartUseRouteDefaults').checked = settings.autoDepartUseRouteDefaults;
+    const autoDepartCustomSettings = document.getElementById('autoDepartCustomSettings');
+    if (autoDepartCustomSettings) {
+      autoDepartCustomSettings.classList.toggle('hidden', settings.autoDepartUseRouteDefaults);
+    }
+  }
+  if (document.getElementById('minFuelThreshold')) {
+    const value = String(settings.minFuelThreshold);
+    document.getElementById('minFuelThreshold').value = formatNumberWithSeparator(value);
+  }
+  if (document.getElementById('minVesselUtilization')) document.getElementById('minVesselUtilization').value = settings.minVesselUtilization;
+  if (document.getElementById('autoVesselSpeed')) document.getElementById('autoVesselSpeed').value = settings.autoVesselSpeed;
+
+  // Auto-Repair
+  if (document.getElementById('autoBulkRepair')) {
+    document.getElementById('autoBulkRepair').checked = settings.autoBulkRepair;
+    const autoBulkRepairOptions = document.getElementById('autoBulkRepairOptions');
+    if (autoBulkRepairOptions) {
+      autoBulkRepairOptions.classList.toggle('hidden', !settings.autoBulkRepair);
+    }
+  }
+  if (document.getElementById('autoBulkRepairMinCash') && settings.autoBulkRepairMinCash !== undefined) {
+    const value = String(settings.autoBulkRepairMinCash);
+    document.getElementById('autoBulkRepairMinCash').value = formatNumberWithSeparator(value);
+  }
+
+  // Auto-Campaign
+  if (document.getElementById('autoCampaignRenewal')) {
+    document.getElementById('autoCampaignRenewal').checked = settings.autoCampaignRenewal;
+    const autoCampaignRenewalOptions = document.getElementById('autoCampaignRenewalOptions');
+    if (autoCampaignRenewalOptions) {
+      autoCampaignRenewalOptions.classList.toggle('hidden', !settings.autoCampaignRenewal);
+    }
+  }
+  if (document.getElementById('autoCampaignRenewalMinCash') && settings.autoCampaignRenewalMinCash !== undefined) {
+    const value = String(settings.autoCampaignRenewalMinCash);
+    document.getElementById('autoCampaignRenewalMinCash').value = formatNumberWithSeparator(value);
+  }
+
+  // Auto-COOP
+  if (document.getElementById('autoCoopEnabled')) {
+    document.getElementById('autoCoopEnabled').checked = settings.autoCoopEnabled;
+    const autoCoopOptions = document.getElementById('autoCoopOptions');
+    if (autoCoopOptions) {
+      autoCoopOptions.classList.toggle('hidden', !settings.autoCoopEnabled);
+    }
+  }
+
+  // Auto-Anchor Points
+  if (document.getElementById('autoAnchorPointEnabled')) {
+    document.getElementById('autoAnchorPointEnabled').checked = settings.autoAnchorPointEnabled;
+    const autoAnchorPointOptions = document.getElementById('autoAnchorPointOptions');
+    if (autoAnchorPointOptions) {
+      autoAnchorPointOptions.classList.toggle('hidden', !settings.autoAnchorPointEnabled);
+    }
+  }
+  // Auto-Anchor Point Min Cash
+  if (document.getElementById('autoAnchorPointMinCash') && settings.autoAnchorPointMinCash !== undefined) {
+    const value = String(settings.autoAnchorPointMinCash);
+    document.getElementById('autoAnchorPointMinCash').value = formatNumberWithSeparator(value);
+  }
+  // Auto-Anchor Point Amount (radio buttons)
+  if (document.getElementById('autoAnchorAmount1') && document.getElementById('autoAnchorAmount10')) {
+    if (settings.autoAnchorPointAmount === 10) {
+      document.getElementById('autoAnchorAmount10').checked = true;
+    } else {
+      document.getElementById('autoAnchorAmount1').checked = true;
+    }
+  }
+
+  // Auto-Negotiate Hijacking
+  if (document.getElementById('autoNegotiateHijacking')) {
+    document.getElementById('autoNegotiateHijacking').checked = settings.autoNegotiateHijacking;
+    const autoNegotiateOptions = document.getElementById('autoNegotiateOptions');
+    if (autoNegotiateOptions) {
+      autoNegotiateOptions.classList.toggle('hidden', !settings.autoNegotiateHijacking);
+    }
+  }
+
+  // Desktop Notifications
+  if (document.getElementById('enableDesktopNotifications')) document.getElementById('enableDesktopNotifications').checked = settings.enableDesktopNotifications;
+
+  // AutoPilot Notifications
+  if (document.getElementById('autoPilotNotifications')) {
+    // Use the value from settings, default to true if undefined
+    const notifValue = settings.autoPilotNotifications !== undefined ? settings.autoPilotNotifications : true;
+    document.getElementById('autoPilotNotifications').checked = notifValue;
+  }
+
+  // Individual Agent Notifications
+  // Individual Agent Notifications (InApp + Desktop)
+  if (document.getElementById('notifyBarrelBossInApp')) document.getElementById('notifyBarrelBossInApp').checked = settings.notifyBarrelBossInApp !== false;
+  if (document.getElementById('notifyBarrelBossDesktop')) document.getElementById('notifyBarrelBossDesktop').checked = settings.notifyBarrelBossDesktop !== false;
+  if (document.getElementById('notifyAtmosphereBrokerInApp')) document.getElementById('notifyAtmosphereBrokerInApp').checked = settings.notifyAtmosphereBrokerInApp !== false;
+  if (document.getElementById('notifyAtmosphereBrokerDesktop')) document.getElementById('notifyAtmosphereBrokerDesktop').checked = settings.notifyAtmosphereBrokerDesktop !== false;
+  if (document.getElementById('notifyCargoMarshalInApp')) document.getElementById('notifyCargoMarshalInApp').checked = settings.notifyCargoMarshalInApp !== false;
+  if (document.getElementById('notifyCargoMarshalDesktop')) document.getElementById('notifyCargoMarshalDesktop').checked = settings.notifyCargoMarshalDesktop !== false;
+  if (document.getElementById('notifyYardForemanInApp')) document.getElementById('notifyYardForemanInApp').checked = settings.notifyYardForemanInApp !== false;
+  if (document.getElementById('notifyYardForemanDesktop')) document.getElementById('notifyYardForemanDesktop').checked = settings.notifyYardForemanDesktop !== false;
+  if (document.getElementById('notifyReputationChiefInApp')) document.getElementById('notifyReputationChiefInApp').checked = settings.notifyReputationChiefInApp !== false;
+  if (document.getElementById('notifyReputationChiefDesktop')) document.getElementById('notifyReputationChiefDesktop').checked = settings.notifyReputationChiefDesktop !== false;
+  if (document.getElementById('notifyFairHandInApp')) document.getElementById('notifyFairHandInApp').checked = settings.notifyFairHandInApp !== false;
+  if (document.getElementById('notifyFairHandDesktop')) document.getElementById('notifyFairHandDesktop').checked = settings.notifyFairHandDesktop !== false;
+  if (document.getElementById('notifyHarbormasterInApp')) document.getElementById('notifyHarbormasterInApp').checked = settings.notifyHarbormasterInApp !== false;
+  if (document.getElementById('notifyHarbormasterDesktop')) document.getElementById('notifyHarbormasterDesktop').checked = settings.notifyHarbormasterDesktop !== false;
+  if (document.getElementById('notifyCaptainBlackbeardInApp')) document.getElementById('notifyCaptainBlackbeardInApp').checked = settings.notifyCaptainBlackbeardInApp !== false;
+  if (document.getElementById('notifyCaptainBlackbeardDesktop')) document.getElementById('notifyCaptainBlackbeardDesktop').checked = settings.notifyCaptainBlackbeardDesktop !== false;
+
+  // Inbox Notifications
+  if (document.getElementById('enableInboxNotifications')) document.getElementById('enableInboxNotifications').checked = settings.enableInboxNotifications !== false; // Default to true
+
+  // Chat Bot Settings
+  if (document.getElementById('enableChatBot')) {
+    document.getElementById('enableChatBot').checked = settings.chatbotEnabled || false;
+    // Enable/disable other chat bot settings based on main toggle
+    const isEnabled = settings.chatbotEnabled || false;
+    const chatBotSettingsElements = document.querySelectorAll('[id^="cmd"], #enableDailyForecast, #dailyForecastTime, #enableAllianceCommands, #enableDMCommands, #commandPrefix');
+    chatBotSettingsElements.forEach(el => {
+      if (el.closest('div')) {
+        if (isEnabled) {
+          el.closest('div').classList.remove('checkbox-container-disabled');
+          el.closest('div').classList.add('checkbox-container-enabled');
+        } else {
+          el.closest('div').classList.remove('checkbox-container-enabled');
+          el.closest('div').classList.add('checkbox-container-disabled');
+        }
+        if (el.type === 'checkbox' || el.type === 'text' || el.type === 'time') {
+          el.disabled = !isEnabled;
+        }
+      }
+    });
+  }
+  if (document.getElementById('commandPrefix') && settings.chatbotPrefix !== undefined) document.getElementById('commandPrefix').value = settings.chatbotPrefix;
+  if (document.getElementById('enableDailyForecast')) {
+    document.getElementById('enableDailyForecast').checked = settings.chatbotDailyForecastEnabled || false;
+    const dailyForecastTime = document.getElementById('dailyForecastTime');
+    if (dailyForecastTime) {
+      dailyForecastTime.disabled = !settings.chatbotDailyForecastEnabled;
+      if (settings.chatbotDailyForecastEnabled) {
+        dailyForecastTime.closest('div').classList.remove('checkbox-container-disabled');
+        dailyForecastTime.closest('div').classList.add('checkbox-container-enabled');
+      } else {
+        dailyForecastTime.closest('div').classList.remove('checkbox-container-enabled');
+        dailyForecastTime.closest('div').classList.add('checkbox-container-disabled');
+      }
+    }
+  }
+  if (document.getElementById('dailyForecastTime') && settings.chatbotDailyForecastTime !== undefined) document.getElementById('dailyForecastTime').value = settings.chatbotDailyForecastTime;
+  if (document.getElementById('enableAllianceCommands')) {
+    document.getElementById('enableAllianceCommands').checked = settings.chatbotAllianceCommandsEnabled !== false; // Default to true
+    const isAllianceEnabled = settings.chatbotAllianceCommandsEnabled !== false;
+    if (document.getElementById('cmdForecast')) document.getElementById('cmdForecast').disabled = !isAllianceEnabled;
+    if (document.getElementById('cmdHelp')) document.getElementById('cmdHelp').disabled = !isAllianceEnabled;
+  }
+  if (document.getElementById('cmdForecast')) {
+    document.getElementById('cmdForecast').checked = settings.chatbotForecastCommandEnabled !== false; // Default to true
+    // Set channel checkboxes
+    if (document.getElementById('cmdForecastAlliance')) {
+      document.getElementById('cmdForecastAlliance').checked = settings.chatbotForecastAlliaseEnabled !== false;
+      document.getElementById('cmdForecastAlliance').disabled = !settings.chatbotForecastCommandEnabled;
+    }
+    if (document.getElementById('cmdForecastDM')) {
+      document.getElementById('cmdForecastDM').checked = settings.chatbotForecastDMEnabled !== false;
+      document.getElementById('cmdForecastDM').disabled = !settings.chatbotForecastCommandEnabled;
+    }
+    // Load aliases
+    if (document.getElementById('cmdForecastAliases')) {
+      const aliases = settings.chatbotForecastAliases || ['prices', 'price'];
+      document.getElementById('cmdForecastAliases').value = aliases.join(', ');
+    }
+  }
+  if (document.getElementById('cmdHelp')) {
+    document.getElementById('cmdHelp').checked = settings.chatbotHelpCommandEnabled !== false; // Default to true
+    // Set channel checkboxes
+    if (document.getElementById('cmdHelpAlliance')) {
+      document.getElementById('cmdHelpAlliance').checked = settings.chatbotHelpAllianceEnabled !== false;
+      document.getElementById('cmdHelpAlliance').disabled = !settings.chatbotHelpCommandEnabled;
+    }
+    if (document.getElementById('cmdHelpDM')) {
+      document.getElementById('cmdHelpDM').checked = settings.chatbotHelpDMEnabled === true; // Default to false
+      document.getElementById('cmdHelpDM').disabled = !settings.chatbotHelpCommandEnabled;
+    }
+    // Load aliases
+    if (document.getElementById('cmdHelpAliases')) {
+      const aliases = settings.chatbotHelpAliases || ['commands', 'help'];
+      document.getElementById('cmdHelpAliases').value = aliases.join(', ');
+    }
+  }
+  if (document.getElementById('enableDMCommands')) {
+    document.getElementById('enableDMCommands').checked = settings.chatbotDMCommandsEnabled || false;
+    // Note: Delete DM checkbox doesn't exist in current HTML
+  }
+
   // ===== STEP 1.5: Load User Settings (CEO Level & Points) =====
   try {
     const userResponse = await fetch(apiUrl('/api/user/get-settings'));
     if (userResponse.ok) {
       const userData = await userResponse.json();
 
-      // CEO Level
-      const ceoLevel = userData.user?.ceo_level || userData.data?.settings?.ceo_level || 0;
-      if (ceoLevel > 0) {
-        const ceoLevelBadge = document.getElementById('ceoLevelBadge');
-        const ceoLevelNumber = document.getElementById('ceoLevelNumber');
-        if (ceoLevelBadge && ceoLevelNumber) {
-          ceoLevelNumber.textContent = ceoLevel;
-          ceoLevelBadge.style.display = 'inline-block';
-        }
+      // CEO Level - NO FALLBACK! If missing, throw error for debugging
+      const ceoLevel = userData.user?.ceo_level || userData.data?.settings?.ceo_level;
+      if (!ceoLevel) {
+        throw new Error('CEO level missing from API response');
       }
 
-      // Points (Premium Currency)
+      const ceoLevelBadge = document.getElementById('ceoLevelBadge');
+      const ceoLevelNumber = document.getElementById('ceoLevelNumber');
+      if (ceoLevelBadge && ceoLevelNumber) {
+        ceoLevelNumber.textContent = ceoLevel;
+        ceoLevelBadge.classList.remove('hidden');
+      }
+
+      // Calculate XP progress to show fill progress
+      try {
+        // Use userData we already fetched - NO FALLBACKS! Fail fast if data missing
+        const expPoints = userData.user?.experience_points || userData.data?.settings?.experience_points;
+        const currentLevelExp = userData.user?.current_level_experience_points || userData.data?.settings?.current_level_experience_points;
+        const levelupExp = userData.user?.levelup_experience_points || userData.data?.settings?.levelup_experience_points;
+
+        if (expPoints === undefined || currentLevelExp === undefined || levelupExp === undefined) {
+          throw new Error('XP data missing from API response');
+        }
+
+        // Calculate progress within current level (not total XP)
+        // Progress = (current XP - XP at level start) / (XP needed for next level - XP at level start)
+        const expInCurrentLevel = expPoints - currentLevelExp;
+        const expNeededForLevel = levelupExp - currentLevelExp;
+        const progress = Math.min(100, Math.max(0, (expInCurrentLevel / expNeededForLevel) * 100));
+
+        console.log(`[CEO Level Progress] Current: ${expPoints}, Level Start: ${currentLevelExp}, Next Level: ${levelupExp}, Progress: ${progress.toFixed(1)}%`);
+
+        // Update fill bar (SVG rect grows from left to right)
+        const ceoLevelFill = document.getElementById('ceoLevelFill');
+        if (ceoLevelFill) {
+          // SVG rect width is in viewBox units (0-24), scale percentage to 24
+          const widthInViewBox = (progress / 100) * 24;
+          ceoLevelFill.setAttribute('width', widthInViewBox);
+        }
+      } catch (error) {
+        console.error('Failed to calculate XP progress:', error);
+      }
+
+      // Points (Premium Currency) with color coding
       const points = userData.user?.points || 0;
       const pointsDisplay = document.getElementById('pointsDisplay');
       if (pointsDisplay) {
-        pointsDisplay.textContent = points.toLocaleString();
+        pointsDisplay.textContent = points.toLocaleString('en-US');
+        // Red if 0, yellow if < 600, green if >= 600
+        pointsDisplay.classList.remove('text-danger', 'text-warning', 'text-success');
+        if (points === 0) {
+          pointsDisplay.classList.add('text-danger');
+        } else if (points < 600) {
+          pointsDisplay.classList.add('text-warning');
+        } else {
+          pointsDisplay.classList.add('text-success');
+        }
       }
     }
   } catch (error) {
@@ -676,8 +1986,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Enter key to send message (Shift+Enter for new line)
   // Prevents sending when member suggestion dropdown is open (@ mentions)
   messageInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey &&
-        (!document.getElementById('memberSuggestions') || document.getElementById('memberSuggestions').style.display !== 'block')) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const suggestionBox = document.getElementById('memberSuggestions');
+
+      // If autocomplete dropdown is visible, select first suggestion instead of sending
+      if (suggestionBox && !suggestionBox.classList.contains('hidden')) {
+        e.preventDefault();
+        const firstSuggestion = suggestionBox.querySelector('.member-suggestion');
+        if (firstSuggestion) {
+          firstSuggestion.click();
+        }
+        return;
+      }
+
+      // Otherwise send message
       e.preventDefault();
       sendMessage(messageInput, charCount, sendMessageBtn, chatFeed);
     }
@@ -693,8 +2015,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Delete current private chat conversation
   document.getElementById('deleteChatBtn').addEventListener('click', deleteCurrentChat);
 
+  // --- Hijacking Inbox Event Listeners ---
+  // Open Blackbeard's Phone Booth
+  document.getElementById('hijackingBtn').addEventListener('click', openHijackingInbox);
+
+  // Close hijacking inbox overlay
+  document.getElementById('closeHijackingBtn').addEventListener('click', closeHijackingInbox);
+
   // Back button: closes current chat view and reopens recipient selection
   document.getElementById('backToSelectionBtn').addEventListener('click', () => {
+    // Check if we came from hijacking inbox
+    if (window.cameFromHijackingInbox) {
+      window.cameFromHijackingInbox = false;
+      closeMessenger();
+      openHijackingInbox();
+      return;
+    }
+
+    // Normal behavior: go back to chat selection
     const currentChat = getCurrentPrivateChat();
     const targetCompanyName = currentChat.targetCompanyName;
     const targetUserId = currentChat.targetUserId;
@@ -755,6 +2093,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Close campaigns overlay
   document.getElementById('closeCampaignsBtn').addEventListener('click', closeCampaignsOverlay);
 
+  // Open forecast overlay
+  document.getElementById('forecastBtn').addEventListener('click', () => {
+    document.getElementById('forecastOverlay').classList.remove('hidden');
+
+    // Pass current event data to forecast calendar if available
+    const cachedData = window.lastUpdateData;
+    if (cachedData && cachedData.prices) {
+      const eventDiscount = cachedData.prices.eventDiscount || null;
+      const eventData = cachedData.prices.eventData || null;
+      if (eventDiscount && eventData) {
+        updateEventDiscount(eventDiscount, eventData);
+      }
+    }
+
+    initForecastCalendar();
+  });
+
+  // Close forecast overlay
+  document.getElementById('closeForecastBtn').addEventListener('click', () => {
+    document.getElementById('forecastOverlay').classList.add('hidden');
+  });
+
+  // Initialize event info module
+  initEventInfo();
+
   // Open coop overlay
   document.getElementById('coopBtn').addEventListener('click', showCoopOverlay);
 
@@ -767,9 +2130,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Vessel Catalog Event Listeners ---
   // Open vessel catalog overlay and load available vessels for purchase
   document.getElementById('buyVesselsBtn').addEventListener('click', async () => {
-    document.getElementById('buyVesselsOverlay').style.display = 'flex';
+    // Load current bunker data (including cash) before showing purchase dialog
+    await updateBunkerStatus(settings);
+    document.getElementById('buyVesselsOverlay').classList.remove('hidden');
     await loadAcquirableVessels();
   });
+
+  // Open sell vessels overlay
+  document.getElementById('sellVesselsBtn').addEventListener('click', openSellVesselsOverlay);
+
+  // Close sell vessels overlay
+  document.getElementById('closeSellVesselsBtn').addEventListener('click', closeSellVesselsOverlay);
+
+  // Sell vessel filter buttons
+  document.getElementById('sellFilterContainerBtn').addEventListener('click', (e) => {
+    document.querySelectorAll('#sellVesselsOverlay .vessel-filter-btn').forEach(btn => btn.classList.remove('active'));
+    e.target.classList.add('active');
+    setSellFilter('container');
+  });
+
+  document.getElementById('sellFilterTankerBtn').addEventListener('click', (e) => {
+    document.querySelectorAll('#sellVesselsOverlay .vessel-filter-btn').forEach(btn => btn.classList.remove('active'));
+    e.target.classList.add('active');
+    setSellFilter('tanker');
+  });
+
+  // Sell cart button
+  document.getElementById('sellCartBtn').addEventListener('click', showSellCart);
 
   // Filter to show only pending vessel purchases (not yet delivered)
   document.getElementById('filterPendingBtn').addEventListener('click', async () => {
@@ -781,50 +2168,91 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Close vessel catalog overlay
   document.getElementById('closeBuyVesselsBtn').addEventListener('click', () => {
-    document.getElementById('buyVesselsOverlay').style.display = 'none';
+    document.getElementById('buyVesselsOverlay').classList.add('hidden');
   });
 
-  // Filter vessel catalog to show only container ships
-  document.getElementById('filterContainerBtn').addEventListener('click', () => {
-    setVesselFilter('container');
-    document.getElementById('filterContainerBtn').classList.add('active');
-    document.getElementById('filterTankerBtn').classList.remove('active');
-    document.getElementById('filterEngineBtn').classList.remove('active');
-    document.getElementById('filterPendingBtn').classList.remove('active');
-    displayVessels();
+  // Toggle filter dropdown menu
+  document.getElementById('filterDropdownBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = document.getElementById('filterDropdownMenu');
+    menu.classList.toggle('hidden');
   });
 
-  // Filter vessel catalog to show only tanker ships
-  document.getElementById('filterTankerBtn').addEventListener('click', () => {
-    setVesselFilter('tanker');
-    document.getElementById('filterTankerBtn').classList.add('active');
-    document.getElementById('filterContainerBtn').classList.remove('active');
-    document.getElementById('filterEngineBtn').classList.remove('active');
-    document.getElementById('filterPendingBtn').classList.remove('active');
-    displayVessels();
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('filterDropdownMenu');
+    const btn = document.getElementById('filterDropdownBtn');
+    if (!menu.contains(e.target) && !btn.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
   });
 
-  // Open engine type filter overlay (filter by engine: diesel, gas turbine, etc.)
-  document.getElementById('filterEngineBtn').addEventListener('click', () => {
-    showEngineFilterOverlay();
+  // Live filtering - apply filters when any checkbox or dropdown changes
+  document.getElementById('filterDropdownMenu').addEventListener('change', (e) => {
+    if (e.target.type === 'checkbox' || e.target.tagName === 'SELECT') {
+      applyVesselFilters();
+    }
   });
 
-  // Close engine filter overlay
-  document.getElementById('closeEngineFilterBtn').addEventListener('click', closeEngineFilterOverlay);
+  // Reset filters button
+  document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+    resetVesselFilters();
+  });
 
-  // Bulk purchase button (buy multiple vessels at once)
-  document.getElementById('bulkBuyBtn').addEventListener('click', purchaseBulk);
+  // Sort by price button
+  document.getElementById('sortPriceBtn').addEventListener('click', () => {
+    togglePriceSort();
+  });
+
+  // Cart button (show shopping cart dialog)
+  document.getElementById('cartBtn').addEventListener('click', showShoppingCart);
+
+  // --- Number Formatting for All Number Fields ---
+  // Apply thousand separators (dots) to all numeric input fields in settings
+  const formattedNumberFields = [
+    'fuelThreshold',
+    'co2Threshold',
+    'minFuelThreshold',
+    'autoRebuyFuelThreshold',
+    'autoRebuyFuelMinCash',
+    'autoRebuyCO2Threshold',
+    'autoRebuyCO2MinCash',
+    'autoBulkRepairMinCash',
+    'autoCampaignRenewalMinCash',
+    'autoAnchorPointMinCash'
+  ];
+
+  formattedNumberFields.forEach(fieldId => {
+    const input = document.getElementById(fieldId);
+    if (input) {
+      // Format on input (while typing)
+      input.addEventListener('input', function(e) {
+        // Remove all non-digits
+        let value = e.target.value.replace(/\D/g, '');
+        // Add thousand separators (dots)
+        let formattedValue = formatNumberWithSeparator(value);
+        // Update field with formatted value
+        e.target.value = formattedValue;
+      });
+
+      // Format initial value on page load
+      if (input.value) {
+        let value = input.value.replace(/\D/g, '');
+        input.value = formatNumberWithSeparator(value);
+      }
+    }
+  });
 
   // --- Settings Threshold Event Listeners ---
   // Fuel price alert threshold ($/ton)
   document.getElementById('fuelThreshold').addEventListener('change', function() {
-    settings.fuelThreshold = parseInt(this.value);
+    settings.fuelThreshold = parseInt(this.value.replace(/\./g, ''));
     saveSettings(settings);
   });
 
   // CO2 price alert threshold ($/ton)
   document.getElementById('co2Threshold').addEventListener('change', function() {
-    settings.co2Threshold = parseInt(this.value);
+    settings.co2Threshold = parseInt(this.value.replace(/\./g, ''));
     saveSettings(settings);
   });
 
@@ -836,13 +2264,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     debouncedUpdateRepairCount(500);
   });
 
+  // --- AutoPilot Notifications Toggle ---
+  // AutoPilot Notifications master toggle
+  // When UNCHECKED: All notifications are suppressed regardless of individual settings
+  // When CHECKED: Individual agent settings determine notification behavior
+  const autoPilotNotificationsCheckbox = document.getElementById('autoPilotNotifications');
+
+  if (autoPilotNotificationsCheckbox) {
+    autoPilotNotificationsCheckbox.addEventListener('change', function() {
+      settings.autoPilotNotifications = this.checked;
+      toggleAutoPilotAgentCheckboxes(this.checked);
+      saveSettings(settings);
+    });
+  }
+
+  // Initialize agent checkboxes state on load
+  // Use the actual setting value, default to true if undefined
+  const initialNotifState = settings.autoPilotNotifications !== undefined ? settings.autoPilotNotifications : true;
+  toggleAutoPilotAgentCheckboxes(initialNotifState);
+
+  // Individual Agent Notification toggles (InApp + Desktop)
+  const agentNotificationIds = [
+    'notifyBarrelBossInApp',
+    'notifyBarrelBossDesktop',
+    'notifyAtmosphereBrokerInApp',
+    'notifyAtmosphereBrokerDesktop',
+    'notifyCargoMarshalInApp',
+    'notifyCargoMarshalDesktop',
+    'notifyYardForemanInApp',
+    'notifyYardForemanDesktop',
+    'notifyReputationChiefInApp',
+    'notifyReputationChiefDesktop',
+    'notifyFairHandInApp',
+    'notifyFairHandDesktop',
+    'notifyHarbormasterInApp',
+    'notifyHarbormasterDesktop',
+    'notifyCaptainBlackbeardInApp',
+    'notifyCaptainBlackbeardDesktop'
+  ];
+
+  agentNotificationIds.forEach(id => {
+    const checkbox = document.getElementById(id);
+    if (checkbox) {
+      checkbox.addEventListener('change', function() {
+        settings[id] = this.checked;
+        saveSettings(settings);
+      });
+    }
+  });
+
   // --- AutoPilot Auto-Rebuy Fuel Event Listeners ---
   // Enable/disable auto-rebuy fuel
   // Shows/hides additional options when toggled
   document.getElementById('autoRebuyFuel').addEventListener('change', function() {
     settings.autoRebuyFuel = this.checked;
-    // Show/hide threshold options based on checkbox state
-    document.getElementById('autoRebuyFuelOptions').style.display = this.checked ? 'block' : 'none';
+    // Show/hide threshold options and min cash section based on checkbox state
+    document.getElementById('autoRebuyFuelOptions').classList.toggle('hidden', !this.checked);
+    const minCashSection = document.getElementById('autoRebuyFuelMinCashSection');
+    if (minCashSection) minCashSection.classList.toggle('hidden', !this.checked);
     saveSettings(settings);
     updatePageTitle(settings);
   });
@@ -858,13 +2337,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Use alert value: set to fuelThreshold and disable input
       thresholdInput.value = settings.fuelThreshold;
       thresholdInput.disabled = true;
-      thresholdInput.style.opacity = '0.5';
-      thresholdInput.style.cursor = 'not-allowed';
+      thresholdInput.classList.remove('input-enabled');
+      thresholdInput.classList.add('input-disabled');
     } else {
       // Use custom value: enable input
       thresholdInput.disabled = false;
-      thresholdInput.style.opacity = '1';
-      thresholdInput.style.cursor = 'text';
+      thresholdInput.classList.remove('input-disabled');
+      thresholdInput.classList.add('input-enabled');
     }
 
     saveSettings(settings);
@@ -872,7 +2351,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Custom threshold for auto-rebuy fuel (only used when "use alert" unchecked)
   document.getElementById('autoRebuyFuelThreshold').addEventListener('change', function() {
-    settings.autoRebuyFuelThreshold = parseInt(this.value);
+    settings.autoRebuyFuelThreshold = parseInt(this.value.replace(/\./g, ''));
+    saveSettings(settings);
+  });
+
+  // Min cash balance for auto-rebuy fuel
+  document.getElementById('autoRebuyFuelMinCash').addEventListener('change', function() {
+    settings.autoRebuyFuelMinCash = parseInt(this.value.replace(/\./g, ''));
     saveSettings(settings);
   });
 
@@ -881,8 +2366,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Shows/hides additional options when toggled
   document.getElementById('autoRebuyCO2').addEventListener('change', function() {
     settings.autoRebuyCO2 = this.checked;
-    // Show/hide threshold options based on checkbox state
-    document.getElementById('autoRebuyCO2Options').style.display = this.checked ? 'block' : 'none';
+    // Show/hide threshold options and min cash section based on checkbox state
+    document.getElementById('autoRebuyCO2Options').classList.toggle('hidden', !this.checked);
+    const minCashSection = document.getElementById('autoRebuyCO2MinCashSection');
+    if (minCashSection) minCashSection.classList.toggle('hidden', !this.checked);
     saveSettings(settings);
     updatePageTitle(settings);
   });
@@ -898,13 +2385,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Use alert value: set to co2Threshold and disable input
       thresholdInput.value = settings.co2Threshold;
       thresholdInput.disabled = true;
-      thresholdInput.style.opacity = '0.5';
-      thresholdInput.style.cursor = 'not-allowed';
+      thresholdInput.classList.remove('input-enabled');
+      thresholdInput.classList.add('input-disabled');
     } else {
       // Use custom value: enable input
       thresholdInput.disabled = false;
-      thresholdInput.style.opacity = '1';
-      thresholdInput.style.cursor = 'text';
+      thresholdInput.classList.remove('input-disabled');
+      thresholdInput.classList.add('input-enabled');
     }
 
     saveSettings(settings);
@@ -912,7 +2399,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Custom threshold for auto-rebuy CO2 (only used when "use alert" unchecked)
   document.getElementById('autoRebuyCO2Threshold').addEventListener('change', function() {
-    settings.autoRebuyCO2Threshold = parseInt(this.value);
+    settings.autoRebuyCO2Threshold = parseInt(this.value.replace(/\./g, ''));
+    saveSettings(settings);
+  });
+
+  // Min cash balance for auto-rebuy CO2
+  document.getElementById('autoRebuyCO2MinCash').addEventListener('change', function() {
+    settings.autoRebuyCO2MinCash = parseInt(this.value.replace(/\./g, ''));
     saveSettings(settings);
   });
 
@@ -920,6 +2413,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Auto-depart all ready vessels
   document.getElementById('autoDepartAll').addEventListener('change', function() {
     settings.autoDepartAll = this.checked;
+    // Show/hide options based on checkbox state
+    document.getElementById('autoDepartOptions').classList.toggle('hidden', !this.checked);
     saveSettings(settings);
     updatePageTitle(settings);
   });
@@ -927,21 +2422,86 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Auto-repair all vessels below maintenance threshold
   document.getElementById('autoBulkRepair').addEventListener('change', function() {
     settings.autoBulkRepair = this.checked;
+    // Show/hide options based on checkbox state
+    document.getElementById('autoBulkRepairOptions').classList.toggle('hidden', !this.checked);
     saveSettings(settings);
     updatePageTitle(settings);
   });
 
-  // Auto-repair interval
-  document.getElementById('autoRepairInterval').addEventListener('change', function() {
-    settings.autoRepairInterval = this.value;
+  // Min cash balance for auto bulk repair
+  document.getElementById('autoBulkRepairMinCash').addEventListener('change', function() {
+    settings.autoBulkRepairMinCash = parseInt(this.value.replace(/\./g, ''));
     saveSettings(settings);
   });
 
   // Auto-renew expiring campaigns
   document.getElementById('autoCampaignRenewal').addEventListener('change', function() {
     settings.autoCampaignRenewal = this.checked;
+    // Show/hide options based on checkbox state
+    document.getElementById('autoCampaignRenewalOptions').classList.toggle('hidden', !this.checked);
     saveSettings(settings);
     updatePageTitle(settings);
+  });
+
+  // Min cash balance for auto campaign renewal
+  document.getElementById('autoCampaignRenewalMinCash').addEventListener('change', function() {
+    settings.autoCampaignRenewalMinCash = parseInt(this.value.replace(/\./g, ''));
+    saveSettings(settings);
+  });
+
+  // Auto-COOP distribution
+  document.getElementById('autoCoopEnabled').addEventListener('change', function() {
+    settings.autoCoopEnabled = this.checked;
+    // Show/hide options based on checkbox state
+    document.getElementById('autoCoopOptions').classList.toggle('hidden', !this.checked);
+    saveSettings(settings);
+    updatePageTitle(settings);
+  });
+
+  // Auto-Anchor Point Purchase
+  document.getElementById('autoAnchorPointEnabled').addEventListener('change', function() {
+    settings.autoAnchorPointEnabled = this.checked;
+    // Show/hide options based on checkbox state
+    document.getElementById('autoAnchorPointOptions').classList.toggle('hidden', !this.checked);
+    saveSettings(settings);
+    updatePageTitle(settings);
+  });
+
+  // Auto-Negotiate Hijacking
+  document.getElementById('autoNegotiateHijacking').addEventListener('change', function() {
+    settings.autoNegotiateHijacking = this.checked;
+    // Show/hide options based on checkbox state
+    document.getElementById('autoNegotiateOptions').classList.toggle('hidden', !this.checked);
+    saveSettings(settings);
+    updatePageTitle(settings);
+  });
+
+  // Auto-Anchor Point Min Cash
+  document.getElementById('autoAnchorPointMinCash').addEventListener('change', function() {
+    const value = parseInt(this.value.replace(/\./g, ''));
+    if (value >= 0) {
+      settings.autoAnchorPointMinCash = value;
+      saveSettings(settings);
+    } else {
+      if (settings.autoAnchorPointMinCash !== undefined) {
+        this.value = settings.autoAnchorPointMinCash;
+      }
+    }
+  });
+
+  // Auto-Anchor Point Amount Radio Buttons
+  document.getElementById('autoAnchorAmount1').addEventListener('change', function() {
+    if (this.checked) {
+      settings.autoAnchorPointAmount = 1;
+      saveSettings(settings);
+    }
+  });
+
+  document.getElementById('autoAnchorAmount10').addEventListener('change', function() {
+    if (this.checked) {
+      settings.autoAnchorPointAmount = 10;
+      saveSettings(settings);
+    }
   });
 
   // Desktop notifications master toggle
@@ -950,7 +2510,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveSettings(settings);
   });
 
+  // Inbox notifications toggle
+  document.getElementById('enableInboxNotifications').addEventListener('change', function() {
+    settings.enableInboxNotifications = this.checked;
+    saveSettings(settings);
+  });
+
   // --- Intelligent Auto-Depart Settings ---
+
   // Toggle between using route defaults vs custom settings
   document.getElementById('autoDepartUseRouteDefaults').addEventListener('change', function() {
     settings.autoDepartUseRouteDefaults = this.checked;
@@ -958,12 +2525,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (this.checked) {
       // Use route defaults: hide custom settings
-      customSettingsDiv.style.display = 'none';
+      customSettingsDiv.classList.add('hidden');
     } else {
       // Use custom settings: show inputs
-      customSettingsDiv.style.display = 'block';
+      customSettingsDiv.classList.remove('hidden');
     }
 
+    saveSettings(settings);
+  });
+
+  // Minimum fuel threshold for auto-depart
+  document.getElementById('minFuelThreshold').addEventListener('change', function() {
+    settings.minFuelThreshold = parseInt(this.value.replace(/\./g, ''));
     saveSettings(settings);
   });
 
@@ -978,6 +2551,401 @@ document.addEventListener('DOMContentLoaded', async () => {
     settings.autoVesselSpeed = parseInt(this.value);
     saveSettings(settings);
   });
+
+  // --- Chat Bot Settings Event Listeners ---
+  // Enable/disable Chat Bot
+  const enableChatBotCheckbox = document.getElementById('enableChatBot');
+  if (enableChatBotCheckbox) {
+    enableChatBotCheckbox.addEventListener('change', function() {
+      settings.chatbotEnabled = this.checked;
+      // Show/hide other chat bot settings when enabled/disabled
+      const chatBotSettingsElements = document.querySelectorAll('[id^="cmd"], #enableDailyForecast, #dailyForecastTime, #enableAllianceCommands, #enableDMCommands, #commandPrefix');
+      chatBotSettingsElements.forEach(el => {
+        if (el.closest('div')) {
+          if (this.checked) {
+            el.closest('div').classList.remove('checkbox-container-disabled');
+            el.closest('div').classList.add('checkbox-container-enabled');
+          } else {
+            el.closest('div').classList.remove('checkbox-container-enabled');
+            el.closest('div').classList.add('checkbox-container-disabled');
+          }
+          if (el.type === 'checkbox' || el.type === 'text' || el.type === 'time') {
+            el.disabled = !this.checked;
+          }
+        }
+      });
+      saveSettings(settings);
+    });
+  }
+
+  // Command prefix
+  const commandPrefixInput = document.getElementById('commandPrefix');
+  if (commandPrefixInput) {
+    commandPrefixInput.addEventListener('input', function() {
+      settings.chatbotPrefix = this.value;
+      saveSettings(settings);
+    });
+  }
+
+  // Daily forecast enabled
+  const enableDailyForecastCheckbox = document.getElementById('enableDailyForecast');
+  if (enableDailyForecastCheckbox) {
+    enableDailyForecastCheckbox.addEventListener('change', function() {
+      settings.chatbotDailyForecastEnabled = this.checked;
+      const dailyForecastTime = document.getElementById('dailyForecastTime');
+      if (dailyForecastTime) {
+        dailyForecastTime.disabled = !this.checked;
+        if (this.checked) {
+          dailyForecastTime.closest('div').classList.remove('checkbox-container-disabled');
+          dailyForecastTime.closest('div').classList.add('checkbox-container-enabled');
+        } else {
+          dailyForecastTime.closest('div').classList.remove('checkbox-container-enabled');
+          dailyForecastTime.closest('div').classList.add('checkbox-container-disabled');
+        }
+      }
+      saveSettings(settings);
+    });
+  }
+
+  // Daily forecast time
+  const dailyForecastTimeInput = document.getElementById('dailyForecastTime');
+  if (dailyForecastTimeInput) {
+    dailyForecastTimeInput.addEventListener('change', function() {
+      settings.chatbotDailyForecastTime = this.value;
+      saveSettings(settings);
+    });
+  }
+
+  // Alliance commands enabled
+  const enableAllianceCommandsCheckbox = document.getElementById('enableAllianceCommands');
+  if (enableAllianceCommandsCheckbox) {
+    enableAllianceCommandsCheckbox.addEventListener('change', function() {
+      settings.chatbotAllianceCommandsEnabled = this.checked;
+      // Enable/disable individual command checkboxes
+      document.getElementById('cmdForecast').disabled = !this.checked;
+      document.getElementById('cmdHelp').disabled = !this.checked;
+      saveSettings(settings);
+    });
+  }
+
+  // Forecast command enabled
+  const cmdForecastCheckbox = document.getElementById('cmdForecast');
+  if (cmdForecastCheckbox) {
+    cmdForecastCheckbox.addEventListener('change', function() {
+      settings.chatbotForecastCommandEnabled = this.checked;
+      // Enable/disable channel checkboxes based on command state
+      if (document.getElementById('cmdForecastAlliance')) document.getElementById('cmdForecastAlliance').disabled = !this.checked;
+      if (document.getElementById('cmdForecastDM')) document.getElementById('cmdForecastDM').disabled = !this.checked;
+      saveSettings(settings);
+    });
+  }
+
+  // Forecast Alliance channel
+  const cmdForecastAllianceCheckbox = document.getElementById('cmdForecastAlliance');
+  if (cmdForecastAllianceCheckbox) {
+    cmdForecastAllianceCheckbox.addEventListener('change', function() {
+      settings.chatbotForecastAllianceEnabled = this.checked;
+      saveSettings(settings);
+    });
+  }
+
+  // Forecast DM channel
+  const cmdForecastDMCheckbox = document.getElementById('cmdForecastDM');
+  if (cmdForecastDMCheckbox) {
+    cmdForecastDMCheckbox.addEventListener('change', function() {
+      settings.chatbotForecastDMEnabled = this.checked;
+      saveSettings(settings);
+    });
+  }
+
+  // Forecast Aliases
+  const cmdForecastAliasesInput = document.getElementById('cmdForecastAliases');
+  if (cmdForecastAliasesInput) {
+    cmdForecastAliasesInput.addEventListener('blur', function() {
+      const aliasString = this.value.trim();
+      if (aliasString) {
+        settings.chatbotForecastAliases = aliasString.split(',').map(s => s.trim()).filter(s => s);
+      } else {
+        settings.chatbotForecastAliases = [];
+      }
+      saveSettings(settings);
+    });
+  }
+
+  // Help command enabled
+  const cmdHelpCheckbox = document.getElementById('cmdHelp');
+  if (cmdHelpCheckbox) {
+    cmdHelpCheckbox.addEventListener('change', function() {
+      settings.chatbotHelpCommandEnabled = this.checked;
+      // Enable/disable channel checkboxes based on command state
+      if (document.getElementById('cmdHelpAlliance')) document.getElementById('cmdHelpAlliance').disabled = !this.checked;
+      if (document.getElementById('cmdHelpDM')) document.getElementById('cmdHelpDM').disabled = !this.checked;
+      saveSettings(settings);
+    });
+  }
+
+  // Help Alliance channel
+  const cmdHelpAllianceCheckbox = document.getElementById('cmdHelpAlliance');
+  if (cmdHelpAllianceCheckbox) {
+    cmdHelpAllianceCheckbox.addEventListener('change', function() {
+      settings.chatbotHelpAllianceEnabled = this.checked;
+      saveSettings(settings);
+    });
+  }
+
+  // Help DM channel
+  const cmdHelpDMCheckbox = document.getElementById('cmdHelpDM');
+  if (cmdHelpDMCheckbox) {
+    cmdHelpDMCheckbox.addEventListener('change', function() {
+      settings.chatbotHelpDMEnabled = this.checked;
+      saveSettings(settings);
+    });
+  }
+
+  // Help Aliases
+  const cmdHelpAliasesInput = document.getElementById('cmdHelpAliases');
+  if (cmdHelpAliasesInput) {
+    cmdHelpAliasesInput.addEventListener('blur', function() {
+      const aliasString = this.value.trim();
+      if (aliasString) {
+        settings.chatbotHelpAliases = aliasString.split(',').map(s => s.trim()).filter(s => s);
+      } else {
+        settings.chatbotHelpAliases = [];
+      }
+      saveSettings(settings);
+    });
+  }
+
+  // DM commands enabled
+  const enableDMCommandsCheckbox = document.getElementById('enableDMCommands');
+  if (enableDMCommandsCheckbox) {
+    enableDMCommandsCheckbox.addEventListener('change', function() {
+      settings.chatbotDMCommandsEnabled = this.checked;
+      // Find and toggle the delete DM checkbox if it exists
+      const deleteDMCheckbox = document.querySelector('[id*="deleteDM"], [id*="deleteAfterReply"]');
+      if (deleteDMCheckbox) {
+        deleteDMCheckbox.disabled = !this.checked;
+        if (this.checked) {
+          deleteDMCheckbox.closest('div').classList.remove('checkbox-container-disabled');
+          deleteDMCheckbox.closest('div').classList.add('checkbox-container-enabled');
+        } else {
+          deleteDMCheckbox.closest('div').classList.remove('checkbox-container-enabled');
+          deleteDMCheckbox.closest('div').classList.add('checkbox-container-disabled');
+        }
+      }
+      saveSettings(settings);
+    });
+  }
+
+  // Note: Delete DM after reply checkbox doesn't exist in current HTML
+  // Will handle it if/when it's added to the UI
+
+  // Add custom command button - only if element exists
+  const addCustomCommandBtn = document.getElementById('addCustomCommand');
+  if (addCustomCommandBtn) {
+    addCustomCommandBtn.addEventListener('click', function() {
+    const commandsContainer = document.getElementById('customCommandsList');
+    const commandIndex = (settings.chatbotCustomCommands || []).length;
+
+    const newCommand = {
+      command: '',
+      response: '',
+      allianceEnabled: true,
+      dmEnabled: true,
+      adminOnly: false
+    };
+
+    if (!settings.chatbotCustomCommands) {
+      settings.chatbotCustomCommands = [];
+    }
+    settings.chatbotCustomCommands.push(newCommand);
+
+    const commandDiv = document.createElement('div');
+    commandDiv.className = 'custom-command-item';
+    commandDiv.innerHTML = `
+      <div class="command-header-row">
+        <input type="text" placeholder="Command (e.g. status)" data-command-index="${commandIndex}" data-field="command" class="command-input">
+        <button class="remove-custom-command" data-command-index="${commandIndex}">Remove</button>
+      </div>
+
+      <div class="response-container">
+        <textarea
+          placeholder="Response text (max 1000 characters, use Shift+Enter for line breaks)"
+          data-command-index="${commandIndex}"
+          data-field="response"
+          maxlength="1000"
+          class="response-textarea"></textarea>
+        <div class="char-counter-container">
+          <span class="char-counter" data-command-index="${commandIndex}">0</span> / 1000 characters
+        </div>
+      </div>
+
+      <div class="response-options">
+        <div class="response-option-row">
+          <div class="response-option-header">Response Channel:</div>
+          <label class="response-option-label">
+            <input type="checkbox" data-command-index="${commandIndex}" data-field="allianceEnabled" checked class="response-option-checkbox">
+            <span class="response-option-text">Alliance Chat</span>
+          </label>
+          <label class="response-option-label">
+            <input type="checkbox" data-command-index="${commandIndex}" data-field="dmEnabled" checked class="response-option-checkbox">
+            <span class="response-option-text">Direct Messages</span>
+          </label>
+        </div>
+        <label class="response-option-label">
+          <input type="checkbox" data-command-index="${commandIndex}" data-field="adminOnly" class="response-option-checkbox">
+          <span class="response-option-text-admin">Admin Only</span>
+        </label>
+      </div>
+    `;
+
+    commandsContainer.appendChild(commandDiv);
+
+    // Add event listeners to the new inputs
+    commandDiv.querySelectorAll('input[type="text"]').forEach(input => {
+      input.addEventListener('input', function() {
+        const index = parseInt(this.dataset.commandIndex);
+        const field = this.dataset.field;
+        if (settings.chatbotCustomCommands[index]) {
+          settings.chatbotCustomCommands[index][field] = this.value;
+          saveSettings(settings);
+        }
+      });
+    });
+
+    // Textarea with character counter
+    const textarea = commandDiv.querySelector('textarea');
+    const charCounter = commandDiv.querySelector('.char-counter');
+    textarea.addEventListener('input', function() {
+      const index = parseInt(this.dataset.commandIndex);
+      if (settings.chatbotCustomCommands[index]) {
+        settings.chatbotCustomCommands[index].response = this.value;
+        saveSettings(settings);
+      }
+      charCounter.textContent = this.value.length;
+    });
+
+    commandDiv.querySelectorAll('input[type="checkbox"]').forEach(input => {
+      input.addEventListener('change', function() {
+        const index = parseInt(this.dataset.commandIndex);
+        const field = this.dataset.field;
+        if (settings.chatbotCustomCommands[index]) {
+          settings.chatbotCustomCommands[index][field] = this.checked;
+          saveSettings(settings);
+        }
+      });
+    });
+
+    commandDiv.querySelector('.remove-custom-command').addEventListener('click', function() {
+      const index = parseInt(this.dataset.commandIndex);
+      settings.chatbotCustomCommands.splice(index, 1);
+      commandDiv.remove();
+      // Re-index remaining commands
+      document.querySelectorAll('.custom-command-item').forEach((item, newIndex) => {
+        item.querySelectorAll('[data-command-index]').forEach(el => {
+          el.dataset.commandIndex = newIndex;
+        });
+      });
+      saveSettings(settings);
+    });
+    });
+  }
+
+  // Load existing custom commands - only if container exists
+  const customCommandsList = document.getElementById('customCommandsList');
+  if (customCommandsList && settings.chatbotCustomCommands && settings.chatbotCustomCommands.length > 0) {
+    const commandsContainer = document.getElementById('customCommandsList');
+    settings.chatbotCustomCommands.forEach((cmd, index) => {
+      const commandDiv = document.createElement('div');
+      commandDiv.className = 'custom-command-item';
+      commandDiv.innerHTML = `
+        <div class="command-header-row">
+          <input type="text" placeholder="Command (e.g. status)" data-command-index="${index}" data-field="command" value="${escapeHtml(cmd.command)}" class="command-input">
+          <button class="remove-custom-command" data-command-index="${index}">Remove</button>
+        </div>
+
+        <div class="response-container">
+          <textarea
+            placeholder="Response text (max 1000 characters, use Shift+Enter for line breaks)"
+            data-command-index="${index}"
+            data-field="response"
+            maxlength="1000"
+            class="response-textarea">${escapeHtml(cmd.response || '')}</textarea>
+          <div class="char-counter-container">
+            <span class="char-counter" data-command-index="${index}">${(cmd.response || '').length}</span> / 1000 characters
+          </div>
+        </div>
+
+        <div class="response-options">
+          <div class="response-option-row">
+            <div class="response-option-header">Response Channel:</div>
+            <label class="response-option-label">
+              <input type="checkbox" data-command-index="${index}" data-field="allianceEnabled" ${cmd.allianceEnabled !== false ? 'checked' : ''} class="response-option-checkbox">
+              <span class="response-option-text">Alliance Chat</span>
+            </label>
+            <label class="response-option-label">
+              <input type="checkbox" data-command-index="${index}" data-field="dmEnabled" ${cmd.dmEnabled !== false ? 'checked' : ''} class="response-option-checkbox">
+              <span class="response-option-text">Direct Messages</span>
+            </label>
+          </div>
+          <label class="response-option-label">
+            <input type="checkbox" data-command-index="${index}" data-field="adminOnly" ${cmd.adminOnly ? 'checked' : ''} class="response-option-checkbox">
+            <span class="response-option-text-admin">Admin Only</span>
+          </label>
+        </div>
+      `;
+
+      commandsContainer.appendChild(commandDiv);
+
+      // Add event listeners
+      commandDiv.querySelectorAll('input[type="text"]').forEach(input => {
+        input.addEventListener('input', function() {
+          const idx = parseInt(this.dataset.commandIndex);
+          const field = this.dataset.field;
+          if (settings.chatbotCustomCommands[idx]) {
+            settings.chatbotCustomCommands[idx][field] = this.value;
+            saveSettings(settings);
+          }
+        });
+      });
+
+      // Textarea with character counter
+      const textarea = commandDiv.querySelector('textarea');
+      const charCounter = commandDiv.querySelector('.char-counter');
+      textarea.addEventListener('input', function() {
+        const idx = parseInt(this.dataset.commandIndex);
+        if (settings.chatbotCustomCommands[idx]) {
+          settings.chatbotCustomCommands[idx].response = this.value;
+          saveSettings(settings);
+        }
+        charCounter.textContent = this.value.length;
+      });
+
+      commandDiv.querySelectorAll('input[type="checkbox"]').forEach(input => {
+        input.addEventListener('change', function() {
+          const idx = parseInt(this.dataset.commandIndex);
+          const field = this.dataset.field;
+          if (settings.chatbotCustomCommands[idx]) {
+            settings.chatbotCustomCommands[idx][field] = this.checked;
+            saveSettings(settings);
+          }
+        });
+      });
+
+      commandDiv.querySelector('.remove-custom-command').addEventListener('click', function() {
+        const idx = parseInt(this.dataset.commandIndex);
+        settings.chatbotCustomCommands.splice(idx, 1);
+        commandDiv.remove();
+        // Re-index remaining commands
+        document.querySelectorAll('.custom-command-item').forEach((item, newIdx) => {
+          item.querySelectorAll('[data-command-index]').forEach(el => {
+            el.dataset.commandIndex = newIdx;
+          });
+        });
+        saveSettings(settings);
+      });
+    });
+  }
 
   // --- Vessel Management Event Listeners ---
   // Depart all ready vessels in harbor
@@ -1008,6 +2976,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const notificationBtn = document.getElementById('notificationBtn');
   if (notificationBtn) {
     // Update button state based on browser permission AND settings
+    /**
+     * Updates notification button UI state
+     * @returns {void}
+     */
     const updateNotificationButtonState = () => {
       const settings = window.getSettings ? window.getSettings() : {};
       const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
@@ -1017,15 +2989,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Show red disabled megaphone
         notificationBtn.classList.remove('enabled');
         notificationBtn.classList.add('disabled');
-        notificationBtn.style.display = '';
+        notificationBtn.classList.remove('hidden');
       } else {
         // Hide button completely when browser permission is granted
-        notificationBtn.style.display = 'none';
+        notificationBtn.classList.add('hidden');
       }
     };
 
     // Set initial state
     updateNotificationButtonState();
+
+    // Check permission status every 2 seconds to auto-hide button when permission granted
+    setInterval(updateNotificationButtonState, 2000);
 
     notificationBtn.addEventListener('click', async () => {
       // Only handle browser permission (device-specific), not global settings
@@ -1060,73 +3035,253 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ===== STEP 5: Load Initial Data =====
-  // Loads all initial data with 500ms delays between API calls to prevent
-  // socket hang-ups (server limitation when handling rapid concurrent requests).
-  // Each call is awaited sequentially to maintain proper pacing.
+  // Show cached values immediately for instant display
+  // WebSocket will send fresh data once connected and update everything
 
-  // Load alliance member list (for @ mentions autocomplete)
+  if (window.DEBUG_MODE) {
+    console.log('[Init] Loading cached values...');
+  }
+  loadCache();
+  if (window.DEBUG_MODE) {
+    console.log('[Init] Cached values displayed - waiting for WebSocket to send fresh data');
+  }
+
+  // Trigger price alert check on backend (will send alerts via WebSocket if needed)
+  try {
+    fetch('/api/check-price-alerts', { method: 'POST' });
+    if (window.DEBUG_MODE) {
+      console.log('[Init] Price alert check triggered');
+    }
+  } catch (error) {
+    console.error('[Init] Failed to trigger price alerts:', error);
+  }
+
+  // SEQUENTIAL: Load chat data (needs delays to prevent socket hang-ups)
   await loadAllianceMembers();
+
+  // WebSocket will send initial chat data on connect
+  // No need for retry loop - backend handles initial data push
+  // If no data received within 500ms, fall back to single API call
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  // Load alliance chat messages
-  await loadMessages(chatFeed);
-  await new Promise(resolve => setTimeout(resolve, 500));
+  const feedContent = chatFeed.innerHTML;
+  if (feedContent.includes('Loading chat...')) {
+    // WebSocket didn't send initial data yet - make single API call as fallback
+    if (window.DEBUG_MODE) {
+      console.log('[Init] No initial WebSocket data - making fallback API call');
+    }
+    await loadMessages(chatFeed);
+  } else {
+    if (window.DEBUG_MODE) {
+      console.log('[Init] Chat data received via WebSocket');
+    }
+  }
 
-  // Load unread private message count (updates messenger badge)
-  await updateUnreadBadge();
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Update unread message badge
+  updateUnreadBadge();
+  if (window.DEBUG_MODE) {
+    console.log('[Init] Unread badge updated!');
+  }
 
-  // Load vessel count in harbor (updates "Ready" badge)
-  await updateVesselCount();
-  await new Promise(resolve => setTimeout(resolve, 500));
+  // Define autopilot button update function BEFORE WebSocket connects
+  // This must be available when WebSocket sends initial autopilot_status event
+  /**
+   * Updates autopilot button icon and title
+   * @param {boolean} isPaused - True if autopilot is paused
+   * @returns {void}
+   */
+  window.updateAutopilotButton = function(isPaused) {
+    const icon = document.getElementById('autopilotToggleIcon');
+    const headerTitle = document.querySelector('.autopilot-active');
 
-  // Load vessels needing repair (updates "Repair" badge)
-  await updateRepairCount(settings);
-  await new Promise(resolve => setTimeout(resolve, 500));
+    if (icon && headerTitle) {
+      if (isPaused) {
+        // Paused state - RED with PLAY icon (to resume)
+        icon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+        headerTitle.classList.add('paused');
+      } else {
+        // Running state - GREEN with PAUSE icon (two bars)
+        icon.innerHTML = `<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>`;
+        headerTitle.classList.remove('paused');
+      }
+    }
+  };
 
-  // Load fuel/CO2 prices and storage levels (updates "Bunker" badge)
-  await updateBunkerStatus(settings);
-  await new Promise(resolve => setTimeout(resolve, 500));
+  /**
+   * Toggles autopilot pause/resume state
+   * @async
+   * @returns {Promise<void>}
+   */
+  window.toggleAutopilot = async function() {
+    try {
+      const cachedPauseState = getStorage('autopilotPaused');
+      const currentlyPaused = cachedPauseState ? JSON.parse(cachedPauseState) : false;
+      const newPauseState = !currentlyPaused;
 
-  // Load campaign status (updates "Campaigns" badge)
-  await updateCampaignsStatus();
-  await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('[Autopilot Toggle] Switching from', currentlyPaused ? 'PAUSED' : 'RUNNING', 'to', newPauseState ? 'PAUSED' : 'RUNNING');
 
-  // Load coop status (updates "Coop" badge)
-  await updateCoopBadge();
-  await new Promise(resolve => setTimeout(resolve, 500));
+      // Send toggle request to backend
+      const response = await fetch(window.apiUrl('/api/autopilot/toggle'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paused: newPauseState })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle autopilot');
+      }
+
+      const result = await response.json();
+
+      // Update UI immediately (WebSocket will confirm the state)
+      setStorage('autopilotPaused', JSON.stringify(newPauseState));
+      window.updateAutopilotButton(newPauseState);
+
+      // Show side notification
+      if (newPauseState) {
+        showSideNotification('⏸️ <strong>AutoPilot paused</strong><br>All automated functions are now on hold', 'warning', 5000, true);
+      } else {
+        showSideNotification('▶️ <strong>AutoPilot resumed</strong><br>All automated functions are now active', 'success', 5000, true);
+      }
+
+    } catch (error) {
+      console.error('[Autopilot Toggle] Error:', error);
+      showSideNotification('❌ <strong>Failed to toggle autopilot</strong><br>Please try again', 'error', 5000, true);
+    }
+  };
+
+  /**
+   * Handles autopilot status updates from WebSocket
+   * @param {Object} data - Status update data
+   * @param {boolean} data.paused - Autopilot pause state
+   * @returns {void}
+   */
+  window.onAutopilotStatusUpdate = function(data) {
+    // Also save to per-user localStorage for instant load on next page refresh
+    setStorage('autopilotPaused', JSON.stringify(data.paused));
+    window.updateAutopilotButton(data.paused);
+
+    // Show side notification
+    if (window.showSideNotification) {
+      const status = data.paused ? 'paused' : 'resumed';
+      const icon = data.paused ? '⏸️' : '▶️';
+      window.showSideNotification(`${icon} Autopilot ${status}`, data.paused ? 'warning' : 'success');
+    }
+  };
+
+  // Load autopilot pause state from per-user localStorage BEFORE WebSocket connects
+  // CRITICAL: Only load if userId validated to prevent showing wrong account state
+  try {
+    const currentUserId = window.USER_STORAGE_PREFIX;
+
+    // Validation: Only load autopilot state if userId validated
+    if (!currentUserId) {
+      console.log('[Autopilot UI] Skipping cached state - userId not validated (will use WebSocket state)');
+      // Default to "running" - WebSocket will send correct state
+      window.updateAutopilotButton(false);
+    } else {
+      // Safe to load cached state - userId validated
+      const cachedPauseState = getStorage('autopilotPaused');
+      if (cachedPauseState !== null) {
+        const isPaused = JSON.parse(cachedPauseState);
+        console.log('[Autopilot UI] Loaded cached pause state:', isPaused ? 'PAUSED' : 'RUNNING');
+        window.updateAutopilotButton(isPaused);
+      } else {
+        // No cached state - default to running
+        console.log('[Autopilot UI] No cached state found - defaulting to RUNNING');
+        window.updateAutopilotButton(false);
+      }
+    }
+  } catch (error) {
+    console.error('[Autopilot UI] Failed to load cached pause state:', error);
+    // On error, default to running
+    window.updateAutopilotButton(false);
+  }
 
   // ===== STEP 6: Initialize WebSocket =====
   // Establishes wss:// connection for real-time chat updates and settings sync
   initWebSocket();
 
-  // ===== STEP 7: Initialize Automation System =====
-  // Starts AutoPilot monitoring intervals for auto-rebuy, auto-depart, etc.
-  initAutomation();
+  // ===== STEP 7: Automation System =====
+  // Moved to backend: server/autopilot.js + server/scheduler.js
+  // Backend autopilot initialized in app.js via scheduler.initSchedulers()
 
   // ===== STEP 8: Update Page Title =====
   // Shows "AutoPilot" indicator in title if any automation features enabled
   updatePageTitle(settings);
 
-  // ===== STEP 9: Start Auto-Refresh Intervals =====
-  // Randomized intervals prevent server-side bot detection based on perfectly
-  // timed API requests. Each interval adds random milliseconds to base interval.
+  // ===== STEP 9: WebSocket-Only Updates (NO POLLING) =====
+  //
+  // IMPORTANT: ALL data updates come exclusively from backend via WebSocket:
+  // - WebSocket connection is maintained and reconnects automatically on disconnect
+  // - Backend pushes all updates at configured intervals (25s for chat, 60s for badges)
+  // - NO frontend polling needed - reduces API load and prevents duplicate calls
+  //
+  // WebSocket Events:
+  // - chat_update: Alliance chat messages (25s interval)
+  // - vessel_count_update: Vessel badges (60s interval)
+  // - repair_count_update: Repair badge (60s interval)
+  // - campaign_status_update: Campaigns badge (60s interval)
+  // - unread_messages_update: Messages badge (10s interval)
+  // - bunker_update: Bunker status (60s interval)
+  // - coop_targets_update: Coop badge (60s interval)
+  //
+  // Frontend only loads initial data on page load, then receives all updates via WebSocket.
+  // This eliminates duplicate API calls (frontend + backend both polling same endpoints).
 
-  // Refresh alliance chat messages every 25-27 seconds
-  setInterval(() => loadMessages(chatFeed), 25000 + Math.random() * 2000);
+  // ===== STEP 10: Page Visibility API =====
+  // Refresh chat messages when page becomes visible again.
+  // Badge data comes from WebSocket which maintains connection automatically.
+  // Debounce mechanism to prevent duplicate refreshes
+  let refreshInProgress = false;
+  let lastRefreshTime = 0;
+  const REFRESH_COOLDOWN = 1000; // 1 second cooldown
 
-  // Refresh unread message badge every 30-35 seconds
-  setInterval(updateUnreadBadge, 30000 + Math.random() * 5000);
+  /**
+   * Refreshes chat messages with cooldown protection
+   * @async
+   * @param {string} source - Trigger source for logging
+   * @returns {Promise<void>}
+   */
+  const refreshChatData = async (source) => {
+    const now = Date.now();
 
-  // Refresh vessel count every 60-70 seconds
-  setInterval(updateVesselCount, 60000 + Math.random() * 10000);
+    // Skip if refresh is already in progress or within cooldown
+    if (refreshInProgress || (now - lastRefreshTime) < REFRESH_COOLDOWN) {
+      if (DEBUG_MODE) {
+        console.log(`[${source}] Skipping refresh (cooldown or in progress)`);
+      }
+      return;
+    }
 
-  // Refresh repair count every 60-70 seconds
-  setInterval(() => updateRepairCount(settings), 60000 + Math.random() * 10000);
+    refreshInProgress = true;
+    lastRefreshTime = now;
+    if (DEBUG_MODE) {
+      console.log(`[${source}] Refreshing chat messages`);
+    }
 
-  // Refresh bunker prices every 30 minutes + 1 minute random (prices change every 30min)
-  setInterval(() => updateBunkerStatus(settings), (30 * 60 * 1000) + (Math.random() * 60 * 1000));
+    try {
+      await loadMessages(chatFeed);
+      if (DEBUG_MODE) {
+        console.log(`[${source}] Chat messages refreshed`);
+      }
+    } catch (error) {
+      console.error(`[${source}] Error refreshing chat:`, error);
+    } finally {
+      refreshInProgress = false;
+    }
+  };
 
-  // Refresh campaign status every 60-70 seconds
-  setInterval(updateCampaignsStatus, 60000 + Math.random() * 10000);
+  document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden) {
+      await refreshChatData('Visibility');
+    }
+  });
+
+  // ===== STEP 11: Focus API (additional insurance for PC browsers) =====
+  // Some PC browsers don't trigger visibilitychange reliably, so we also
+  // listen to window focus events for extra coverage.
+  window.addEventListener('focus', async () => {
+    await refreshChatData('Focus');
+  });
 });

@@ -1,0 +1,220 @@
+/**
+ * @fileoverview Event Information Module
+ *
+ * Displays complete event information in a modal window.
+ * Shows all event details including ports, discounts, timing, and demand multipliers.
+ *
+ * @module event-info
+ */
+
+let currentEventData = null;
+
+/**
+ * Updates stored event data
+ * @param {Object|null} eventData - Complete event object from /game/index
+ */
+export function updateEventData(eventData) {
+    currentEventData = eventData;
+
+    // Get banner container
+    const container = document.getElementById('eventBannerContainer');
+
+    if (!container) {
+        console.warn('[Event] Event banner container not found');
+        return;
+    }
+
+    // Only create banner if we have event data AND a valid, non-empty event name
+    if (eventData && eventData.name && eventData.name.trim() !== '') {
+        // Format event name (replace underscores, capitalize)
+        const formattedName = eventData.name
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+        // Create banner dynamically
+        container.innerHTML = `
+            <button id="eventBannerBtn" class="event-banner-btn">
+                <div class="event-banner-content">
+                    <span class="event-banner-label">Event</span>
+                    <span id="eventBannerText" class="event-banner-name">${formattedName}</span>
+                </div>
+            </button>
+        `;
+
+        // Attach click handler to newly created banner
+        const banner = document.getElementById('eventBannerBtn');
+        if (banner) {
+            banner.addEventListener('click', openEventModal);
+        }
+    } else {
+        // Remove banner if no event or no event name
+        container.innerHTML = '';
+    }
+}
+
+/**
+ * Opens the event information modal
+ */
+export function openEventModal() {
+    const overlay = document.getElementById('eventOverlay');
+    const content = document.getElementById('eventInfoContent');
+
+    if (!overlay || !content) return;
+
+    overlay.classList.remove('d-none');
+    overlay.classList.add('d-flex');
+
+    if (!currentEventData) {
+        content.innerHTML = '<p style="text-align: center; color: #999;">No active event</p>';
+        return;
+    }
+
+    // Parse ports from JSON string
+    let ports = [];
+    try {
+        ports = JSON.parse(currentEventData.ports || '[]');
+    } catch (e) {
+        console.error('[Event] Failed to parse ports:', e);
+    }
+
+    // Capitalize port names
+    const capitalizedPorts = ports.map(port => {
+        return port.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    });
+
+    // Format time remaining as timer
+    const endsIn = currentEventData.ends_in || 0;
+    const days = Math.floor(endsIn / 86400);
+    const hours = Math.floor((endsIn % 86400) / 3600);
+    const minutes = Math.floor((endsIn % 3600) / 60);
+    const seconds = endsIn % 60;
+    const timeRemaining = `${days} (d) ${hours} (h) ${minutes} (m) ${seconds} (s)`;
+
+    // Format dates
+    const startDate = new Date(currentEventData.time_start * 1000).toLocaleString('de-DE');
+    const endDate = new Date(currentEventData.time_end * 1000).toLocaleString('de-DE');
+
+    // Format name and type (replace underscores, capitalize)
+    const formatName = (str) => {
+        return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
+    // Capitalize first letter
+    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+    // Build HTML - single content area with styled sections
+    let html = `
+        <div class="event-info-container">
+            <h3 class="event-info-title"><strong>${formatName(currentEventData.name || 'Active Event')}</strong></h3>
+
+            <div class="event-info-grid">
+                <span class="event-info-label">Type:</span>
+                <span class="event-info-value">${formatName(currentEventData.type || 'N/A')}</span>
+
+                <span class="event-info-label">Discount Type:</span>
+                <span class="event-info-value-highlight">${capitalize(currentEventData.discount_type || 'N/A')}</span>
+
+                <span class="event-info-label">Discount Amount:</span>
+                <span class="event-info-value-highlight">${currentEventData.discount_percentage || 0}%</span>
+
+                <span class="event-info-label">Demand Type:</span>
+                <span class="event-info-value">${capitalize(currentEventData.capacity_type || 'N/A')}</span>
+
+                <span class="event-info-label">Daily Demand Multiplier:</span>
+                <span class="event-info-value-highlight">${currentEventData.daily_demand_multiplier || 1}x</span>
+
+                <span class="event-info-label">Started:</span>
+                <span class="event-info-value">${startDate}</span>
+
+                <span class="event-info-label">Ends:</span>
+                <span class="event-info-value">${endDate}</span>
+
+                <span class="event-info-label">Ends In:</span>
+                <span id="eventTimer" class="event-timer">${timeRemaining}</span>
+            </div>
+        </div>
+
+        <div class="event-ports-container">
+            <h4 class="event-ports-title">Participating Ports (${ports.length})</h4>
+            <div class="event-ports-grid">
+    `;
+
+    capitalizedPorts.forEach((port, index) => {
+        // If this is the last port and the total count is odd, span both columns
+        const isLastAndOdd = (index === capitalizedPorts.length - 1) && (capitalizedPorts.length % 2 !== 0);
+        const fullClass = isLastAndOdd ? ' event-port-item-full' : '';
+        html += `<div class="event-port-item${fullClass}">${port}</div>`;
+    });
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    content.innerHTML = html;
+
+    // Start countdown timer
+    startEventTimer(currentEventData.ends_in);
+}
+
+/**
+ * Starts the event countdown timer
+ * @param {number} initialSeconds - Initial seconds remaining
+ */
+function startEventTimer(initialSeconds) {
+    let remainingSeconds = initialSeconds;
+
+    const updateTimer = () => {
+        const days = Math.floor(remainingSeconds / 86400);
+        const hours = Math.floor((remainingSeconds % 86400) / 3600);
+        const minutes = Math.floor((remainingSeconds % 3600) / 60);
+        const seconds = remainingSeconds % 60;
+
+        const timerElement = document.getElementById('eventTimer');
+        if (timerElement) {
+            timerElement.textContent = `${days} (d) ${hours} (h) ${minutes} (m) ${seconds} (s)`;
+        }
+
+        remainingSeconds--;
+
+        if (remainingSeconds < 0) {
+            clearInterval(timerInterval);
+            if (timerElement) {
+                timerElement.textContent = 'Event Ended';
+            }
+        }
+    };
+
+    // Clear any existing timer
+    if (window.eventTimerInterval) {
+        clearInterval(window.eventTimerInterval);
+    }
+
+    // Update immediately and then every second
+    updateTimer();
+    window.eventTimerInterval = setInterval(updateTimer, 1000);
+}
+
+/**
+ * Initialize event info module
+ */
+export function initEventInfo() {
+    // Banner click handler is now attached dynamically when banner is created
+    // (see updateEventData function)
+
+    // Close button
+    const closeBtn = document.getElementById('closeEventBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            const overlay = document.getElementById('eventOverlay');
+            overlay.classList.add('d-none');
+            overlay.classList.remove('d-flex');
+        });
+    }
+
+    // Make openEventModal available globally
+    window.openEventModal = openEventModal;
+
+    console.log('[Event Info] Module initialized');
+}

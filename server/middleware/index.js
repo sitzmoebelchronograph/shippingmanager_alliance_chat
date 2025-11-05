@@ -28,7 +28,7 @@
  * Security Posture:
  * - Helmet disabled CSP to allow network access (192.168.x.x)
  * - Rate limiting prevents API abuse and DoS attacks
- * - 1KB body limit prevents large payload attacks
+ * - 50KB body limit allows history storage while preventing excessive payloads
  * - CORS headers disabled for cross-origin access from LAN devices
  *
  * @requires express - Web framework and middleware
@@ -41,6 +41,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 const config = require('../config');
 
 /**
@@ -50,13 +51,16 @@ const config = require('../config');
  * Order matters - security headers must be first, body parsing before routes, etc.
  *
  * Helmet Configuration:
- * - contentSecurityPolicy: false - Allows accessing server via network IPs
+ * - contentSecurityPolicy: false - Allows accessing server via network IPs (192.168.x.x)
+ * - strictTransportSecurity: false - Self-signed certs require manual certificate warning bypass;
+ *   HSTS would prevent users from accessing /ca-cert.pem to install the CA certificate,
+ *   creating a Catch-22 where users cannot bypass warnings to get the trusted cert
  * - CORS headers disabled - Enables access from other devices on LAN
- * - This is necessary for 192.168.x.x access but reduces some security protections
- * - Trade-off accepted for LAN accessibility requirement
+ * - This is necessary for LAN accessibility but reduces some security protections
+ * - Trade-off accepted for single-user LAN deployment model
  *
  * Body Parser Configuration:
- * - Limit: 1KB - Chat messages are small, prevents large payload attacks
+ * - Limit: 50KB - Allows for hijacking negotiation history storage
  * - JSON only - No form data or multipart parsing needed
  * - Auto-rejects requests with Content-Type mismatch
  *
@@ -101,14 +105,20 @@ function setupMiddleware(app) {
     crossOriginOpenerPolicy: false,
     crossOriginResourcePolicy: false,
     crossOriginEmbedderPolicy: false,
-    originAgentCluster: false
+    originAgentCluster: false,
+    strictTransportSecurity: false  // Self-signed certs require manual certificate warning bypass
   }));
 
   // Body parser middleware
-  app.use(express.json({ limit: '1kb' }));
+  // Increased limit from 1kb to 50kb for hijacking history storage
+  app.use(express.json({ limit: '50kb' }));
 
   // Static files
-  app.use(express.static('public'));
+  // When running as .exe (pkg), use __dirname which points to snapshot directory
+  // When running as .js (dev), __dirname points to server/middleware, so go up two levels
+  const baseDir = process.pkg ? path.join(__dirname, '..', '..') : path.join(__dirname, '..', '..');
+  app.use(express.static(path.join(baseDir, 'public')));
+  app.use('/data', express.static(path.join(baseDir, 'data')));
 
   // Global rate limiter
   const limiter = rateLimit(config.RATE_LIMIT);

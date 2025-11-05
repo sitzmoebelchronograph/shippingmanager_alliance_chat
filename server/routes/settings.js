@@ -68,16 +68,11 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
-const path = require('path');
-const { broadcast } = require('../websocket');
-
-/**
- * Path to persistent settings storage file.
- * Located in project root: settings.json
- *
- * @constant {string}
- */
-const SETTINGS_FILE = path.join(__dirname, '../../settings.json');
+const { broadcast, broadcastToUser } = require('../websocket');
+const { getSettingsFilePath, validateSettings } = require('../settings-schema');
+const { getUserId } = require('../utils/api');
+const logger = require('../utils/logger');
+const { isDebugMode } = logger;
 
 /**
  * GET /api/settings - Retrieves current application settings from persistent storage.
@@ -139,30 +134,32 @@ const SETTINGS_FILE = path.join(__dirname, '../../settings.json');
  */
 router.get('/settings', async (req, res) => {
   try {
-    const data = await fs.readFile(SETTINGS_FILE, 'utf8');
+    const userId = getUserId();
+    if (!userId) {
+      return res.status(401).json({ error: 'User not logged in' });
+    }
+
+    const settingsFile = getSettingsFilePath(userId);
+    const data = await fs.readFile(settingsFile, 'utf8');
     const settings = JSON.parse(data);
-    res.json(settings);
+
+    // Validate settings and return (include debug mode from environment and userId for cache key)
+    const { validated } = validateSettings(settings);
+    validated.debugMode = isDebugMode();
+    validated.userId = userId;  // Include userId for per-user localStorage cache
+    res.json(validated);
   } catch (error) {
-    console.error('Error reading settings:', error);
-    // Return default settings if file doesn't exist or is corrupted
-    res.json({
-      fuelThreshold: 400,
-      co2Threshold: 7,
-      maintenanceThreshold: 10,
-      autoRebuyFuel: false,
-      autoRebuyFuelUseAlert: true,
-      autoRebuyFuelThreshold: 400,
-      autoRebuyCO2: false,
-      autoRebuyCO2UseAlert: true,
-      autoRebuyCO2Threshold: 7,
-      autoDepartAll: false,
-      autoBulkRepair: false,
-      autoRepairInterval: '2-3',
-      autoCampaignRenewal: false,
-      enableDesktopNotifications: true,
-      autoDepartUseRouteDefaults: true,
-      minVesselUtilization: 45,
-      autoVesselSpeed: 50
+    logger.error('═══════════════════════════════════════════════════════════');
+    logger.error('FATAL ERROR: Cannot load settings');
+    logger.error('═══════════════════════════════════════════════════════════');
+    logger.error('Error:', error.message);
+    logger.error('');
+    logger.error('Settings should have been initialized on server startup.');
+    logger.error('If you see this error, something is seriously wrong.');
+    logger.error('═══════════════════════════════════════════════════════════');
+    res.status(500).json({
+      error: 'FATAL: Settings could not be loaded',
+      message: 'Server configuration error - please contact administrator'
     });
   }
 });
@@ -238,47 +235,127 @@ router.get('/settings', async (req, res) => {
  */
 router.post('/settings', async (req, res) => {
   try {
+    const userId = getUserId();
+    if (!userId) {
+      return res.status(401).json({ error: 'User not logged in' });
+    }
+
     const settings = req.body;
 
-    // Validate settings structure
-    const validSettings = {
-      fuelThreshold: parseInt(settings.fuelThreshold) || 400,
-      co2Threshold: parseInt(settings.co2Threshold) || 7,
-      maintenanceThreshold: parseInt(settings.maintenanceThreshold) || 10,
-      autoRebuyFuel: !!settings.autoRebuyFuel,
-      autoRebuyFuelUseAlert: settings.autoRebuyFuelUseAlert !== undefined ? !!settings.autoRebuyFuelUseAlert : true,
-      autoRebuyFuelThreshold: parseInt(settings.autoRebuyFuelThreshold) || 400,
-      autoRebuyCO2: !!settings.autoRebuyCO2,
-      autoRebuyCO2UseAlert: settings.autoRebuyCO2UseAlert !== undefined ? !!settings.autoRebuyCO2UseAlert : true,
-      autoRebuyCO2Threshold: parseInt(settings.autoRebuyCO2Threshold) || 7,
-      autoDepartAll: !!settings.autoDepartAll,
-      autoBulkRepair: !!settings.autoBulkRepair,
-      autoRepairInterval: settings.autoRepairInterval || '2-3',
-      autoCampaignRenewal: !!settings.autoCampaignRenewal,
-      enableDesktopNotifications: settings.enableDesktopNotifications !== undefined ? !!settings.enableDesktopNotifications : true,
-      autoDepartUseRouteDefaults: settings.autoDepartUseRouteDefaults !== undefined ? !!settings.autoDepartUseRouteDefaults : true,
-      minVesselUtilization: parseInt(settings.minVesselUtilization) || 45,
-      autoVesselSpeed: parseInt(settings.autoVesselSpeed) || 50
-    };
+    // Validate and coerce all settings values
+    let validSettings;
+    try {
+      const result = validateSettings(settings);
+      validSettings = result.validated;
+    } catch (validationError) {
+      logger.error('[Settings] Validation failed:', validationError.message);
+      return res.status(400).json({
+        error: 'Invalid settings',
+        message: validationError.message
+      });
+    }
 
-    await fs.writeFile(SETTINGS_FILE, JSON.stringify(validSettings, null, 2), 'utf8');
+    const settingsFile = getSettingsFilePath(userId);
+    await fs.writeFile(settingsFile, JSON.stringify(validSettings, null, 2), 'utf8');
 
-    // Broadcast settings update to all connected clients
-    broadcast('settings_update', validSettings);
+    // Update state management with new settings
+    try {
+      const state = require('../state');
+      state.updateSettings(userId, validSettings);
+    } catch (error) {
+      logger.error('[Settings] Failed to update state:', error);
+    }
 
-    // Restart backend automation if repair settings changed
-    if (settings.autoBulkRepair !== undefined || settings.autoRepairInterval !== undefined) {
-      try {
-        const backendAutomation = require('../automation');
-        backendAutomation.restartAutoRepair();
-      } catch (error) {
-        console.error('[Settings] Failed to restart backend automation:', error);
+    // Broadcast settings update to this user's connected clients
+    broadcastToUser(userId, 'settings_update', validSettings);
+
+    // ALWAYS update schedulers when settings are saved (not just when changed)
+    // This ensures schedulers use current settings without hard-coded defaults
+    try {
+      const scheduler = require('../scheduler');
+      const chatBot = require('../chatbot');
+
+      logger.log(`[Settings] ========================================`);
+      logger.log(`[Settings] Scheduler Update Triggered`);
+      logger.log(`[Settings] Header + Autopilot Interval: ${Math.floor(validSettings.headerDataInterval / 60)}min`);
+      logger.log(`[Settings] Auto-Depart: ${validSettings.autoDepartAll ? 'ENABLED' : 'DISABLED'}`);
+      logger.log(`[Settings] Auto-Repair: ${validSettings.autoBulkRepair ? 'ENABLED' : 'DISABLED'}`);
+      logger.log(`[Settings] Auto-Campaign: ${validSettings.autoCampaignRenewal ? 'ENABLED' : 'DISABLED'}`);
+      logger.log(`[Settings] Auto-COOP: ${validSettings.autoCoopEnabled ? 'ENABLED' : 'DISABLED'}`);
+      logger.log(`[Settings] Auto-Anchor: ${validSettings.autoAnchorPointEnabled ? 'ENABLED' : 'DISABLED'}`);
+      logger.log(`[Settings] ========================================`);
+
+      // Header + Autopilot monitor now combined (eliminates duplicate /game/index calls)
+      // headerDataInterval controls both header updates AND autopilot monitor
+      // Both scheduler updates happen in the updateHeaderSchedules call below
+
+      // Handle auto-rebuy - trigger immediately when enabled or settings changed
+      const autopilot = require('../autopilot');
+      if (validSettings.autoRebuyFuel || validSettings.autoRebuyCO2) {
+        logger.log(`[Settings] Auto-Rebuy enabled - triggering immediate check`);
+        logger.log(`[Settings] Auto-Rebuy Fuel: ${validSettings.autoRebuyFuel ? 'ENABLED' : 'DISABLED'}`);
+        logger.log(`[Settings] Auto-Rebuy CO2: ${validSettings.autoRebuyCO2 ? 'ENABLED' : 'DISABLED'}`);
+
+        // Trigger auto-rebuy immediately
+        setTimeout(async () => {
+          try {
+            await autopilot.autoRebuyAll();
+            logger.log(`[Settings] Auto-Rebuy triggered successfully`);
+          } catch (error) {
+            logger.error(`[Settings] Failed to trigger auto-rebuy:`, error);
+          }
+        }, 1000); // Small delay to ensure settings are saved
       }
+
+      // Update ChatBot settings
+      try {
+        logger.log(`[Settings] ChatBot: ${validSettings.chatbotEnabled ? 'ENABLED' : 'DISABLED'}`);
+
+        // Transform settings to ChatBot format
+        const chatBotSettings = {
+          enabled: validSettings.chatbotEnabled,
+          commandPrefix: validSettings.chatbotPrefix,
+          allianceCommands: {
+            enabled: validSettings.chatbotAllianceCommandsEnabled,
+            cooldownSeconds: validSettings.chatbotCooldownSeconds || 30
+          },
+          commands: {
+            forecast: {
+              enabled: validSettings.chatbotForecastCommandEnabled,
+              responseType: 'dm',
+              adminOnly: false
+            },
+            help: {
+              enabled: validSettings.chatbotHelpCommandEnabled,
+              responseType: 'dm',
+              adminOnly: false
+            }
+          },
+          scheduledMessages: {
+            dailyForecast: {
+              enabled: validSettings.chatbotDailyForecastEnabled,
+              timeUTC: validSettings.chatbotDailyForecastTime,
+              dayOffset: 1
+            }
+          },
+          dmCommands: {
+            enabled: validSettings.chatbotDMCommandsEnabled
+          },
+          customCommands: validSettings.chatbotCustomCommands || []
+        };
+
+        await chatBot.updateSettings(chatBotSettings);
+        logger.log('[Settings] ChatBot settings updated');
+      } catch (error) {
+        logger.error('[Settings] Failed to update ChatBot:', error);
+      }
+    } catch (error) {
+      logger.error('[Settings] Failed to update schedulers:', error);
     }
 
     res.json({ success: true, settings: validSettings });
   } catch (error) {
-    console.error('Error saving settings:', error);
+    logger.error('Error saving settings:', error);
     res.status(500).json({ error: 'Failed to save settings' });
   }
 });

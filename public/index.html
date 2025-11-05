@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚓ Shipping Manager - CoPilot</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=20251031-2">
 </head>
 <body>
     <!-- Price Alerts (center, with spin animation) -->
@@ -18,17 +18,24 @@
             <div class="header-top" style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <h1>
                     <span class="header-icon" style="position: relative; display: inline-block;">
-                        ⚓
-                        <span id="ceoLevelBadge" style="position: absolute; top: -14px; right: -3px; width: 30px; height: 30px; display: none;">
-                            <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));">
-                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="0.5"/>
+                        <span id="ceoLevelBadge" style="position: relative; display: inline-block; width: 47px; height: 47px; margin-right: 2px; margin-left: -5px; vertical-align: middle; top: -3px;">
+                            <svg viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); overflow: visible;">
+                                <defs>
+                                    <clipPath id="starClip">
+                                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                                    </clipPath>
+                                </defs>
+                                <!-- Background star (empty/outline) -->
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="rgba(251, 191, 36, 0.2)" stroke="#f59e0b" stroke-width="0.5"/>
+                                <!-- XP Progress fill (grows from left to right using clip-path) -->
+                                <rect id="ceoLevelFill" x="0" y="0" width="0" height="24" fill="#fbbf24" clip-path="url(#starClip)" style="transition: width 0.3s ease;"/>
+                                <!-- Star outline on top -->
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="none" stroke="#f59e0b" stroke-width="0.5"/>
                             </svg>
-                            <span id="ceoLevelNumber" style="position: absolute; top: 72.5%; left: 50%; transform: translate(-50%, -50%); font-size: 12px; font-weight: 900; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">0</span>
+                            <span id="ceoLevelNumber" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 17px; font-weight: 900; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);"></span>
                         </span>
                     </span>
                     <span class="header-text" id="pageHeaderTitle">Shipping Manager - CoPilot</span>
-                </h1>
-                <div class="header-right">
                     <button id="notificationBtn" class="megaphone-btn">
                         <span class="megaphone-icon"></span>
                         <span class="sound-waves"></span>
@@ -47,86 +54,109 @@
                             }
                         })();
                     </script>
+                </h1>
+                <div class="header-right">
                 </div>
             </div>
-            <div class="header-info-displays" style="display: flex; align-items: center; gap: 6px; padding-left: 10px; margin-top: 8px;">
+            <div class="header-info-displays">
                 <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="color: #fbbf24; font-weight: 600; font-size: 15px;">💎</span>
-                    <span id="pointsDisplay" style="color: #fbbf24; font-weight: 600; font-size: 13px;">-</span>
+                    <span id="pointsDisplay" style="color: #fbbf24; font-weight: 600; font-size: 13px;"></span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="color: #4ade80; font-weight: 600; font-size: 15px;">💰</span>
-                    <span id="cashDisplay" style="color: #4ade80; font-weight: 600; font-size: 13px;">$-</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 2px;">
-                    <span style="font-size: 15px;">📈</span>
-                    <span id="stockDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">-</span>
-                    <span style="font-size: 13px; color: #9ca3af;">$</span>
-                    <span id="stockTrend" style="font-size: 13px;"></span>
+                    <span id="cashDisplay" style="color: #4ade80; font-weight: 600; font-size: 13px;"></span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="font-size: 15px;">⛽</span>
-                    <span id="fuelPriceDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">$-/t</span>
+                    <span id="fuelPriceDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;"></span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="font-size: 15px;">💨</span>
-                    <span id="co2PriceDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">$-/t</span>
+                    <span id="co2PriceDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;"></span>
+                </div>
+                <div id="coopContainer" class="hidden" style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 15px;">🤝</span>
+                    <span id="coopDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;"></span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 15px;">📊</span>
+                    <span id="campaignsHeaderDisplay"></span>
+                </div>
+                <div id="stockContainer" class="hidden" style="display: flex; align-items: center; gap: 2px;">
+                    <span style="font-size: 15px;">📈</span>
+                    <span id="stockDisplay" style="font-weight: 500; font-size: 13px;"></span>
+                    <span id="stockTrend" style="font-size: 13px;"></span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 2px;">
                     <span style="font-size: 15px;">⚓</span>
-                    <span id="anchorSlotsDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">-/-</span>
+                    <span id="anchorSlotsDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;"></span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 2px;">
-                    <span style="font-size: 15px;">🤝</span>
-                    <span id="coopDisplay" style="font-weight: 500; font-size: 13px; color: #9ca3af;">-/-</span>
+                <div id="hijackedVesselsDisplay">
+                    <span id="hijackedIcon">☠️</span>
+                    <span id="hijackedCount"></span>
                 </div>
+                <div id="eventBannerContainer"></div>
             </div>
         </div>
 
         <div class="action-bar" style="justify-content: space-between;">
             <div style="display: flex; gap: 10px;">
-                <button id="fuelBtn" class="action-btn bunker-btn" title="Buy max fuel">
-                    ⛽ <span id="fuelDisplay">-/-</span>
+                <button id="fuelBtn" class="action-btn bunker-btn" title="Buy max fuel" style="position: relative; overflow: hidden;">
+                    <div id="fuelFill" style="position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: transparent; transition: width 0.3s ease, background 0.3s ease; pointer-events: none;"></div>
+                    <span style="position: relative; z-index: 1;">⛽ <span id="fuelDisplay"></span></span>
                 </button>
-                <button id="co2Btn" class="action-btn bunker-btn" title="Buy max CO2">
-                    💨 <span id="co2Display">-/-</span>
+                <button id="co2Btn" class="action-btn bunker-btn" title="Buy max CO2" style="position: relative; overflow: hidden;">
+                    <div id="co2Fill" style="position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: transparent; transition: width 0.3s ease, background 0.3s ease; pointer-events: none;"></div>
+                    <span style="position: relative; z-index: 1;">💨 <span id="co2Display"></span></span>
                 </button>
             </div>
             <div class="action-buttons-group">
                 <button id="departAllBtn" class="action-btn" disabled title="Depart all vessels from harbor">
                     🚢
-                    <span id="vesselCount" class="action-badge" style="display: none;">0</span>
+                    <span id="vesselCount" class="action-badge hidden"></span>
                 </button>
-                <button id="anchorBtn" class="action-btn" disabled title="Vessels at anchor">
+                <button id="anchorBtn" class="action-btn" title="Purchase anchor points">
                     ⚓
-                    <span id="anchorCount" class="action-badge" style="display: none;">0</span>
+                    <span id="anchorCount" class="action-badge hidden"></span>
                 </button>
                 <button id="repairAllBtn" class="action-btn" disabled title="Repair all vessels with high wear">
                     🔧
-                    <span id="repairCount" class="action-badge" style="display: none;">0</span>
-                </button>
-                <button id="campaignsBtn" class="action-btn" title="Marketing campaigns status">
-                    📊
-                    <span id="campaignsCount" class="action-badge" style="display: none;">0</span>
-                </button>
-                <button id="allChatsBtn" class="action-btn" title="View all private messages">
-                    📬
-                    <span id="unreadBadge" class="action-badge" style="display: none; background: #ef4444;">0</span>
+                    <span id="repairCount" class="action-badge hidden"></span>
                 </button>
                 <button id="buyVesselsBtn" class="action-btn" title="Buy vessels">
                     ⛴️
                     <span style="position: absolute; bottom: -6px; left: 0px; color: #10b981; font-size: 20px; font-weight: bold; line-height: 1;">+</span>
-                    <span id="pendingVesselsBadge" class="action-badge" style="display: none; background: #f97316;">0</span>
+                    <span id="pendingVesselsBadge" class="action-badge badge-orange-bg hidden"></span>
                 </button>
-                <button id="coopBtn" class="action-btn" title="Alliance Cooperation">
+                <button id="sellVesselsBtn" class="action-btn" title="Sell vessels">
+                    ⛴️
+                    <span style="position: absolute; bottom: -6px; left: 0px; color: #ef4444; font-size: 20px; font-weight: bold; line-height: 1;">-</span>
+                </button>
+                <button id="allChatsBtn" class="action-btn" title="View all private messages">
+                    📬
+                    <span id="unreadBadge" class="action-badge badge-red-bg hidden"></span>
+                </button>
+                <button id="hijackingBtn" class="action-btn" title="Blackbeard's Phone Booth">
+                    ☠️
+                    <span id="hijackingBadge" class="action-badge badge-red-bg hidden"></span>
+                </button>
+                <button id="campaignsBtn" class="action-btn" title="Marketing campaigns status">
+                    📊
+                    <span id="campaignsCount" class="action-badge hidden"></span>
+                </button>
+                <button id="coopBtn" class="action-btn" title="Alliance Cooperation" style="display: none;">
                     🤝
-                    <span id="coopBadge" class="action-badge" style="display: none;">-/-</span>
+                    <span id="coopBadge" class="action-badge hidden"></span>
                 </button>
                 <button id="contactListBtn" class="action-btn" title="View contact list">
                     👥
                 </button>
                 <button id="settingsBtn" class="action-btn" title="Settings">
                     ⚙️
+                </button>
+                <button id="forecastBtn" class="action-btn" title="Forecast Calendar">
+                    📅
                 </button>
                 <button id="docsBtn" class="action-btn" title="Documentation">
                     📖
@@ -155,10 +185,10 @@
         </div>
     </div>
     
-    <div id="allChatsOverlay" class="overlay" style="display:none;">
-        <div class="messenger-window">
+    <div id="allChatsOverlay" class="overlay hidden">
+        <div class="messenger-window messenger-window-narrow">
             <div class="messenger-header">
-                <h2>All Private Conversations</h2>
+                <h2>📬 All Private Conversations</h2>
                 <button id="closeAllChatsBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
             </div>
             <div class="messenger-feed" id="allChatsList">
@@ -166,8 +196,8 @@
         </div>
     </div>
 
-    <div id="contactListOverlay" class="overlay" style="display:none;">
-        <div class="messenger-window">
+    <div id="contactListOverlay" class="overlay hidden">
+        <div class="messenger-window messenger-window-narrow">
             <div class="messenger-header">
                 <h2>👥 Contact List</h2>
                 <button id="closeContactListBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
@@ -177,11 +207,11 @@
         </div>
     </div>
 
-    <div id="chatSelectionOverlay" class="overlay" style="display:none;">
-        <div class="messenger-window">
+    <div id="chatSelectionOverlay" class="overlay hidden">
+        <div class="messenger-window messenger-window-narrow">
             <div class="messenger-header">
-                <button id="backToAllChatsBtn" class="close-btn" style="margin-right: 10px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">←</span></button>
                 <h2 id="chatSelectionTitle">Select Conversation</h2>
+                <button id="backToAllChatsBtn" class="close-btn" style="margin-left: auto;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block; transform: translateY(-2px);">←</span></button>
                 <button id="closeChatSelectionBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
             </div>
             <div class="messenger-feed" id="chatSelectionList">
@@ -189,18 +219,18 @@
         </div>
     </div>
 
-    <div id="messengerOverlay" class="overlay" style="display:none;">
+    <div id="messengerOverlay" class="overlay hidden">
         <div class="messenger-window">
             <div class="messenger-header">
-                <button id="backToSelectionBtn" class="close-btn" style="margin-right: 10px;" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">←</span></button>
                 <h2 id="messengerTitle">Private Chat with ...</h2>
-                <button id="deleteChatBtn" class="close-btn" style="color: #ef4444; margin-right: 10px;" onmouseover="this.querySelector('span').style.animation='shake-trash-simple 0.5s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">🗑️</span></button>
+                <button id="deleteChatBtn" class="close-btn" style="color: #ef4444; margin-left: auto;" onmouseover="this.querySelector('span').style.animation='shake-trash-simple 0.5s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">🗑️</span></button>
+                <button id="backToSelectionBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block; transform: translateY(-2px);">←</span></button>
                 <button id="closeMessengerBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
             </div>
             <div class="messenger-feed" id="messengerFeed">
             </div>
             <div class="messenger-input" style="flex-direction: column; gap: 10px;">
-                <div id="subjectInputWrapper" style="display: none;">
+                <div id="subjectInputWrapper" class="hidden">
                     <input
                         type="text"
                         id="subjectInput"
@@ -222,22 +252,95 @@
         </div>
     </div>
 
-    <div id="campaignsOverlay" class="overlay" style="display:none;">
+    <div id="hijackingOverlay" class="overlay hidden">
+        <div class="messenger-window messenger-window-narrow">
+            <div class="messenger-header">
+                <h2>☠️ Blackbeard's Phone Booth</h2>
+                <button id="closeHijackingBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
+            </div>
+            <div class="messenger-feed" id="hijackingFeed">
+            </div>
+        </div>
+    </div>
+
+    <div id="forecastOverlay" class="overlay hidden">
+        <div class="forecast-window">
+            <div class="messenger-header">
+                <h2>📅 Forecast Calendar</h2>
+                <div id="forecastEventBadge" class="hidden">
+                    <span id="forecastEventText"></span>
+                </div>
+                <button id="closeForecastBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
+            </div>
+            <div id="calendarBook">
+                <!-- Calendar content will be generated by forecast-calendar.js -->
+            </div>
+        </div>
+    </div>
+
+    <div id="eventOverlay" class="overlay hidden">
+        <div class="messenger-window messenger-window-narrow">
+            <div class="messenger-header">
+                <h2>🎉 Event Information</h2>
+                <button id="closeEventBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
+            </div>
+            <div class="messenger-feed" id="eventInfoContent" style="padding: 20px;">
+                <!-- Event info will be populated by event-info.js -->
+            </div>
+        </div>
+    </div>
+
+    <div id="anchorPurchaseOverlay" class="overlay hidden">
+        <div class="messenger-window messenger-window-narrow">
+            <div class="messenger-header">
+                <h2>⚓ Purchase Anchor Points</h2>
+                <button id="closeAnchorPurchaseBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
+            </div>
+            <div id="anchorPurchaseFeed" style="padding: 20px; position: relative;">
+                <!-- Content will be generated by anchor-purchase.js -->
+            </div>
+        </div>
+    </div>
+
+    <div id="sellVesselsOverlay" class="overlay hidden">
         <div class="messenger-window">
+            <div class="messenger-header">
+                <h2>⛴️ Sell Vessels</h2>
+                <button id="closeSellVesselsBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
+            </div>
+            <div class="vessel-header-controls">
+                <button id="sellFilterContainerBtn" class="vessel-filter-btn active" data-type="container">
+                    📦 Container
+                </button>
+                <button id="sellFilterTankerBtn" class="vessel-filter-btn" data-type="tanker">
+                    🛢️ Tanker
+                </button>
+                <button id="sellCartBtn" class="vessel-filter-btn hidden">
+                    💵 Cart (<span id="sellCartCount"></span>)
+                </button>
+            </div>
+            <div class="messenger-feed" id="sellVesselCatalogFeed">
+                <!-- Vessel list will be generated by vessel-selling.js -->
+            </div>
+        </div>
+    </div>
+
+    <div id="campaignsOverlay" class="overlay hidden">
+        <div class="messenger-window messenger-window-narrow">
             <div class="messenger-header">
                 <h2>📊 Marketing Campaigns</h2>
                 <button id="closeCampaignsBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
             </div>
-            <div class="messenger-feed" style="padding: 20px; overflow-y: auto;">
-                <div id="campaignsContent" style="max-width: 600px; margin: 0 auto;">
+            <div class="messenger-feed messenger-feed-compact">
+                <div id="campaignsContent">
                     <!-- Content will be populated by JavaScript -->
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="coopOverlay" class="overlay" style="display:none;">
-        <div class="messenger-window">
+    <div id="coopOverlay" class="overlay hidden">
+        <div class="messenger-window messenger-window-narrow">
             <div class="messenger-header">
                 <h2>🤝 Alliance Cooperation</h2>
                 <button id="closeCoopBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
@@ -250,22 +353,27 @@
         </div>
     </div>
 
-    <div id="settingsOverlay" class="overlay" style="display:none;">
+    <div id="settingsOverlay" class="overlay hidden">
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2>⚙️ Settings</h2>
                 <button id="closeSettingsBtn" class="close-btn" onmouseover="this.querySelector('span').style.animation='pulse-arrow 0.6s ease-in-out infinite'" onmouseout="this.querySelector('span').style.animation='none'"><span style="display: inline-block;">×</span></button>
             </div>
-            <div class="messenger-feed" style="padding: 20px; overflow-y: auto;">
-                <div style="max-width: 500px; margin: 0 auto;">
+            <div class="messenger-feed" style="padding: 10px; overflow-y: auto;">
+                <div style="width: 100%; margin: 0 auto;">
                     <!-- Price Alerts Section -->
-                    <div style="margin-bottom: 25px;">
-                        <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #e0e0e0;">Price Alerts</h3>
-                        <p style="margin: 0 0 15px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
-                            Get browser notifications when prices drop below these thresholds
-                        </p>
+                    <div style="margin-bottom: 25px; padding: 20px; background: rgba(31, 41, 55, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;">
+                        <h3 onclick="toggleSection('priceAlertsContent')" style="margin: 0 0 10px 0; font-size: 16px; color: #e0e0e0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                            <span>📢 Price Alerts</span>
+                            <span id="priceAlertsToggle" style="font-size: 14px; color: #9ca3af; font-weight: normal;">➕</span>
+                        </h3>
+                        <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 10px 0 15px 0;"></div>
+                        <div id="priceAlertsContent" class="hidden" data-display-mode="block">
+                            <p style="margin: 0 0 15px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
+                                Get browser notifications when prices drop below these thresholds
+                            </p>
 
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
                             <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
                                 <label for="fuelThreshold" style="margin: 0; color: #e0e0e0; font-size: 14px;">
                                     ⛽ Fuel Alert Threshold ($/ton)
@@ -275,7 +383,7 @@
                                     id="fuelThreshold"
                                     value="400"
                                     min="1"
-                                    max="9999"
+                                   
                                     style="width: 100px; padding: 6px 10px; background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; font-size: 14px;"
                                 />
                             </div>
@@ -289,7 +397,7 @@
                                     id="co2Threshold"
                                     value="7"
                                     min="1"
-                                    max="9999"
+                                   
                                     style="width: 100px; padding: 6px 10px; background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; font-size: 14px;"
                                 />
                             </div>
@@ -308,195 +416,534 @@
                             font-size: 14px;
                             transition: all 0.2s;
                         " onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">
-                            🔔 Test Browser Notification
+                            Test notification
                         </button>
+                        </div>
+                    </div>
+
+                    <!-- General Settings Section -->
+                    <div style="margin-bottom: 25px; padding: 20px; background: rgba(31, 41, 55, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;">
+                        <h3 onclick="toggleSection('generalSettingsContent')" style="margin: 0 0 10px 0; font-size: 16px; color: #e0e0e0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                            <span>⚙️ General Settings</span>
+                            <span id="generalSettingsToggle" style="font-size: 14px; color: #9ca3af; font-weight: normal;">➕</span>
+                        </h3>
+                        <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 10px 0 15px 0;"></div>
+                        <div id="generalSettingsContent" class="hidden" style="flex-direction: column; gap: 10px;" data-display-mode="flex">
+                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="enableDesktopNotifications" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;" checked>
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🔔 Enable Desktop Notifications</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px;">Show browser notifications for alerts and AutoPilot actions (requires browser permission)</p>
+                            </div>
+                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="enableInboxNotifications" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">📬 Enable Inbox Notifications</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px;">Show notifications for new private messages</p>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label for="maintenanceThreshold" style="margin: 0; color: #e0e0e0; font-size: 14px;">🔧 Wear Threshold</label>
+                                <select id="maintenanceThreshold" style="width: 100px; padding: 6px 10px; background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; font-size: 14px; cursor: pointer;">
+                                    <option value="2">2%</option>
+                                    <option value="3">3%</option>
+                                    <option value="4">4%</option>
+                                    <option value="5">5%</option>
+                                    <option value="10">10%</option>
+                                    <option value="15">15%</option>
+                                    <option value="20">20%</option>
+                                    <option value="25">25%</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Auto-Pilot Settings Section -->
                     <div style="margin-bottom: 25px; padding: 20px; background: rgba(16, 185, 129, 0.05); border: 2px solid rgba(16, 185, 129, 0.3); border-radius: 12px;">
-                        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #10b981; font-weight: 700;">🤖 Auto-Pilot - Settings</h3>
-                        <p style="margin: 0 0 20px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
-                            Enable automated game management. When ANY function is active, page title changes to <strong>"AutoPilot"</strong> mode.
-                        </p>
-
-                        <!-- Desktop Notifications Master Toggle -->
-                        <div style="padding: 14px; background: rgba(59, 130, 246, 0.15); border: 2px solid rgba(59, 130, 246, 0.4); border-radius: 8px; margin-bottom: 16px;">
-                            <label style="display: flex; align-items: center; cursor: pointer;">
-                                <input type="checkbox" id="enableDesktopNotifications" style="width: 20px; height: 20px; margin-right: 12px; cursor: pointer;" checked>
-                                <span style="color: #60a5fa; font-size: 15px; font-weight: 600;">🔔 Enable Desktop Notifications</span>
-                            </label>
-                            <p style="margin: 8px 0 0 32px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
-                                Show browser notifications for alerts and AutoPilot actions (requires browser permission)
+                        <h3 onclick="toggleSection('autopilotContent')" style="margin: 0 0 10px 0; font-size: 18px; color: #10b981; font-weight: 700; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                            <span>🤖 Auto-Pilot - Settings</span>
+                            <span id="autopilotToggle" style="font-size: 16px; color: #9ca3af; font-weight: normal;">➕</span>
+                        </h3>
+                        <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 10px 0 15px 0;"></div>
+                        <div id="autopilotContent" class="hidden" data-display-mode="block">
+                            <p style="margin: 0 0 20px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
+                                Enable automated game management. When ANY function is active, page title changes to <strong>"AutoPilot"</strong> mode.
                             </p>
+
+                            <!-- General Autopilot Settings -->
+                        <div style="margin-bottom: 16px; padding: 16px; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px;">
+                            <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #60a5fa; font-weight: 600;">⚙️ General Settings</h4>
+
+                            <!-- AutoPilot Notifications Toggle -->
+                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoPilotNotifications" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;" checked>
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🔔 AutoPilot Notifications</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px;">Master toggle for ALL autopilot notifications (in-app alerts + desktop notifications). When disabled, all autopilot notifications are suppressed regardless of individual agent settings.</p>
+                            </div>
                         </div>
 
                         <div style="display: flex; flex-direction: column; gap: 12px;">
                             <!-- Auto-rebuy Fuel -->
-                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                            <div style="padding: 16px; background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px;">
                                 <label style="display: flex; align-items: center; cursor: pointer;">
                                     <input type="checkbox" id="autoRebuyFuel" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
-                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">⛽ Auto-Rebuy Fuel</span>
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">⛽ Autopilot - Barrel Boss</span>
                                 </label>
                                 <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
-                                    Automatically purchase fuel when price drops at/below threshold
+                                    Automatically purchase fuel when price drops at/below threshold.
+                                </p>
+                                <p style="margin: 4px 0 0 28px; color: #fbbf24; font-size: 11px; line-height: 1.4;">
+                                    💡 Checks every minute. Purchases when price is at/below threshold.
                                 </p>
 
+                                <!-- Min Cash Reserve (always visible when feature enabled) -->
+                                <div id="autoRebuyFuelMinCashSection" class="autopilot-options autopilot-options-fuel hidden">
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">💰 Min Cash Reserve ($):</label>
+                                        <input type="text" id="autoRebuyFuelMinCash" min="0" value="0" step="10000" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 11px;">Don't buy if cash would drop below this amount</p>
+                                    </div>
+                                </div>
+
                                 <!-- Nested: Use Alert Value -->
-                                <div id="autoRebuyFuelOptions" style="margin: 12px 0 0 28px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid rgba(251, 191, 36, 0.3);">
+                                <div id="autoRebuyFuelOptions" class="autopilot-options autopilot-options-fuel hidden">
                                     <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 10px;">
                                         <input type="checkbox" id="autoRebuyFuelUseAlert" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;">
                                         <span style="color: #d1d5db; font-size: 13px;">Use alert threshold</span>
                                     </label>
-                                    <div>
+                                    <div style="margin-bottom: 8px;">
                                         <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">Max price ($/ton):</label>
-                                        <input type="number" id="autoRebuyFuelThreshold" min="1" max="1000" value="400" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                        <input type="text" id="autoRebuyFuelThreshold" min="1" value="400" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                    </div>
+                                    <div style="padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                                            <input type="checkbox" id="notifyBarrelBossInApp" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">📱 Enable in-app alerts</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyBarrelBossDesktop" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">🔔 Enable desktop notifications</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Auto-rebuy CO2 -->
-                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                            <div style="padding: 16px; background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 8px;">
                                 <label style="display: flex; align-items: center; cursor: pointer;">
                                     <input type="checkbox" id="autoRebuyCO2" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
-                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">💨 Auto-Rebuy CO2</span>
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">💨 Autopilot - Atmosphere Broker</span>
                                 </label>
                                 <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
-                                    Automatically purchase CO2 when price drops at/below threshold
+                                    Automatically purchase CO2 when price drops at/below threshold.
+                                </p>
+                                <p style="margin: 4px 0 0 28px; color: #22c55e; font-size: 11px; line-height: 1.4;">
+                                    💡 Checks every minute. Purchases when price is at/below threshold.
                                 </p>
 
+                                <!-- Min Cash Reserve (always visible when feature enabled) -->
+                                <div id="autoRebuyCO2MinCashSection" class="autopilot-options autopilot-options-co2 hidden">
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">💰 Min Cash Reserve ($):</label>
+                                        <input type="text" id="autoRebuyCO2MinCash" min="0" value="0" step="10000" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 11px;">Don't buy if cash would drop below this amount</p>
+                                    </div>
+                                </div>
+
                                 <!-- Nested: Use Alert Value -->
-                                <div id="autoRebuyCO2Options" style="margin: 12px 0 0 28px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid rgba(96, 165, 250, 0.3);">
+                                <div id="autoRebuyCO2Options" class="autopilot-options autopilot-options-co2 hidden">
                                     <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 10px;">
                                         <input type="checkbox" id="autoRebuyCO2UseAlert" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;">
                                         <span style="color: #d1d5db; font-size: 13px;">Use alert threshold</span>
                                     </label>
-                                    <div>
+                                    <div style="margin-bottom: 8px;">
                                         <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">Max price ($/ton):</label>
-                                        <input type="number" id="autoRebuyCO2Threshold" min="1" max="100" value="7" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                        <input type="text" id="autoRebuyCO2Threshold" min="1" value="7" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                    </div>
+                                    <div style="padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                                            <input type="checkbox" id="notifyAtmosphereBrokerInApp" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">📱 Enable in-app alerts</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyAtmosphereBrokerDesktop" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">🔔 Enable desktop notifications</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Auto-Depart All -->
-                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                            <div style="padding: 16px; background: rgba(96, 165, 250, 0.05); border: 1px solid rgba(96, 165, 250, 0.3); border-radius: 8px;">
                                 <label style="display: flex; align-items: center; cursor: pointer;">
                                     <input type="checkbox" id="autoDepartAll" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
-                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🚢 Auto-Depart All</span>
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🚢 Autopilot - Cargo Marshal</span>
                                 </label>
                                 <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
-                                    Intelligently departs vessels based on port demand and fuel prices.<br>
-                                    <span style="color: #fbbf24;">⚠️ Requires minimum 10t fuel in bunker</span> - no vessels will be sent if fuel is below this threshold.
+                                    Intelligently departs vessels based on port demand and fuel prices.
+                                </p>
+                                <p style="margin: 4px 0 0 28px; color: #60a5fa; font-size: 11px; line-height: 1.4;">
+                                    💡 Checks every minute. Departs vessels when ready and profitable.
+                                </p>
+                                <p style="margin: 4px 0 0 28px; color: #fbbf24; font-size: 11px; line-height: 1.4;">
+                                    ⚠️ Requires minimum 10t fuel in bunker - no vessels will be sent if fuel is below this threshold.
                                 </p>
 
                                 <!-- Nested: Intelligent Auto-Depart Settings -->
-                                <div style="margin: 12px 0 0 28px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid rgba(96, 165, 250, 0.3);">
+                                <div id="autoDepartOptions" class="autopilot-options autopilot-options-blue hidden">
+                                    <!-- Min Fuel Threshold -->
+                                    <div style="margin-bottom: 10px;">
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">⛽ Min Fuel for Auto-Depart (t):</label>
+                                        <input type="text" id="minFuelThreshold" min="0" value="100" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                    </div>
+
+                                    <!-- Min Utilization - ALWAYS visible -->
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">📦 Min Utilization (%):</label>
+                                        <select
+                                            id="minVesselUtilization"
+                                            style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;"
+                                        >
+                                            <option value="30">30%</option>
+                                            <option value="45" selected>45%</option>
+                                            <option value="60">60%</option>
+                                            <option value="75">75%</option>
+                                            <option value="90">90%</option>
+                                        </select>
+                                    </div>
+
                                     <!-- Use Route Default Checkbox -->
                                     <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 10px;">
                                         <input type="checkbox" id="autoDepartUseRouteDefaults" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
-                                        <span style="color: #d1d5db; font-size: 13px;">Use route defaults</span>
+                                        <span style="color: #d1d5db; font-size: 13px;">Use route defaults for vessel speed</span>
                                     </label>
 
-                                    <!-- Min Utilization (hidden when using route defaults) -->
-                                    <div id="autoDepartCustomSettings" style="display: none;">
-                                        <div style="margin-bottom: 8px;">
-                                            <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">📦 Min Utilization (%):</label>
-                                            <select
-                                                id="minVesselUtilization"
-                                                style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;"
-                                            >
-                                                <option value="30">30%</option>
-                                                <option value="45" selected>45%</option>
-                                                <option value="60">60%</option>
-                                                <option value="75">75%</option>
-                                                <option value="90">90%</option>
-                                            </select>
-                                        </div>
+                                    <!-- Vessel Speed (hidden when using route defaults) -->
+                                    <div id="autoDepartCustomSettings" class="hidden">
                                         <div>
                                             <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">⚡ Vessel Speed (10-100%):</label>
                                             <input
                                                 type="number"
                                                 id="autoVesselSpeed"
                                                 min="10"
-                                                max="100"
+
                                                 value="50"
                                                 style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;"
                                             >
                                         </div>
                                     </div>
+                                    <div style="padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                                            <input type="checkbox" id="notifyCargoMarshalInApp" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">📱 Enable in-app alerts</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyCargoMarshalDesktop" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">🔔 Enable desktop notifications</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Auto Anchor Points -->
+                            <div style="padding: 16px; background: rgba(125, 211, 252, 0.05); border: 1px solid rgba(125, 211, 252, 0.3); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoAnchorPointEnabled" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">⚓ Autopilot - Harbormaster</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                    Automatically purchase anchor points to maintain target level. Runs every 30 minutes.
+                                </p>
+
+                                <div id="autoAnchorPointOptions" class="autopilot-options autopilot-options-light-blue hidden">
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 6px;">⚓ Purchase Amount:</label>
+                                        <div style="display: flex; gap: 8px;">
+                                            <label style="flex: 1; display: flex; align-items: center; padding: 8px; background: rgba(59, 130, 246, 0.1); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                                                <input type="radio" name="autoAnchorAmount" value="1" id="autoAnchorAmount1" checked style="margin-right: 8px; cursor: pointer;">
+                                                <span style="color: #e0e0e0; font-size: 13px; font-weight: 600;">Buy 1</span>
+                                            </label>
+                                            <label style="flex: 1; display: flex; align-items: center; padding: 8px; background: rgba(139, 92, 246, 0.1); border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                                                <input type="radio" name="autoAnchorAmount" value="10" id="autoAnchorAmount10" style="margin-right: 8px; cursor: pointer;">
+                                                <span style="color: #e0e0e0; font-size: 13px; font-weight: 600;">Buy 10</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">💰 Min Cash Reserve ($):</label>
+                                        <input type="text" id="autoAnchorPointMinCash" min="0" value="0" step="10000" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                    </div>
+                                    <div style="padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                                            <input type="checkbox" id="notifyHarbormasterInApp" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">📱 Enable in-app alerts</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyHarbormasterDesktop" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">🔔 Enable desktop notifications</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Auto Bulk Repair -->
-                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                            <div style="padding: 16px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px;">
                                 <label style="display: flex; align-items: center; cursor: pointer;">
                                     <input type="checkbox" id="autoBulkRepair" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
-                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🔧 Auto Bulk Repair</span>
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🔧 Autopilot - Yard Foreman</span>
                                 </label>
                                 <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
-                                    Automatically repair all vessels as long as funds are available
+                                    Automatically repair all vessels as long as funds are available. Runs every 10 minutes.
+                                </p>
+                                <p style="margin: 4px 0 0 28px; color: #6b7280; font-size: 11px; font-style: italic;">
+                                    Uses the wear threshold configured in the Maintenance section below
                                 </p>
 
-                                <!-- Nested: Repair Interval -->
-                                <div style="margin: 12px 0 0 28px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid rgba(96, 165, 250, 0.3);">
-                                    <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">⏱️ Check Interval:</label>
-                                    <select id="autoRepairInterval" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
-                                        <option value="0-1">0-1 hour</option>
-                                        <option value="1-2">1-2 hours</option>
-                                        <option value="2-3" selected>2-3 hours</option>
-                                        <option value="3-4">3-4 hours</option>
-                                        <option value="4-5">4-5 hours</option>
-                                        <option value="5-6">5-6 hours</option>
-                                        <option value="6-12">6-12 hours</option>
-                                        <option value="12-24">12-24 hours</option>
-                                    </select>
-                                    <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 11px; line-height: 1.3;">
-                                        Random check within this time range (runs on server)
-                                    </p>
+                                <!-- Nested: Repair Options -->
+                                <div id="autoBulkRepairOptions" class="autopilot-options autopilot-options-blue">
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">💰 Min Cash Reserve ($):</label>
+                                        <input type="text" id="autoBulkRepairMinCash" class="autopilot-mincash-input" min="0" step="10000">
+                                        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 11px;">Don't repair if cash would drop below this amount</p>
+                                    </div>
+                                    <div style="padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                                            <input type="checkbox" id="notifyYardForemanInApp" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">📱 Enable in-app alerts</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyYardForemanDesktop" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">🔔 Enable desktop notifications</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Auto Campaign Renewal -->
-                            <div style="padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
+                            <div style="padding: 16px; background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 8px;">
                                 <label style="display: flex; align-items: center; cursor: pointer;">
                                     <input type="checkbox" id="autoCampaignRenewal" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
-                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">📊 Auto Campaign Renewal</span>
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">📊 Autopilot - Reputation Chief</span>
                                 </label>
                                 <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
-                                    When a campaign expires, automatically purchase the most expensive one that current funds allow
+                                    When a campaign expires, automatically purchase the most expensive one that current funds allow. Runs every 15 minutes.
                                 </p>
+
+                                <div id="autoCampaignRenewalOptions" class="autopilot-options autopilot-options-blue">
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">💰 Min Cash Reserve ($):</label>
+                                        <input type="text" id="autoCampaignRenewalMinCash" class="autopilot-mincash-input" min="0" step="10000">
+                                        <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 11px;">Don't buy if cash would drop below this amount</p>
+                                    </div>
+                                    <div style="padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                                            <input type="checkbox" id="notifyReputationChiefInApp" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">📱 Enable in-app alerts</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyReputationChiefDesktop" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">🔔 Enable desktop notifications</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Auto COOP -->
+                            <div style="padding: 16px; background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoCoopEnabled" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🤝 Autopilot - Fair Hand</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                    Automatically contribute to alliance COOP when available. Runs every 60 minutes.
+                                </p>
+
+                                <div id="autoCoopOptions" class="autopilot-options autopilot-options-blue hidden">
+                                    <p style="margin: 0 0 8px 0; color: #9ca3af; font-size: 12px;">COOP settings placeholder</p>
+                                    <div style="padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                                            <input type="checkbox" id="notifyFairHandInApp" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">📱 Enable in-app alerts</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyFairHandDesktop" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">🔔 Enable desktop notifications</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Auto Negotiate Hijacking -->
+                            <div style="padding: 16px; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="autoNegotiateHijacking" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                    <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">☠️ Autopilot - Cap'n Blackbeard</span>
+                                </label>
+                                <p style="margin: 8px 0 0 28px; color: #9ca3af; font-size: 12px; line-height: 1.4;">
+                                    Automatically negotiate and accept hijacking ransoms. Runs every 20 minutes. Open cases checked every 30s, solved cases cached.
+                                </p>
+
+                                <div id="autoNegotiateOptions" class="autopilot-options autopilot-options-blue hidden">
+                                    <div style="padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 6px;">
+                                            <input type="checkbox" id="notifyCaptainBlackbeardInApp" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">📱 Enable in-app alerts</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyCaptainBlackbeardDesktop" class="autopilot-agent-checkbox" style="width: 16px; height: 16px; margin-right: 8px; cursor: pointer;" checked>
+                                            <span style="color: #d1d5db; font-size: 13px;">🔔 Enable desktop notifications</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Bot Settings Section -->
+                    <div style="margin-bottom: 25px; padding: 20px; background: rgba(139, 92, 246, 0.05); border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 12px;">
+                        <h3 onclick="toggleSection('chatbotContent')" style="margin: 0 0 10px 0; font-size: 18px; color: #a78bfa; font-weight: 700; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                            <span>💬 Chat Bot Settings</span>
+                            <span id="chatbotToggle" style="font-size: 16px; color: #9ca3af; font-weight: normal;">➕</span>
+                        </h3>
+                        <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 10px 0 15px 0;"></div>
+                        <div id="chatbotContent" class="hidden" style="flex-direction: column; gap: 12px;" data-display-mode="flex">
+                            <p style="margin: 0 0 20px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
+                                Configure automated chat responses and commands in alliance chat
+                            </p>
+
+                            <!-- Box 1: General Settings -->
+                            <div style="padding: 16px; background: rgba(31, 41, 55, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                                <h4 style="margin: 0 0 12px 0; color: #a78bfa; font-size: 14px; font-weight: 600;">General Settings</h4>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <!-- Enable Chat Bot -->
+                                    <div style="padding: 10px; background: rgba(31, 41, 55, 0.5); border-radius: 6px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="enableChatBot" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                            <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">✨ Enable Chat Bot</span>
+                                        </label>
+                                    </div>
+
+                                    <!-- Command Prefix -->
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(31, 41, 55, 0.5); border-radius: 6px;">
+                                        <label for="commandPrefix" style="margin: 0; color: #e0e0e0; font-size: 14px;">💬 Command Prefix</label>
+                                        <input type="text" id="commandPrefix" value="!" maxlength="3" style="width: 80px; padding: 6px 10px; background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; font-size: 14px; text-align: center;">
+                                    </div>
+
+                                    <!-- Alliance Commands -->
+                                    <div style="padding: 10px; background: rgba(31, 41, 55, 0.5); border-radius: 6px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="enableAllianceCommands" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                            <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">🏢 Alliance Commands</span>
+                                        </label>
+                                        <p style="margin: 6px 0 0 28px; color: #9ca3af; font-size: 12px;">Respond to commands in alliance chat</p>
+                                    </div>
+
+                                    <!-- DM Commands -->
+                                    <div style="padding: 10px; background: rgba(31, 41, 55, 0.5); border-radius: 6px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="enableDMCommands" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                            <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">📨 DM Commands</span>
+                                        </label>
+                                        <p style="margin: 6px 0 0 28px; color: #9ca3af; font-size: 12px;">Respond to commands in private messages</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Box 2: Help Command Settings -->
+                            <div style="padding: 16px; background: rgba(31, 41, 55, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                                <h4 style="margin: 0 0 12px 0; color: #a78bfa; font-size: 14px; font-weight: 600;">Help Command Settings</h4>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <!-- Help Command -->
+                                    <div style="padding: 10px; background: rgba(31, 41, 55, 0.5); border-radius: 6px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 8px;">
+                                            <input type="checkbox" id="cmdHelp" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                            <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">❓ Help Command</span>
+                                        </label>
+                                        <div style="margin-left: 28px; display: flex; flex-direction: column; gap: 8px;">
+                                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #d1d5db;">
+                                                <input type="checkbox" id="cmdHelpAlliance" style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;" checked>
+                                                Allow in alliance chat
+                                            </label>
+                                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #d1d5db;">
+                                                <input type="checkbox" id="cmdHelpDM" style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;" checked>
+                                                Allow in DMs
+                                            </label>
+                                            <div>
+                                                <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">Aliases (comma-separated):</label>
+                                                <input type="text" id="cmdHelpAliases" placeholder="help, h, commands" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Box 3: Forecast Command Settings -->
+                            <div style="padding: 16px; background: rgba(31, 41, 55, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                                <h4 style="margin: 0 0 12px 0; color: #a78bfa; font-size: 14px; font-weight: 600;">Forecast Command Settings</h4>
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <!-- Daily Forecast Time -->
+                                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(31, 41, 55, 0.5); border-radius: 6px;">
+                                        <label for="dailyForecastTime" style="margin: 0; color: #e0e0e0; font-size: 14px;">📅 Daily Forecast Time (HH:MM):</label>
+                                        <input type="time" id="dailyForecastTime" value="18:00" style="width: 120px; padding: 6px; background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; font-size: 14px;">
+                                    </div>
+
+                                    <!-- Forecast Command -->
+                                    <div style="padding: 10px; background: rgba(31, 41, 55, 0.5); border-radius: 6px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 8px;">
+                                            <input type="checkbox" id="cmdForecast" style="width: 18px; height: 18px; margin-right: 10px; cursor: pointer;">
+                                            <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">📊 Forecast Command</span>
+                                        </label>
+                                        <div style="margin-left: 28px; display: flex; flex-direction: column; gap: 8px;">
+                                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #d1d5db;">
+                                                <input type="checkbox" id="cmdForecastAlliance" style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;" checked>
+                                                Allow in alliance chat
+                                            </label>
+                                            <label style="display: flex; align-items: center; cursor: pointer; font-size: 13px; color: #d1d5db;">
+                                                <input type="checkbox" id="cmdForecastDM" style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;" checked>
+                                                Allow in DMs
+                                            </label>
+                                            <div>
+                                                <label style="color: #9ca3af; font-size: 12px; display: block; margin-bottom: 4px;">Aliases (comma-separated):</label>
+                                                <input type="text" id="cmdForecastAliases" placeholder="prices, price" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Box 4: Custom Commands -->
+                            <div style="padding: 16px; background: rgba(31, 41, 55, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                                <h4 style="margin: 0 0 12px 0; color: #a78bfa; font-size: 14px; font-weight: 600;">Custom Commands</h4>
+                                <div style="padding: 10px; background: rgba(31, 41, 55, 0.5); border-radius: 6px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <span style="color: #e0e0e0; font-size: 14px; font-weight: 500;">⚡ Custom Commands</span>
+                                        <button id="addCustomCommand" style="padding: 4px 12px; background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 4px; color: #a78bfa; cursor: pointer; font-size: 12px; font-weight: 600;">+ Add</button>
+                                    </div>
+                                    <div id="customCommandsList" style="display: flex; flex-direction: column; gap: 8px;">
+                                        <!-- Custom commands will be added here dynamically -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Maintenance Section -->
-                    <div style="margin-bottom: 25px;">
-                        <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #e0e0e0;">Maintenance</h3>
-                        <p style="margin: 0 0 15px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
-                            Automatically repair vessels when wear reaches this threshold
-                        </p>
-
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
-                            <label for="maintenanceThreshold" style="margin: 0; color: #e0e0e0; font-size: 14px;">
-                                🔧 Wear Threshold
-                            </label>
-                            <select
-                                id="maintenanceThreshold"
-                                style="width: 100px; padding: 6px 10px; background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: #fff; font-size: 14px;"
-                            >
-                                <option value="10">10%</option>
-                                <option value="20">20%</option>
-                            </select>
-                        </div>
-                    </div>
-
                     <!-- Certificate Section -->
-                    <div>
-                        <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #e0e0e0;">🔒 Certificate Installation</h3>
-                        <p style="margin: 0 0 15px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
-                            Install the CA certificate to remove security warnings and enable notifications on mobile devices
-                        </p>
+                    <div style="margin-bottom: 25px; padding: 20px; background: rgba(31, 41, 55, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;">
+                        <h3 onclick="toggleSection('certificateContent')" style="margin: 0 0 10px 0; font-size: 16px; color: #e0e0e0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+                            <span>🔒 Certificate Installation</span>
+                            <span id="certificateToggle" style="font-size: 14px; color: #9ca3af; font-weight: normal;">➕</span>
+                        </h3>
+                        <div style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 10px 0 15px 0;"></div>
+                        <div id="certificateContent" class="hidden" data-display-mode="block">
+                            <p style="margin: 0 0 15px 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
+                                Install the CA certificate to remove security warnings and enable notifications on mobile devices
+                            </p>
 
-                        <div style="background: rgba(31, 41, 55, 0.5); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                            <div style="background: rgba(31, 41, 55, 0.5); border-radius: 8px; padding: 15px; margin-bottom: 15px;">
                             <div style="margin-bottom: 12px;">
                                 <strong style="color: #e0e0e0; font-size: 14px;">💻 Desktop (Windows/Mac/Linux):</strong>
                                 <p style="margin: 5px 0 0 0; color: #9ca3af; font-size: 13px; line-height: 1.4;">
@@ -528,13 +975,14 @@
                         " onmouseover="this.style.background='rgba(59, 130, 246, 0.3)'" onmouseout="this.style.background='rgba(59, 130, 246, 0.2)'">
                             📥 Download CA Certificate
                         </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="buyVesselsOverlay" class="overlay" style="display:none;">
+    <div id="buyVesselsOverlay" class="overlay hidden">
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2 id="buyVesselsHeader">⛴️ Buy Vessels</h2>
@@ -542,32 +990,179 @@
             </div>
 
             <div class="vessel-header-controls">
-                <button id="filterContainerBtn" class="vessel-filter-btn active" data-type="container">
-                    📦 Container
+                <div class="filter-dropdown-container">
+                    <button id="filterDropdownBtn" class="vessel-filter-btn">
+                        🔍 Filters
+                    </button>
+                    <div id="filterDropdownMenu" class="filter-dropdown-menu hidden">
+                        <div id="resetFiltersBtn" class="filter-section hidden" style="cursor: pointer; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 8px;" onclick="resetVesselFilters()">
+                            <div style="color: #fca5a5; font-weight: 500; text-align: center;">🔄 Reset All Filters</div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">Vessel Type</div>
+                            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                <label class="filter-option">
+                                    <input type="checkbox" name="vesselType" value="container" checked>
+                                    <span>📦 Container</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" name="vesselType" value="tanker" checked>
+                                    <span>🛢️ Tanker</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">Price Range ($)</div>
+                            <div class="filter-range-row">
+                                <select id="priceMin" class="filter-range-select">
+                                    <option value="0">0</option>
+                                </select>
+                                <span class="filter-range-separator">—</span>
+                                <select id="priceMax" class="filter-range-select">
+                                    <option value="Infinity">max</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">Engine Type</div>
+                            <div class="filter-range-row">
+                                <select id="engineType" class="filter-range-select-full">
+                                    <option value="all" selected>All Engines</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">Max Speed (kn)</div>
+                            <div class="filter-range-row">
+                                <select id="speedMin" class="filter-range-select">
+                                    <option value="0">0</option>
+                                </select>
+                                <span class="filter-range-separator">—</span>
+                                <select id="speedMax" class="filter-range-select">
+                                    <option value="999">999</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">Service Hours (h)</div>
+                            <div class="filter-range-row">
+                                <select id="serviceMin" class="filter-range-select">
+                                    <option value="0">0</option>
+                                </select>
+                                <span class="filter-range-separator">—</span>
+                                <select id="serviceMax" class="filter-range-select">
+                                    <option value="Infinity">max</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">Fuel Factor</div>
+                            <div class="filter-range-row">
+                                <select id="fuelFactorMin" class="filter-range-select">
+                                    <option value="0">0</option>
+                                </select>
+                                <span class="filter-range-separator">—</span>
+                                <select id="fuelFactorMax" class="filter-range-select">
+                                    <option value="999">999</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">CO2 Factor</div>
+                            <div class="filter-range-row">
+                                <select id="co2FactorMin" class="filter-range-select">
+                                    <option value="0">0</option>
+                                </select>
+                                <span class="filter-range-separator">—</span>
+                                <select id="co2FactorMax" class="filter-range-select">
+                                    <option value="999">999</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="capacityTEUSection" class="filter-section">
+                            <div class="filter-section-title">Capacity (TEU)</div>
+                            <div class="filter-range-row">
+                                <select id="capacityMinTEU" class="filter-range-select">
+                                    <option value="0">0</option>
+                                </select>
+                                <span class="filter-range-separator">—</span>
+                                <select id="capacityMaxTEU" class="filter-range-select">
+                                    <option value="999999">999999</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="capacityBBLSection" class="filter-section">
+                            <div class="filter-section-title">Capacity (bbl)</div>
+                            <div class="filter-range-row">
+                                <select id="capacityMinBBL" class="filter-range-select">
+                                    <option value="0">0</option>
+                                </select>
+                                <span class="filter-range-separator">—</span>
+                                <select id="capacityMaxBBL" class="filter-range-select">
+                                    <option value="999999">999999</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">Year Built</div>
+                            <div class="filter-range-row">
+                                <select id="yearMin" class="filter-range-select">
+                                    <option value="0">0</option>
+                                </select>
+                                <span class="filter-range-separator">—</span>
+                                <select id="yearMax" class="filter-range-select">
+                                    <option value="9999">9999</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <div class="filter-section-title">Special</div>
+                            <label class="filter-option">
+                                <input type="checkbox" name="special" value="credits">
+                                <span>💲 Credits Only</span>
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" name="special" value="perks">
+                                <span>✨ Has perks only</span>
+                            </label>
+                        </div>
+
+                    </div>
+                </div>
+                <button id="sortPriceBtn" class="vessel-filter-btn" data-sort="asc">
+                    💰 Price ↑
                 </button>
-                <button id="filterTankerBtn" class="vessel-filter-btn" data-type="tanker">
-                    🛢️ Tanker
+                <button id="cartBtn" class="vessel-filter-btn hidden">
+                    🛒 Cart (<span id="cartCount"></span>)
                 </button>
-                <button id="filterEngineBtn" class="vessel-filter-btn" data-type="engine">
-                    ⚙️ Engine
+                <button id="filterPendingBtn" class="vessel-filter-btn hidden">
+                    ⏱️ Pending (<span id="pendingCount"></span>)
                 </button>
-                <button id="filterPendingBtn" class="vessel-filter-btn" style="display: none;">
-                    ⏱️ Pending (<span id="pendingCount">0</span>)
-                </button>
-                <button id="bulkBuyBtn" class="bulk-buy-btn" style="display: none;">
-                    💰 Bulk Buy (<span id="selectedCount">0</span>)
+                <button id="bulkBuyBtn" class="bulk-buy-btn hidden">
+                    💰 Bulk Buy (<span id="selectedCount"></span>)
                 </button>
             </div>
 
-            <div class="messenger-feed" id="vesselCatalogFeed" style="padding: 20px; overflow-y: auto;">
-                <div style="text-align: center; color: #9ca3af; padding: 40px;">
+            <div class="messenger-feed" id="vesselCatalogFeed">
+                <div class="vessel-feed-loading">
                     Loading vessels...
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="engineFilterOverlay" class="overlay" style="display:none;">
+    <div id="engineFilterOverlay" class="overlay hidden">
         <div class="messenger-window">
             <div class="messenger-header">
                 <h2>⚙️ Filter by Engine Type</h2>
@@ -576,6 +1171,17 @@
             <div class="messenger-feed" id="engineFilterList" style="padding: 20px; overflow-y: auto;">
                 <!-- Engine list will be populated by JavaScript -->
             </div>
+        </div>
+    </div>
+
+    <!-- Connection Lost Overlay -->
+    <div id="connectionLostOverlay" class="connection-overlay hidden">
+        <div class="connection-message">
+            <h2>Connection Lost</h2>
+            <p>Cannot connect to backend server</p>
+            <p>Please check if the application is running in the system tray</p>
+            <div class="connection-spinner"></div>
+            <p class="connection-retry">Attempting to reconnect...</p>
         </div>
     </div>
 

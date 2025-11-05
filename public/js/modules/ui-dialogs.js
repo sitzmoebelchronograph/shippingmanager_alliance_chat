@@ -23,6 +23,7 @@
 
 import { escapeHtml, formatNumber, renderStars, showSideNotification } from './utils.js';
 import { fetchCampaigns, activateCampaign, fetchContacts } from './api.js';
+import { showAnchorPurchaseDialog } from './anchor-purchase.js';
 
 /**
  * Shows a customizable confirmation dialog with optional details table.
@@ -66,7 +67,7 @@ export function showConfirmDialog(options) {
     overlay.className = 'confirm-dialog-overlay';
 
     const dialog = document.createElement('div');
-    dialog.className = 'confirm-dialog';
+    dialog.className = options.narrow ? 'confirm-dialog confirm-dialog-narrow' : 'confirm-dialog';
 
     const detailsHtml = options.details ? `
       <div class="confirm-dialog-details">
@@ -76,19 +77,28 @@ export function showConfirmDialog(options) {
           let rowClass = '';
           if (isSecondToLastRow && detail.label === 'Total Cost') {
             const totalCostMatch = detail.value.match(/[\d,]+/);
-            const availableCashMatch = options.details[options.details.length - 1].value.match(/[\d,]+/);
+            const cashAfterMatch = options.details[options.details.length - 1].value.match(/-?[\d,]+/);
 
-            if (totalCostMatch && availableCashMatch) {
+            if (totalCostMatch && cashAfterMatch) {
               const totalCost = parseInt(totalCostMatch[0].replace(/,/g, ''));
-              const availableCash = parseInt(availableCashMatch[0].replace(/,/g, ''));
-              rowClass = availableCash >= totalCost ? ' affordable' : ' too-expensive';
+              const cashAfter = parseInt(cashAfterMatch[0].replace(/,/g, ''));
+              // If "Cash after" is positive, purchase is affordable
+              rowClass = cashAfter >= 0 ? ' affordable' : ' too-expensive';
             }
           }
+
+          // Mark Cost rows as expense (red)
+          if (detail.label === 'Cost' || detail.label === 'Total Cost') {
+            rowClass += ' expense-row';
+          }
+
+          // Add custom className to value span (for price color coding)
+          const valueClass = detail.className ? ` class="${detail.className}"` : '';
 
           return `
             <div class="confirm-dialog-detail-row${rowClass}">
               <span class="label">${escapeHtml(detail.label)}</span>
-              <span class="value">${escapeHtml(detail.value)}</span>
+              <span class="value"${valueClass}>${escapeHtml(detail.value)}</span>
             </div>
           `;
         }).join('')}
@@ -116,8 +126,23 @@ export function showConfirmDialog(options) {
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
 
+    // Check if too expensive and disable confirm button
+    const tooExpensiveRow = dialog.querySelector('.confirm-dialog-detail-row.too-expensive');
+    const confirmButton = dialog.querySelector('.confirm-dialog-btn.confirm');
+    if (tooExpensiveRow && confirmButton) {
+      confirmButton.disabled = true;
+      confirmButton.classList.add('disabled');
+      confirmButton.title = 'Insufficient funds';
+    }
+
     const handleClick = (e) => {
       const action = e.target.dataset.action;
+
+      // Prevent confirm if button is disabled (insufficient funds)
+      if (action === 'confirm' && e.target.disabled) {
+        return;
+      }
+
       if (action === 'confirm' || action === 'cancel') {
         document.body.removeChild(overlay);
         resolve(action === 'confirm');
@@ -173,7 +198,12 @@ export function showSettings(settings) {
 
   // Auto-Rebuy Fuel
   document.getElementById('autoRebuyFuel').checked = settings.autoRebuyFuel || false;
-  document.getElementById('autoRebuyFuelOptions').style.display = settings.autoRebuyFuel ? 'block' : 'none';
+  const fuelOptions = document.getElementById('autoRebuyFuelOptions');
+  if (settings.autoRebuyFuel) {
+    fuelOptions.classList.remove('hidden');
+  } else {
+    fuelOptions.classList.add('hidden');
+  }
 
   const fuelUseAlert = settings.autoRebuyFuelUseAlert !== undefined ? settings.autoRebuyFuelUseAlert : true;
   document.getElementById('autoRebuyFuelUseAlert').checked = fuelUseAlert;
@@ -182,18 +212,24 @@ export function showSettings(settings) {
   if (fuelUseAlert) {
     fuelThresholdInput.value = settings.fuelThreshold;
     fuelThresholdInput.disabled = true;
-    fuelThresholdInput.style.opacity = '0.5';
-    fuelThresholdInput.style.cursor = 'not-allowed';
+    fuelThresholdInput.classList.add('disabled');
   } else {
-    fuelThresholdInput.value = settings.autoRebuyFuelThreshold || 400;
+    if (settings.autoRebuyFuelThreshold !== undefined) {
+      fuelThresholdInput.value = settings.autoRebuyFuelThreshold;
+    }
     fuelThresholdInput.disabled = false;
-    fuelThresholdInput.style.opacity = '1';
-    fuelThresholdInput.style.cursor = 'text';
+    fuelThresholdInput.classList.remove('disabled');
+    fuelThresholdInput.classList.add('enabled');
   }
 
   // Auto-Rebuy CO2
   document.getElementById('autoRebuyCO2').checked = settings.autoRebuyCO2 || false;
-  document.getElementById('autoRebuyCO2Options').style.display = settings.autoRebuyCO2 ? 'block' : 'none';
+  const co2Options = document.getElementById('autoRebuyCO2Options');
+  if (settings.autoRebuyCO2) {
+    co2Options.classList.remove('hidden');
+  } else {
+    co2Options.classList.add('hidden');
+  }
 
   const co2UseAlert = settings.autoRebuyCO2UseAlert !== undefined ? settings.autoRebuyCO2UseAlert : true;
   document.getElementById('autoRebuyCO2UseAlert').checked = co2UseAlert;
@@ -202,23 +238,41 @@ export function showSettings(settings) {
   if (co2UseAlert) {
     co2ThresholdInput.value = settings.co2Threshold;
     co2ThresholdInput.disabled = true;
-    co2ThresholdInput.style.opacity = '0.5';
-    co2ThresholdInput.style.cursor = 'not-allowed';
+    co2ThresholdInput.classList.add('disabled');
   } else {
-    co2ThresholdInput.value = settings.autoRebuyCO2Threshold || 7;
+    if (settings.autoRebuyCO2Threshold !== undefined) {
+      co2ThresholdInput.value = settings.autoRebuyCO2Threshold;
+    }
     co2ThresholdInput.disabled = false;
-    co2ThresholdInput.style.opacity = '1';
-    co2ThresholdInput.style.cursor = 'text';
+    co2ThresholdInput.classList.remove('disabled');
+    co2ThresholdInput.classList.add('enabled');
   }
 
   document.getElementById('autoDepartAll').checked = settings.autoDepartAll || false;
   document.getElementById('autoBulkRepair').checked = settings.autoBulkRepair || false;
-  document.getElementById('autoRepairInterval').value = settings.autoRepairInterval || '2-3';
   document.getElementById('autoCampaignRenewal').checked = settings.autoCampaignRenewal || false;
 
   // Desktop notifications master toggle
   const enableDesktopNotifs = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
   document.getElementById('enableDesktopNotifications').checked = enableDesktopNotifs;
+
+  // Individual AutoPilot notification toggles (InApp + Desktop)
+  document.getElementById('notifyBarrelBossInApp').checked = settings.notifyBarrelBossInApp !== undefined ? settings.notifyBarrelBossInApp : true;
+  document.getElementById('notifyBarrelBossDesktop').checked = settings.notifyBarrelBossDesktop !== undefined ? settings.notifyBarrelBossDesktop : true;
+  document.getElementById('notifyAtmosphereBrokerInApp').checked = settings.notifyAtmosphereBrokerInApp !== undefined ? settings.notifyAtmosphereBrokerInApp : true;
+  document.getElementById('notifyAtmosphereBrokerDesktop').checked = settings.notifyAtmosphereBrokerDesktop !== undefined ? settings.notifyAtmosphereBrokerDesktop : true;
+  document.getElementById('notifyCargoMarshalInApp').checked = settings.notifyCargoMarshalInApp !== undefined ? settings.notifyCargoMarshalInApp : true;
+  document.getElementById('notifyCargoMarshalDesktop').checked = settings.notifyCargoMarshalDesktop !== undefined ? settings.notifyCargoMarshalDesktop : true;
+  document.getElementById('notifyYardForemanInApp').checked = settings.notifyYardForemanInApp !== undefined ? settings.notifyYardForemanInApp : true;
+  document.getElementById('notifyYardForemanDesktop').checked = settings.notifyYardForemanDesktop !== undefined ? settings.notifyYardForemanDesktop : true;
+  document.getElementById('notifyReputationChiefInApp').checked = settings.notifyReputationChiefInApp !== undefined ? settings.notifyReputationChiefInApp : true;
+  document.getElementById('notifyReputationChiefDesktop').checked = settings.notifyReputationChiefDesktop !== undefined ? settings.notifyReputationChiefDesktop : true;
+  document.getElementById('notifyFairHandInApp').checked = settings.notifyFairHandInApp !== undefined ? settings.notifyFairHandInApp : true;
+  document.getElementById('notifyFairHandDesktop').checked = settings.notifyFairHandDesktop !== undefined ? settings.notifyFairHandDesktop : true;
+  document.getElementById('notifyHarbormasterInApp').checked = settings.notifyHarbormasterInApp !== undefined ? settings.notifyHarbormasterInApp : true;
+  document.getElementById('notifyHarbormasterDesktop').checked = settings.notifyHarbormasterDesktop !== undefined ? settings.notifyHarbormasterDesktop : true;
+  document.getElementById('notifyCaptainBlackbeardInApp').checked = settings.notifyCaptainBlackbeardInApp !== undefined ? settings.notifyCaptainBlackbeardInApp : true;
+  document.getElementById('notifyCaptainBlackbeardDesktop').checked = settings.notifyCaptainBlackbeardDesktop !== undefined ? settings.notifyCaptainBlackbeardDesktop : true;
 
   // Intelligent Auto-Depart Settings
   const useRouteDefaults = settings.autoDepartUseRouteDefaults !== undefined ? settings.autoDepartUseRouteDefaults : true;
@@ -229,21 +283,43 @@ export function showSettings(settings) {
   const speedInput = document.getElementById('autoVesselSpeed');
 
   if (useRouteDefaults) {
-    customSettingsDiv.style.display = 'none';
+    customSettingsDiv.classList.add('hidden');
   } else {
-    customSettingsDiv.style.display = 'block';
-    minUtilInput.value = settings.minVesselUtilization || 45;
-    speedInput.value = settings.autoVesselSpeed || 50;
+    customSettingsDiv.classList.remove('hidden');
+    if (settings.minVesselUtilization !== undefined) {
+      minUtilInput.value = settings.minVesselUtilization;
+    }
+    if (settings.autoVesselSpeed !== undefined) {
+      speedInput.value = settings.autoVesselSpeed;
+    }
   }
 
-  document.getElementById('settingsOverlay').style.display = 'flex';
+  // Restore section states from per-user localStorage
+  const sectionStates = JSON.parse(window.getStorage('settingsSectionStates') || '{}');
+  Object.keys(sectionStates).forEach(contentId => {
+    const content = document.getElementById(contentId);
+    const toggleId = contentId.replace('Content', 'Toggle');
+    const toggle = document.getElementById(toggleId);
+
+    if (content && toggle) {
+      if (sectionStates[contentId] === 'open') {
+        content.classList.remove('hidden');
+        toggle.textContent = '➖';
+      } else {
+        content.classList.add('hidden');
+        toggle.textContent = '➕';
+      }
+    }
+  });
+
+  document.getElementById('settingsOverlay').classList.remove('hidden');
 }
 
 /**
  * Closes the settings overlay.
  */
 export function closeSettings() {
-  document.getElementById('settingsOverlay').style.display = 'none';
+  document.getElementById('settingsOverlay').classList.add('hidden');
 }
 
 /**
@@ -271,6 +347,7 @@ export async function showCampaignsOverlay() {
     const activeCampaigns = data.data.active_campaigns || [];
     const activeTypes = new Set(activeCampaigns.map(c => c.option_name));
     const totalReputation = data.user.reputation || 0;
+    const userCash = data.user.cash || 0;
 
     const contentDiv = document.getElementById('campaignsContent');
     const requiredTypes = ['reputation', 'awareness', 'green'];
@@ -278,14 +355,14 @@ export async function showCampaignsOverlay() {
     let html = '';
 
     html += `
-      <div style="text-align: center; margin-bottom: 30px;">
-        <div style="font-size: 14px; color: #9ca3af; margin-bottom: 10px;">
+      <div class="campaign-reputation-section">
+        <div class="campaign-reputation-title">
           Company Reputation
         </div>
-        <div style="font-size: 32px; margin-bottom: 8px; line-height: 1;">
+        <div class="campaign-reputation-stars">
           ${renderStars(totalReputation)}
         </div>
-        <div style="font-size: 18px; color: #10b981; font-weight: 600;">
+        <div class="campaign-reputation-percent">
           ${totalReputation}%
         </div>
       </div>
@@ -293,11 +370,11 @@ export async function showCampaignsOverlay() {
 
     if (activeCampaigns.length > 0) {
       html += `
-        <div style="margin-bottom: 30px;">
-          <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #10b981;">
+        <div class="campaign-section-active">
+          <h3 class="campaign-section-header">
             ✅ Active Campaigns
           </h3>
-          <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="campaign-items">
       `;
 
       activeCampaigns.forEach(campaign => {
@@ -313,16 +390,16 @@ export async function showCampaignsOverlay() {
         const timeLeftStr = `${hoursLeft}h ${minutesLeft}m`;
 
         html += `
-          <div style="padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-              <div style="color: #10b981; font-size: 14px; font-weight: 600;">
+          <div class="campaign-item-active">
+            <div class="campaign-item-active-header">
+              <div class="campaign-item-active-title">
                 ${typeIcon} ${typeName}
               </div>
-              <div style="color: #10b981; font-size: 12px; font-weight: 600;">
+              <div class="campaign-item-active-time">
                 ${timeLeftStr} remaining
               </div>
             </div>
-            <div style="display: flex; justify-content: space-between; color: #9ca3af; font-size: 12px;">
+            <div class="campaign-item-active-details">
               <span>Duration: ${duration}h</span>
               <span>Efficiency: ${efficiency}</span>
             </div>
@@ -339,55 +416,44 @@ export async function showCampaignsOverlay() {
     const inactiveTypes = requiredTypes.filter(type => !activeTypes.has(type));
 
     if (inactiveTypes.length > 0) {
-      inactiveTypes.forEach(type => {
+      inactiveTypes.forEach((type, index) => {
         const typeName = type.charAt(0).toUpperCase() + type.slice(1);
         const typeIcon = type === 'reputation' ? '⭐' : type === 'awareness' ? '📢' : '🌱';
         const typeCampaigns = allCampaigns.filter(c => c.option_name === type);
 
         html += `
-          <div style="margin-bottom: 25px;">
-            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #e0e0e0;">
+          <div class="campaign-section">
+            <h3 class="campaign-section-header-inactive">
               ${typeIcon} ${typeName} Campaigns
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="campaign-items">
         `;
 
         typeCampaigns.forEach(campaign => {
           const duration = campaign.campaign_duration;
           const efficiency = `${campaign.min_efficiency}-${campaign.max_efficiency}%`;
           const price = formatNumber(campaign.price);
+          const canAfford = userCash >= campaign.price;
 
           html += `
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: rgba(31, 41, 55, 0.5); border-radius: 8px; gap: 15px;">
-              <div style="flex: 1;">
-                <div style="color: #e0e0e0; font-size: 14px; font-weight: 600; margin-bottom: 4px;">
+            <div class="campaign-item-inactive">
+              <div class="campaign-item-info">
+                <div class="campaign-item-duration">
                   ${duration}h Duration
                 </div>
-                <div style="color: #9ca3af; font-size: 12px;">
+                <div class="campaign-item-efficiency">
                   Efficiency: ${efficiency}
                 </div>
               </div>
-              <div style="text-align: right; margin-right: 10px;">
-                <div style="color: #4ade80; font-size: 14px; font-weight: 600;">
+              <div class="campaign-item-price-wrapper">
+                <div class="${canAfford ? 'campaign-item-price-affordable' : 'campaign-item-price-unaffordable'}">
                   $${price}
                 </div>
               </div>
               <button
-                onclick="window.buyCampaign(${campaign.id}, '${typeName}', ${duration}, ${campaign.price})"
-                style="
-                  padding: 8px 16px;
-                  background: rgba(16, 185, 129, 0.2);
-                  border: 1px solid rgba(16, 185, 129, 0.4);
-                  border-radius: 6px;
-                  color: #10b981;
-                  cursor: pointer;
-                  font-weight: 600;
-                  font-size: 13px;
-                  transition: all 0.2s;
-                  white-space: nowrap;
-                "
-                onmouseover="this.style.background='rgba(16, 185, 129, 0.3)'"
-                onmouseout="this.style.background='rgba(16, 185, 129, 0.2)'"
+                ${canAfford ? '' : 'disabled'}
+                onclick="${canAfford ? `window.buyCampaign(${campaign.id}, '${typeName}', ${duration}, ${campaign.price})` : ''}"
+                class="${canAfford ? 'campaign-buy-btn' : 'campaign-buy-btn-disabled'}"
               >
                 Buy
               </button>
@@ -403,7 +469,7 @@ export async function showCampaignsOverlay() {
     }
 
     contentDiv.innerHTML = html;
-    document.getElementById('campaignsOverlay').style.display = 'flex';
+    document.getElementById('campaignsOverlay').classList.remove('hidden');
   } catch (error) {
     console.error('Error showing campaigns overlay:', error);
     showSideNotification('Failed to load campaigns', 'error');
@@ -414,7 +480,7 @@ export async function showCampaignsOverlay() {
  * Closes the campaigns overlay.
  */
 export function closeCampaignsOverlay() {
-  document.getElementById('campaignsOverlay').style.display = 'none';
+  document.getElementById('campaignsOverlay').classList.add('hidden');
 }
 
 /**
@@ -436,6 +502,7 @@ export async function buyCampaign(campaignId, typeName, duration, price, updateC
     title: '📊 Activate Campaign',
     message: `Do you want to activate this ${typeName} campaign?`,
     confirmText: 'Activate',
+    narrow: true,
     details: [
       { label: 'Type', value: typeName },
       { label: 'Duration', value: `${duration} hours` },
@@ -448,17 +515,67 @@ export async function buyCampaign(campaignId, typeName, duration, price, updateC
   try {
     const data = await activateCampaign(campaignId);
 
-    showSideNotification(`✅ ${typeName} campaign activated for ${duration} hours!`, 'success');
+    // After purchase attempt, refresh campaigns to verify it actually activated
+    const campaignsData = await fetchCampaigns();
+    const activeCampaigns = campaignsData.data.active_campaigns || [];
 
-    closeCampaignsOverlay();
-    if (updateCallbacks) {
-      await updateCallbacks.updateCampaignsStatus();
-      await updateCallbacks.updateBunkerStatus();
+    // Check if the campaign we just tried to buy is now active
+    const isCampaignActive = activeCampaigns.some(c => c.id === campaignId);
+
+    if (isCampaignActive) {
+      // Campaign is active - purchase was successful
+      showSideNotification(`✅ ${typeName} campaign activated for ${duration} hours!`, 'success');
+
+      // Refresh the campaign overlay to show updated state
+      await showCampaignsOverlay();
+
+      if (updateCallbacks) {
+        await updateCallbacks.updateCampaignsStatus();
+        await updateCallbacks.updateBunkerStatus();
+      }
+    } else {
+      // Campaign is not active - purchase failed
+      let errorMsg = data.error || 'Failed to activate campaign';
+
+      // Format common error messages
+      if (errorMsg === 'not_enough_cash') {
+        errorMsg = '<strong>Campaign Manager</strong><br><br>Insufficient funds to activate campaign!';
+      } else if (errorMsg === 'campaign_type_already_active') {
+        errorMsg = '<strong>Campaign Manager</strong><br><br>This campaign type is already active!';
+      } else if (errorMsg.includes('not_enough') || errorMsg.includes('insufficient')) {
+        errorMsg = `<strong>Campaign Manager</strong><br><br>${errorMsg}`;
+      } else {
+        errorMsg = `<strong>Campaign Manager</strong><br><br>${errorMsg}`;
+      }
+
+      showSideNotification(errorMsg, 'error');
+
+      // Refresh the campaign overlay to show updated state even on error
+      await showCampaignsOverlay();
+
+      // Also update status displays
+      if (updateCallbacks) {
+        await updateCallbacks.updateCampaignsStatus();
+        await updateCallbacks.updateBunkerStatus();
+      }
     }
 
   } catch (error) {
     console.error('Error buying campaign:', error);
     showSideNotification('Failed to activate campaign', 'error');
+
+    // Refresh the campaign overlay even on exception
+    try {
+      await showCampaignsOverlay();
+
+      // Also update status displays
+      if (updateCallbacks) {
+        await updateCallbacks.updateCampaignsStatus();
+        await updateCallbacks.updateBunkerStatus();
+      }
+    } catch (refreshError) {
+      console.error('Failed to refresh campaigns overlay:', refreshError);
+    }
   }
 }
 
@@ -540,7 +657,7 @@ export async function showContactList() {
           const userId = parseInt(btn.dataset.userId);
           const companyName = btn.dataset.companyName;
 
-          document.getElementById('contactListOverlay').style.display = 'none';
+          document.getElementById('contactListOverlay').classList.add('hidden');
           if (window.openNewChatFromContact) {
             window.openNewChatFromContact(companyName, userId);
           }
@@ -548,7 +665,7 @@ export async function showContactList() {
       });
     }
 
-    document.getElementById('contactListOverlay').style.display = 'flex';
+    document.getElementById('contactListOverlay').classList.remove('hidden');
 
   } catch (error) {
     console.error('Error loading contact list:', error);
@@ -557,17 +674,10 @@ export async function showContactList() {
 }
 
 export function closeContactList() {
-  document.getElementById('contactListOverlay').style.display = 'none';
+  document.getElementById('contactListOverlay').classList.add('hidden');
 }
 
 export async function showAnchorInfo() {
-  const anchorBadge = document.getElementById('anchorCount');
-  const vesselsAtAnchor = parseInt(anchorBadge.textContent) || 0;
-
-  await showConfirmDialog({
-    title: '⚓ Vessels at Anchor',
-    message: `You have ${vesselsAtAnchor} vessel${vesselsAtAnchor === 1 ? '' : 's'} at anchor.\n\nPlease plan routes for your vessels in the game. Once you assign routes, the vessel count will update automatically.`,
-    confirmText: 'Got it',
-    cancelText: ''
-  });
+  // Show anchor purchase dialog (instant completion via reset-timing exploit)
+  showAnchorPurchaseDialog();
 }

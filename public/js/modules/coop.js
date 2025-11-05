@@ -47,42 +47,103 @@ export async function updateCoopBadge() {
       return;
     }
 
-    // Update button badge (only show if available > 0)
+    // Update button badge (green if >= 3, red if < 3)
     const badge = document.getElementById('coopBadge');
     if (badge) {
       if (coop.available > 0) {
-        badge.textContent = `${coop.available}`;
-        badge.style.display = 'block';
-
-        // Change color based on availability
-        if (coop.available < coop.cap * 0.25) {
-          badge.style.background = '#f97316'; // Orange
+        badge.textContent = coop.available;
+        badge.classList.remove('hidden');
+        // Green if >= 3, red if < 3
+        if (coop.available >= 3) {
+          badge.classList.add('badge-green-bg');
+          badge.classList.remove('badge-red-bg');
         } else {
-          badge.style.background = '#10b981'; // Green
+          badge.classList.add('badge-red-bg');
+          badge.classList.remove('badge-green-bg');
         }
       } else {
-        // Hide badge when 0 available (all sent)
-        badge.style.display = 'none';
+        // Hide badge when 0 available
+        badge.classList.add('hidden');
       }
     }
 
-    // Update header display (always show available/cap)
-    const headerDisplay = document.getElementById('coopDisplay');
-    if (headerDisplay) {
-      headerDisplay.textContent = `${coop.available}/${coop.cap}`;
-
-      // Color based on availability (0 = good, all sent = green)
-      if (coop.available === 0) {
-        headerDisplay.style.color = '#10b981'; // Green - all sent (good!)
-      } else if (coop.available < coop.cap * 0.25) {
-        headerDisplay.style.color = '#f97316'; // Orange - almost done
-      } else {
-        headerDisplay.style.color = '#ef4444'; // Red - still many to send
-      }
-    }
+    // Header display is handled by badge only - no separate display needed
   } catch (error) {
     console.error('[Coop] Error updating badge:', error);
   }
+}
+
+/**
+ * Renders a single member card
+ * @param {Object} member - Member data
+ * @param {boolean} showButton - Whether to show the send button
+ * @param {boolean} disabled - Whether the send button should be disabled
+ * @param {string} buttonText - Optional custom button text
+ * @returns {string} HTML string for member card
+ */
+function renderMemberCard(member, showButton = true, disabled = false, buttonText = 'Send max') {
+  const fuelFormatted = formatNumber(member.fuel);
+
+  // Determine card border color class (only based on disabled state)
+  let borderClass = 'coop-card-neutral';
+  if (disabled) {
+    borderClass = 'coop-card-disabled';
+  }
+
+  // Build restrictions display (ALWAYS show if present)
+  let restrictionsHtml = '';
+  if (member.restrictions && member.restrictions.length > 0) {
+    restrictionsHtml = '<div class="coop-restrictions">';
+    member.restrictions.forEach(r => {
+      let message = r.message;
+
+      // Format time restriction with local timezone
+      if ((r.type === 'time_setting' || r.type === 'time_restriction') && r.startHourUTC !== undefined) {
+        // Convert UTC hours to local time
+        const now = new Date();
+        const startUTC = new Date(now);
+        startUTC.setUTCHours(r.startHourUTC, 0, 0, 0);
+        const endUTC = new Date(now);
+        endUTC.setUTCHours(r.endHourUTC === 0 ? 24 : r.endHourUTC, 0, 0, 0);
+
+        const startLocal = String(startUTC.getHours()).padStart(2, '0') + ':00';
+        const endLocal = String(endUTC.getHours()).padStart(2, '0') + ':00';
+
+        message = `Only accepts ${startLocal}-${endLocal}`;
+      }
+
+      if (message) {
+        restrictionsHtml += `⚠️ ${escapeHtml(message)}<br>`;
+      }
+    });
+    restrictionsHtml += '</div>';
+  }
+
+  // Button HTML
+  let buttonHtml = '';
+  if (showButton) {
+    if (!disabled) {
+      buttonHtml = `<button onclick="window.sendCoopMax(${member.user_id})" class="coop-send-btn">${buttonText}</button>`;
+    } else {
+      buttonHtml = `<button disabled class="coop-send-btn">${buttonText}</button>`;
+    }
+  }
+
+  return `
+    <div class="coop-member-card ${borderClass}">
+      <div class="coop-card-content">
+        <div class="coop-card-info">
+          <div class="coop-member-name">${escapeHtml(member.company_name)}</div>
+          <div class="coop-member-stats">
+            <div>⛴️ ${member.total_vessels} vessels</div>
+            <div>⛽ ${fuelFormatted}t fuel</div>
+          </div>
+          ${restrictionsHtml}
+        </div>
+        ${buttonHtml}
+      </div>
+    </div>
+  `;
 }
 
 /**
@@ -107,90 +168,133 @@ export async function showCoopOverlay() {
 
     if (!coop) {
       content.innerHTML = '<p style="color: #ef4444;">Failed to load coop data</p>';
-      overlay.style.display = 'flex';
+      overlay.classList.remove('hidden');
       return;
     }
 
-    // Filter only enabled members
-    const enabledMembers = members.filter(m => m.enabled === true);
+    // Get own user ID from API response
+    const myUserId = data.user?.id;
+
+    // Separate members into categories
+    const activeMembers = [];
+    const disabledMembers = [];
+    const outOfOrderMembers = [];
+    let myUser = null;
+
+    members.forEach(member => {
+      // Save own user separately
+      if (member.user_id === myUserId) {
+        myUser = member;
+        return;
+      }
+
+      if (!member.enabled) {
+        // COOP disabled
+        disabledMembers.push(member);
+      } else {
+        // COOP enabled - check if has BLOCKING restrictions
+        // Only blocking restrictions move user to "Out of Order"
+        // Settings like time/capacity are shown but don't block if currently OK
+        const hasBlockingRestrictions = member.restrictions.some(r => {
+          // Blocking types: no_vessels, low_fuel, time_restriction (when outside time range)
+          // Non-blocking types: time_setting (inside range), capacity_setting (just a filter)
+          return r.blocking === true || r.type === 'low_fuel' || r.type === 'time_restriction' || r.type === 'no_vessels';
+        });
+
+        if (hasBlockingRestrictions) {
+          // Has actual blocking restrictions - Out of Order
+          outOfOrderMembers.push(member);
+        } else {
+          // Active (may have settings/filters but currently OK)
+          activeMembers.push(member);
+        }
+      }
+    });
 
     let html = `
-      <div style="margin-bottom: 20px; padding: 15px; background: rgba(31, 41, 55, 0.5); border-radius: 8px;">
-        <h3 style="margin: 0 0 10px 0; color: #e0e0e0;">Your Coop Stats</h3>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 14px;">
-          <div>
-            <span style="color: #9ca3af;">Available:</span>
-            <span style="color: #10b981; font-weight: bold; margin-left: 8px;">${coop.available}</span>
-          </div>
-          <div>
-            <span style="color: #9ca3af;">Cap:</span>
-            <span style="color: #e0e0e0; font-weight: bold; margin-left: 8px;">${coop.cap}</span>
-          </div>
-          <div>
-            <span style="color: #9ca3af;">Sent this season:</span>
-            <span style="color: #60a5fa; font-weight: bold; margin-left: 8px;">${coop.sent_this_season}</span>
-          </div>
-          <div>
-            <span style="color: #9ca3af;">Received this season:</span>
-            <span style="color: #a78bfa; font-weight: bold; margin-left: 8px;">${coop.received_this_season}</span>
-          </div>
-        </div>
+      <div class="coop-stats-box">
+        <h3 class="coop-stats-title">Your Co-Op Stats</h3>
+        <table class="coop-stats-table">
+          <tr>
+            <td class="coop-stat-label">Co-Op total:</td>
+            <td class="coop-stat-value coop-stat-max">${coop.coop_boost || coop.cap}</td>
+            <td class="coop-stat-label">Co-Op available:</td>
+            <td class="coop-stat-value coop-stat-available">${coop.available}</td>
+          </tr>
+          <tr>
+            <td class="coop-stat-label">Sent this season:</td>
+            <td class="coop-stat-value coop-stat-sent">${coop.sent_this_season || 0}</td>
+            <td class="coop-stat-label">Received this season:</td>
+            <td class="coop-stat-value coop-stat-received">${coop.received_this_season || 0}</td>
+          </tr>
+          <tr>
+            <td class="coop-stat-label">Sent historical:</td>
+            <td class="coop-stat-value coop-stat-sent-hist">${coop.sent_historical || 0}</td>
+            <td class="coop-stat-label">Received historical:</td>
+            <td class="coop-stat-value coop-stat-received-hist">${coop.received_historical || 0}</td>
+          </tr>
+        </table>
       </div>
-
-      <h3 style="margin: 0 0 15px 0; color: #e0e0e0;">Alliance Members (${enabledMembers.length} active)</h3>
     `;
 
-    if (enabledMembers.length === 0) {
-      html += '<p style="color: #9ca3af; text-align: center; padding: 40px;">No active members available for coop</p>';
-    } else {
-      // Sort by total vessels descending
-      enabledMembers.sort((a, b) => b.total_vessels - a.total_vessels);
+    // Render active members
+    if (activeMembers.length > 0) {
+      html += `<h3 class="coop-section-header coop-section-active">✓ Active (${activeMembers.length})</h3>`;
+      activeMembers.sort((a, b) => b.total_vessels - a.total_vessels);
 
-      enabledMembers.forEach(member => {
-        const fuelFormatted = formatNumber(member.fuel);
-        const isPurchaser = member.has_real_purchase;
+      activeMembers.forEach(member => {
+        // Check if member has blocking restrictions
+        const hasBlockingRestriction = member.restrictions.some(r =>
+          r.blocking === true || r.type === 'no_vessels'
+        );
 
-        html += `
-          <div style="margin-bottom: 12px; padding: 12px; background: rgba(31, 41, 55, 0.3); border-radius: 8px; border-left: 3px solid ${isPurchaser ? '#10b981' : '#404040'};">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div style="flex: 1;">
-                <div style="color: #e0e0e0; font-weight: 500; margin-bottom: 4px;">
-                  User ${member.user_id} ${isPurchaser ? '✓' : ''}
-                </div>
-                <div style="font-size: 12px; color: #9ca3af;">
-                  ⛴️ ${member.total_vessels} vessels | ⛽ ${fuelFormatted}t fuel
-                </div>
-              </div>
-              <button
-                onclick="window.sendCoopMax(${member.user_id})"
-                style="
-                  padding: 8px 16px;
-                  background: rgba(16, 185, 129, 0.2);
-                  border: 1px solid rgba(16, 185, 129, 0.3);
-                  border-radius: 6px;
-                  color: #10b981;
-                  font-weight: 500;
-                  cursor: pointer;
-                  transition: all 0.2s;
-                "
-                onmouseover="this.style.background='rgba(16, 185, 129, 0.3)'"
-                onmouseout="this.style.background='rgba(16, 185, 129, 0.2)'"
-              >
-                Send max
-              </button>
-            </div>
-          </div>
-        `;
+        // Disable button if no COOP available OR member has blocking restrictions
+        const shouldDisableButton = coop.available === 0 || hasBlockingRestriction;
+
+        // Custom button text if no COOP available
+        const buttonText = coop.available === 0 ? 'No Coop Tickets<br>available' : 'Send max';
+
+        html += renderMemberCard(member, true, shouldDisableButton, buttonText);
       });
     }
 
+    // Render out of order members
+    if (outOfOrderMembers.length > 0) {
+      html += `<h3 class="coop-section-header coop-section-warning">⚠️ Out of Order (${outOfOrderMembers.length})</h3>`;
+      outOfOrderMembers.sort((a, b) => b.total_vessels - a.total_vessels);
+
+      outOfOrderMembers.forEach(member => {
+        html += renderMemberCard(member, true, true);
+      });
+    }
+
+    // Render disabled members
+    if (disabledMembers.length > 0) {
+      html += `<h3 class="coop-section-header coop-section-disabled">✕ COOP Disabled (${disabledMembers.length})</h3>`;
+      disabledMembers.sort((a, b) => b.total_vessels - a.total_vessels);
+
+      disabledMembers.forEach(member => {
+        html += renderMemberCard(member, true, true);
+      });
+    }
+
+    // Render own user at the bottom
+    if (myUser) {
+      html += `<h3 class="coop-section-header coop-section-you">👤 You</h3>`;
+      html += renderMemberCard(myUser, false, false);
+    }
+
+    if (activeMembers.length === 0 && outOfOrderMembers.length === 0 && disabledMembers.length === 0) {
+      html += '<p class="coop-empty-message">No members available for coop</p>';
+    }
+
     content.innerHTML = html;
-    overlay.style.display = 'flex';
+    overlay.classList.remove('hidden');
 
   } catch (error) {
     console.error('[Coop] Error showing overlay:', error);
     content.innerHTML = '<p style="color: #ef4444;">Failed to load coop data. Please try again.</p>';
-    overlay.style.display = 'flex';
+    overlay.classList.remove('hidden');
   }
 }
 
@@ -202,18 +306,80 @@ export async function showCoopOverlay() {
 export function closeCoopOverlay() {
   const overlay = document.getElementById('coopOverlay');
   if (overlay) {
-    overlay.style.display = 'none';
+    overlay.classList.add('hidden');
   }
 }
 
 /**
- * Placeholder function for sending max coop vessels
- * Will be implemented when API endpoint is provided
+ * Sends maximum available coop vessels to a specific user
  *
+ * @async
  * @param {number} userId - Target user ID
- * @returns {void}
+ * @returns {Promise<void>}
  */
-export function sendCoopMax(userId) {
-  showSideNotification(`Send max coop to user ${userId} - API endpoint not yet implemented`, 'info');
-  console.log(`[Coop] Send max to user ${userId} - Placeholder function`);
+export async function sendCoopMax(userId) {
+  try {
+    const response = await fetch(window.apiUrl('/api/coop/send-max'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ user_id: userId })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Format error message with Alliance Coop header (use <br> for line breaks)
+      const errorMsg = `🤝 Alliance Coop<br><br>ERROR!<br><br>${data.error || 'Unknown error'}<br>${data.target_user ? `COOP not available for ${data.target_user}` : 'COOP operation failed'}`;
+      showSideNotification(errorMsg, 'error');
+      return;
+    }
+
+    // Show success notification
+    const departed = data.departed || 0;
+    if (departed === 0) {
+      showSideNotification(`No vessels sent - target user has no vessels ready to depart`, 'warning');
+    } else {
+      const partial = data.partial ? ` (requested ${data.requested})` : '';
+      showSideNotification(`Successfully sent ${departed} coop vessel${departed !== 1 ? 's' : ''}${partial}`, 'success');
+    }
+
+    // Note: Badge/header updated automatically via WebSocket broadcast from backend
+    // Refresh overlay to show updated counts
+    await showCoopOverlay();
+
+  } catch (error) {
+    console.error('[Coop] Error sending max vessels:', error);
+    showSideNotification(`Network error sending coop vessels`, 'error');
+  }
+}
+
+/**
+ * Locks all COOP send buttons when COOP send process starts.
+ * Called by WebSocket handler when 'coop_send_start' is received.
+ * @global
+ */
+export function lockCoopButtons() {
+  const coopButtons = document.querySelectorAll('.coop-send-btn');
+  coopButtons.forEach(btn => {
+    btn.disabled = true;
+  });
+  console.log('[COOP Buttons] Locked - coop send in progress');
+}
+
+/**
+ * Unlocks all COOP send buttons when COOP send process completes.
+ * Called by WebSocket handler when 'coop_send_complete' is received.
+ * @global
+ */
+export function unlockCoopButtons() {
+  const coopButtons = document.querySelectorAll('.coop-send-btn');
+  coopButtons.forEach(btn => {
+    // Only re-enable buttons that should be enabled (not those with "No vessels" etc)
+    if (!btn.textContent.includes('No vessels') && !btn.textContent.includes('Not enabled')) {
+      btn.disabled = false;
+    }
+  });
+  console.log('[COOP Buttons] Unlocked - coop send complete');
 }

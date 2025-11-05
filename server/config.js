@@ -1,10 +1,10 @@
 /**
  * @fileoverview Centralized configuration for Shipping Manager application.
  * Contains all server settings, API endpoints, rate limiting rules, and timing intervals.
- * Session cookie is loaded from environment variable (injected by run.js).
+ * Session cookie is loaded from encrypted sessions.json (secure storage).
  *
  * Important configuration notes:
- * - Server listens on 0.0.0.0 (all network interfaces) for LAN access
+ * - All settings loaded from data/startup/settings.json (NO env vars)
  * - Rate limits are set conservatively to avoid API detection
  * - Chat refresh interval is 25 seconds (within the 29-minute price window)
  * - Session cookie provides full account access - never log or expose it
@@ -12,20 +12,178 @@
  * @module server/config
  */
 
-module.exports = {
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+/**
+ * Get platform-specific AppData directory without using environment variables.
+ * Used for user settings, sessions, certificates (roaming data)
+ * @returns {string} AppData\Roaming directory path
+ */
+function getAppDataDir() {
+  if (process.platform === 'win32') {
+    // Windows: C:\Users\Username\AppData\Roaming
+    return path.join(os.homedir(), 'AppData', 'Roaming');
+  }
+  // Linux/Mac: ~/.config
+  return path.join(os.homedir(), '.config');
+}
+
+/**
+ * Get platform-specific Local AppData directory (for machine-specific cache/data).
+ * Used for forecast data, cache files, logs (non-roaming data)
+ * @returns {string} AppData\Local directory path
+ */
+function getLocalAppDataDir() {
+  if (process.platform === 'win32') {
+    // Windows: C:\Users\Username\AppData\Local
+    return path.join(os.homedir(), 'AppData', 'Local');
+  }
+  // Linux/Mac: ~/.local/share
+  return path.join(os.homedir(), '.local', 'share');
+}
+
+/**
+ * Get log directory path.
+ * When packaged as .exe: AppData/Roaming/ShippingManagerCoPilot/logs/
+ * When running from source: ./data/logs/
+ * @returns {string} Log directory path
+ */
+function getLogDir() {
+  const isPkg = !!process.pkg;
+  console.log(`[DEBUG] getLogDir - process.pkg = ${isPkg}`);
+
+  if (isPkg) {
+    // Running as packaged .exe - use AppData/Roaming (same as Python helpers)
+    if (process.platform === 'win32') {
+      const appDataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'ShippingManagerCoPilot', 'logs');
+      console.log(`[DEBUG] Using APPDATA logs: ${appDataPath}`);
+      return appDataPath;
+    }
+    // macOS/Linux
+    return path.join(os.homedir(), '.config', 'ShippingManagerCoPilot', 'logs');
+  }
+  // Running from source - use project directory
+  const localPath = path.join(__dirname, '..', 'data', 'logs');
+  console.log(`[DEBUG] Using local logs: ${localPath}`);
+  return localPath;
+}
+
+/**
+ * Global session cookie storage (set during initialization)
+ * @private
+ */
+let sessionCookie = null;
+
+/**
+ * Set the session cookie for API authentication
+ * @param {string} cookie - Session cookie value
+ */
+function setSessionCookie(cookie) {
+  sessionCookie = cookie;
+}
+
+/**
+ * Get the current session cookie
+ * @returns {string} Session cookie value
+ */
+function getSessionCookie() {
+  return sessionCookie || 'COOKIE_NOT_INITIALIZED';
+}
+
+/**
+ * Get settings directory path based on execution mode.
+ * - .exe mode: AppData/Roaming/ShippingManagerCoPilot/settings/
+ * - dev mode: ./data/localdata/settings/
+ * @returns {string} Settings directory path
+ */
+function getSettingsDir() {
+  const isPkg = !!process.pkg;
+  console.log(`[DEBUG] getSettingsDir - process.pkg = ${isPkg}`);
+
+  if (isPkg) {
+    // Running as packaged .exe - use AppData
+    if (process.platform === 'win32') {
+      const appDataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'ShippingManagerCoPilot', 'settings');
+      console.log(`[DEBUG] Using APPDATA settings: ${appDataPath}`);
+      return appDataPath;
+    }
+    // macOS/Linux
+    return path.join(os.homedir(), '.config', 'ShippingManagerCoPilot', 'settings');
+  }
+  // Running from source - use data/localdata
+  const localPath = path.join(__dirname, '..', 'data', 'localdata', 'settings');
+  console.log(`[DEBUG] Using local settings: ${localPath}`);
+  return localPath;
+}
+
+/**
+ * Load startup settings from systray configuration file.
+ * Creates settings.json with localhost-only defaults on first run.
+ * @returns {Object} Settings object with port, host, selectedUserId, logLevel, debugMode
+ */
+function loadStartupSettings() {
+  const settingsDir = getSettingsDir();
+  const settingsPath = path.join(settingsDir, 'settings.json');
+
+  // First run: Create settings.json with localhost-only defaults
+  if (!fs.existsSync(settingsPath)) {
+    const defaultSettings = {
+      port: 12345,
+      host: '127.0.0.1',  // localhost-only by default (secure)
+      logLevel: 'info',  // info, debug, warn, error
+      debugMode: false   // Enable detailed debug logging
+    };
+
+    try {
+      // Ensure directory exists
+      if (!fs.existsSync(settingsDir)) {
+        fs.mkdirSync(settingsDir, { recursive: true });
+      }
+
+      fs.writeFileSync(settingsPath, JSON.stringify(defaultSettings, null, 2));
+      return defaultSettings;
+    } catch (error) {
+      throw new Error(`Failed to create startup settings: ${error.message}`);
+    }
+  }
+
+  // Read existing settings
+  try {
+    const data = fs.readFileSync(settingsPath, 'utf8');
+    const settings = JSON.parse(data);
+
+    // Return settings with defaults for missing values
+    return {
+      port: settings.port || 12345,
+      host: settings.host || '127.0.0.1',
+      logLevel: settings.logLevel || 'info',
+      debugMode: settings.debugMode !== undefined ? settings.debugMode : false
+    };
+  } catch (error) {
+    throw new Error(`Failed to read startup settings: ${error.message}`);
+  }
+}
+
+// Load startup settings (REQUIRED - no fallbacks)
+const startupSettings = loadStartupSettings();
+
+const config = {
   /**
-   * HTTPS server port. Uses non-standard port to avoid conflicts.
+   * HTTPS server port from systray settings.
+   * NO DEFAULTS - always reads from data/startup/settings.json
    * @constant {number}
-   * @default 12345
    */
-  PORT: 12345,
+  PORT: startupSettings.port,
 
   /**
-   * Server bind address. 0.0.0.0 allows access from all network interfaces (localhost + LAN).
+   * Server bind address from systray settings.
+   * NO DEFAULTS - always reads from data/startup/settings.json
+   * Default on first run: 127.0.0.1 (localhost-only for security)
    * @constant {string}
-   * @default '0.0.0.0'
    */
-  HOST: '0.0.0.0',
+  HOST: startupSettings.host,
 
   /**
    * Base URL for Shipping Manager game API. All proxy requests are sent to this endpoint.
@@ -35,11 +193,15 @@ module.exports = {
   SHIPPING_MANAGER_API: 'https://shippingmanager.cc/api',
 
   /**
-   * Session cookie for API authentication. Loaded from process.env (injected by run.js).
+   * Session cookie for API authentication. Loaded from encrypted sessions.json.
    * Provides full account access - must be kept secure and never logged.
+   * Use getSessionCookie() to access dynamically.
+   * @deprecated Use getSessionCookie() instead
    * @constant {string}
    */
-  SESSION_COOKIE: process.env.SHIPPING_MANAGER_COOKIE || 'PROVIDE YOUR SHIPPING_MANAGER_COOKIE IN AN .env FILE',
+  get SESSION_COOKIE() {
+    return getSessionCookie();
+  },
 
   /**
    * Global rate limiting configuration for all API endpoints.
@@ -73,11 +235,34 @@ module.exports = {
 
   /**
    * WebSocket chat auto-refresh interval in milliseconds.
-   * Server broadcasts updated chat feed to all connected clients every 25 seconds.
-   * This timing is critical for the 29-minute fuel/CO2 purchase window strategy.
+   * Server broadcasts updated chat feed to all connected clients every 20 seconds.
+   * Synchronized with messenger polling to reduce API load.
    *
    * @constant {number}
-   * @default 25000
+   * @default 20000
    */
-  CHAT_REFRESH_INTERVAL: 25000
+  CHAT_REFRESH_INTERVAL: 20000,
+
+  /**
+   * Debug mode enables verbose logging for development and troubleshooting.
+   * Loaded from data/startup/settings.json (no env vars).
+   *
+   * When enabled, logs include:
+   * - Detailed API call information
+   * - Autopilot operation details
+   * - Data fetch/broadcast operations
+   * - Scheduler execution logs
+   *
+   * @constant {boolean}
+   * @default false
+   */
+  DEBUG_MODE: startupSettings.debugMode
 };
+
+module.exports = config;
+module.exports.setSessionCookie = setSessionCookie;
+module.exports.getSessionCookie = getSessionCookie;
+module.exports.getAppDataDir = getAppDataDir;
+module.exports.getLocalAppDataDir = getLocalAppDataDir;
+module.exports.getLogDir = getLogDir;
+module.exports.getSettingsDir = getSettingsDir;

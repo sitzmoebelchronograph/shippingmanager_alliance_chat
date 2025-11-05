@@ -97,7 +97,8 @@ def get_decrypted_cookie_full(db_path: str, prefs_path: str, domain: str, target
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
-        cursor.execute(f"SELECT name, encrypted_value FROM cookies WHERE host_key LIKE '%{domain}'")
+        # Use parameterized query to prevent SQL injection (domain is hardcoded but Bandit still warns)
+        cursor.execute("SELECT name, encrypted_value FROM cookies WHERE host_key LIKE ?", (f"%{domain}",))
         results = cursor.fetchall()
         
         if not results:

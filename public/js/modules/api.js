@@ -200,9 +200,18 @@ export async function purchaseFuel(amount) {
     const response = await fetch(window.apiUrl('/api/bunker/purchase-fuel'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: Math.round(amount * 1000) })
+      body: JSON.stringify({ amount: Math.round(amount) })  // Send amount in tons, server converts to kg
     });
-    return await response.json();
+
+    const data = await response.json();
+
+    // Check for errors - don't hide them behind success!
+    if (!response.ok || data.error) {
+      const errorMsg = data.error || data.message || `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(errorMsg);
+    }
+
+    return data;
   } catch (error) {
     throw error;
   }
@@ -223,28 +232,49 @@ export async function purchaseCO2(amount) {
     const response = await fetch(window.apiUrl('/api/bunker/purchase-co2'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: Math.round(amount * 1000) })
+      body: JSON.stringify({ amount: Math.round(amount) })  // Send amount in tons, server converts to kg
     });
-    return await response.json();
+
+    const data = await response.json();
+
+    // Check for errors - don't hide them behind success!
+    if (!response.ok || data.error) {
+      const errorMsg = data.error || data.message || `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(errorMsg);
+    }
+
+    return data;
   } catch (error) {
     throw error;
   }
 }
 
 /**
- * Departs all vessels currently in harbor that have available routes and fuel.
- * Part of the auto-depart feature.
+ * Universal depart function - departs vessels using autopilot logic.
+ * Can depart ALL vessels or specific vessels by ID.
  *
+ * @param {Array<number>} [vesselIds=null] - Optional array of vessel IDs. If omitted, departs ALL vessels in harbor.
  * @returns {Promise<Object>} Departure result
- * @property {number} departed - Number of vessels departed
- * @property {Array<string>} errors - Array of error messages for vessels that couldn't depart
+ * @property {boolean} success - Whether departure was triggered
+ * @property {string} message - Status message
  * @throws {Error} If request fails
+ *
+ * @example
+ * // Depart all vessels in harbor
+ * await departVessels();
+ *
+ * @example
+ * // Depart specific vessels
+ * await departVessels([123, 456, 789]);
  */
-export async function departAllVessels() {
+export async function departVessels(vesselIds = null) {
   try {
-    const response = await fetch(window.apiUrl('/api/route/depart-all'), {
+    const body = vesselIds ? { vessel_ids: vesselIds } : {};
+
+    const response = await fetch(window.apiUrl('/api/route/depart'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
@@ -255,6 +285,17 @@ export async function departAllVessels() {
   } catch (error) {
     throw error;
   }
+}
+
+/**
+ * Departs all vessels currently in harbor (backwards compatibility wrapper).
+ * Uses the universal departVessels() function with no vessel IDs.
+ *
+ * @returns {Promise<Object>} Departure result
+ * @throws {Error} If request fails
+ */
+export async function departAllVessels() {
+  return await departVessels(null);
 }
 
 /**
@@ -273,6 +314,32 @@ export async function fetchContacts() {
     return await response.json();
   } catch (error) {
     console.error('Error loading contact list:', error);
+    throw error;
+  }
+}
+
+/**
+ * Search for users by company name.
+ * Returns array of matching users with IDs and company names.
+ *
+ * @param {string} name - Search term (partial match)
+ * @returns {Promise<Object>} Search results
+ * @property {Array<Object>} data.companies - Array of matching companies
+ * @property {Object} user - Current user data
+ * @throws {Error} If fetch fails
+ */
+export async function searchUsers(name) {
+  try {
+    const response = await fetch(window.apiUrl('/api/user/search'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+
+    if (!response.ok) throw new Error('Failed to search users');
+    return await response.json();
+  } catch (error) {
+    console.error('Error searching users:', error);
     throw error;
   }
 }
@@ -333,24 +400,84 @@ export async function fetchMessengerMessages(chatId) {
  * @throws {Error} If send fails or validation fails
  */
 export async function sendPrivateMessage(targetUserId, subject, message) {
+  if (window.DEBUG_MODE) {
+    console.log('[API DEBUG] sendPrivateMessage called with:');
+    console.log('  targetUserId:', targetUserId, 'type:', typeof targetUserId);
+    console.log('  subject:', subject);
+    console.log('  message:', message);
+  }
+
+  const payload = {
+    target_user_id: targetUserId,
+    subject: subject,
+    message: message
+  };
+
+  if (window.DEBUG_MODE) {
+    console.log('[API DEBUG] Payload to send:', JSON.stringify(payload, null, 2));
+  }
+
   try {
     const response = await fetch(window.apiUrl('/api/messenger/send-private'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (window.DEBUG_MODE) {
+      console.log('[API DEBUG] Response status:', response.status, response.statusText);
+    }
+
+    if (!response.ok) {
+      const error = await response.json();
+      if (window.DEBUG_MODE) {
+        console.log('[API DEBUG] Error response:', error);
+      }
+      throw new Error(error.error);
+    }
+
+    const result = await response.json();
+    if (window.DEBUG_MODE) {
+      console.log('[API DEBUG] Success response:', result);
+    }
+    return result;
+  } catch (error) {
+    if (window.DEBUG_MODE) {
+      console.log('[API DEBUG] Exception caught:', error.message);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Marks a chat conversation or system message as read.
+ * System messages and regular chats are handled differently by the API.
+ *
+ * @param {number} chatId - Chat ID to mark as read
+ * @param {boolean} [isSystemChat=false] - Whether this is a system message
+ * @returns {Promise<Object>} Mark-as-read result
+ * @property {boolean} success - Whether marking as read was successful
+ * @throws {Error} If marking as read fails
+ */
+export async function markChatAsRead(chatId, isSystemChat = false) {
+  try {
+    const response = await fetch(window.apiUrl('/api/messenger/mark-as-read'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        target_user_id: targetUserId,
-        subject: subject,
-        message: message
+        chat_ids: isSystemChat ? '[]' : `[${chatId}]`,
+        system_message_ids: isSystemChat ? `[${chatId}]` : '[]'
       })
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error);
+      throw new Error(error.error || 'Failed to mark chat as read');
     }
 
     return await response.json();
   } catch (error) {
+    console.error('[API] Mark as read error:', error);
     throw error;
   }
 }
@@ -361,18 +488,20 @@ export async function sendPrivateMessage(targetUserId, subject, message) {
  *
  * @param {number} chatId - Chat ID to delete
  * @param {boolean} [isSystemChat=false] - Whether this is a system message
+ * @param {number} [caseId=null] - Hijacking case ID (for hijacking messages)
  * @returns {Promise<Object>} Deletion result
  * @property {boolean} success - Whether deletion was successful
  * @throws {Error} If deletion fails
  */
-export async function deleteChat(chatId, isSystemChat = false) {
+export async function deleteChat(chatId, isSystemChat = false, caseId = null) {
   try {
     const response = await fetch(window.apiUrl('/api/messenger/delete-chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_ids: isSystemChat ? '[]' : `[${chatId}]`,
-        system_message_ids: isSystemChat ? `[${chatId}]` : '[]'
+        system_message_ids: isSystemChat ? `[${chatId}]` : '[]',
+        case_id: caseId
       })
     });
 
@@ -421,16 +550,27 @@ export async function fetchCampaigns() {
  */
 export async function activateCampaign(campaignId) {
   try {
+    console.log(`[API] activateCampaign REQUEST: campaign_id=${campaignId}`);
+
     const response = await fetch(window.apiUrl('/api/marketing/activate-campaign'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ campaign_id: campaignId })
     });
 
-    if (!response.ok) throw new Error('Failed to activate campaign');
-    return await response.json();
+    console.log(`[API] activateCampaign RESPONSE: status=${response.status} ${response.statusText}`);
+
+    const data = await response.json();
+    console.log(`[API] activateCampaign RESPONSE body:`, JSON.stringify(data, null, 2));
+
+    if (!response.ok) {
+      console.error(`[API] activateCampaign FAILED: HTTP ${response.status}`, data);
+      throw new Error('Failed to activate campaign');
+    }
+
+    return data;
   } catch (error) {
-    console.error('Error activating campaign:', error);
+    console.error('[API] Error activating campaign:', error);
     throw error;
   }
 }
@@ -466,7 +606,7 @@ export async function fetchAcquirableVessels() {
  * @property {number} new_balance - New cash balance
  * @throws {Error} If purchase fails (insufficient funds, invalid name)
  */
-export async function purchaseVessel(vesselId, name, antifouling) {
+export async function purchaseVessel(vesselId, name, antifouling, silent = false) {
   try {
     const response = await fetch(window.apiUrl('/api/vessel/purchase-vessel'), {
       method: 'POST',
@@ -474,7 +614,8 @@ export async function purchaseVessel(vesselId, name, antifouling) {
       body: JSON.stringify({
         vessel_id: vesselId,
         name: name,
-        antifouling_model: antifouling
+        antifouling_model: antifouling,
+        silent: silent
       })
     });
 
@@ -585,6 +726,32 @@ export async function fetchAssignedPorts() {
     return data.data?.ports || [];
   } catch (error) {
     console.error('Error fetching assigned ports:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetches user company data including fuel and CO2 capacity.
+ * Used to get actual capacity values from API instead of hardcoding.
+ *
+ * @returns {Promise<Object>} User company data
+ * @property {number} fuel_capacity - Max fuel capacity in kg
+ * @property {number} co2_capacity - Max CO2 capacity in kg
+ * @throws {Error} If fetch fails
+ */
+export async function fetchUserCompany() {
+  try {
+    const response = await fetch(window.apiUrl('/api/user/get-company'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if (!response.ok) throw new Error('Failed to fetch user company');
+    const data = await response.json();
+    // Return both data.data.company and data.user for full access to all properties
+    return { company: data.data?.company || {}, user: data.user || {} };
+  } catch (error) {
+    console.error('Error fetching user company:', error);
     throw error;
   }
 }

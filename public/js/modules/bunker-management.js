@@ -28,17 +28,17 @@ import { showConfirmDialog } from './ui-dialogs.js';
 
 /**
  * Maximum fuel storage capacity in tons.
- * This is a hardcoded game constant representing the player's fuel tank size.
+ * Fetched from API (/user/get-company) - NEVER hardcoded.
  * @type {number}
  */
-let maxFuel = 5750;
+let maxFuel = 0;
 
 /**
  * Maximum CO2 quota storage capacity in tons.
- * This is a hardcoded game constant representing the player's CO2 allowance capacity.
+ * Fetched from API (/user/get-company) - NEVER hardcoded.
  * @type {number}
  */
-let maxCO2 = 55000;
+let maxCO2 = 0;
 
 /**
  * Current fuel inventory in tons.
@@ -57,6 +57,7 @@ let currentCO2 = 0;
 /**
  * Current cash balance in dollars.
  * Updated from API responses and used for purchase affordability checks.
+ * NOTE: Always use window.updateDataCache.bunker.cash for live value in purchase dialogs
  * @type {number}
  */
 let currentCash = 0;
@@ -64,30 +65,16 @@ let currentCash = 0;
 /**
  * Current fuel price per ton in dollars.
  * Retrieved from API based on current UTC time slot (30-minute intervals).
- * @type {number}
+ * @type {number|null}
  */
-let fuelPrice = 0;
+let fuelPrice = null;
 
 /**
  * Current CO2 quota price per ton in dollars.
  * Retrieved from API based on current UTC time slot (30-minute intervals).
- * @type {number}
- */
-let co2Price = 0;
-
-/**
- * Last fuel price that triggered an alert.
- * Used to prevent duplicate alerts for the same price. Resets when price goes above threshold.
  * @type {number|null}
  */
-let lastFuelAlertPrice = null;
-
-/**
- * Last CO2 price that triggered an alert.
- * Used to prevent duplicate alerts for the same price. Resets when price goes above threshold.
- * @type {number|null}
- */
-let lastCO2AlertPrice = null;
+let co2Price = null;
 
 /**
  * Last known count of active marketing campaigns.
@@ -95,6 +82,104 @@ let lastCO2AlertPrice = null;
  * @type {number|null}
  */
 let lastCampaignsCount = null;
+
+/**
+ * Retry fetching prices if time slot not found
+ * @param {string} targetTimeSlot - The time slot we're looking for
+ * @param {number} attempt - Current attempt number (1-5)
+ */
+async function retryFetchPrices(targetTimeSlot, attempt) {
+  if (attempt > 5) {
+    if (window.DEBUG_MODE) {
+      console.error('[Bunker Management] ❌ Failed to fetch prices after 5 attempts - time slot still not available:', targetTimeSlot);
+    }
+    return;
+  }
+
+  try {
+    if (window.DEBUG_MODE) {
+      console.log(`[Bunker Management] 🔄 Retry attempt ${attempt}/5 - fetching prices for time slot: ${targetTimeSlot}`);
+    }
+
+    const response = await fetch('/api/bunker/get-prices');
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const priceData = data.data.prices.find(p => p.time === targetTimeSlot);
+
+    if (priceData && priceData.fuel_price > 0 && priceData.co2_price > 0) {
+      // Success! Update prices
+      fuelPrice = priceData.fuel_price;
+      co2Price = priceData.co2_price;
+      if (window.DEBUG_MODE) {
+        console.log(`[Bunker Management] ✅ Retry successful on attempt ${attempt} - prices updated:`, {
+          timeSlot: targetTimeSlot,
+          fuel: fuelPrice,
+          co2: co2Price
+        });
+      }
+
+      // Trigger a UI update
+      const settings = window.getSettings ? window.getSettings() : { fuelThreshold: 400, co2Threshold: 7 };
+      await updateBunkerStatus(settings);
+    } else {
+      // Time slot still not available, retry again
+      if (window.DEBUG_MODE) {
+        console.log(`[Bunker Management] ⏳ Attempt ${attempt} - time slot still not available, retrying in 2s...`);
+      }
+      setTimeout(() => {
+        retryFetchPrices(targetTimeSlot, attempt + 1);
+      }, 2000);
+    }
+  } catch (error) {
+    if (window.DEBUG_MODE) {
+      console.error(`[Bunker Management] ❌ Retry attempt ${attempt} failed:`, error.message);
+    }
+    // Retry on error
+    setTimeout(() => {
+      retryFetchPrices(targetTimeSlot, attempt + 1);
+    }, 2000);
+  }
+}
+
+/**
+ * Sets capacity values from bunker_update event data.
+ * Called when WebSocket sends maxFuel and maxCO2 values.
+ * Only logs when capacity values actually change.
+ * @param {number} newMaxFuel - Max fuel capacity in tons
+ * @param {number} newMaxCO2 - Max CO2 capacity in tons
+ */
+export function setCapacityFromBunkerUpdate(newMaxFuel, newMaxCO2) {
+  // Check if values are provided and valid
+  if (newMaxFuel !== undefined && newMaxFuel > 0) {
+    // First time initialization (maxFuel is 0) - set without logging
+    if (maxFuel === 0) {
+      maxFuel = newMaxFuel;
+    }
+    // Value changed - update and log
+    else if (newMaxFuel !== maxFuel) {
+      maxFuel = newMaxFuel;
+      console.log(`[Bunker] Capacity updated from server - Fuel: ${maxFuel}t, CO2: ${maxCO2}t`);
+    }
+  }
+
+  if (newMaxCO2 !== undefined && newMaxCO2 > 0) {
+    // First time initialization (maxCO2 is 0) - set without logging
+    if (maxCO2 === 0) {
+      maxCO2 = newMaxCO2;
+    }
+    // Value changed - update and log (only if we didn't already log for fuel)
+    else if (newMaxCO2 !== maxCO2) {
+      maxCO2 = newMaxCO2;
+      // Only log if fuel didn't change (to avoid double logging)
+      if (newMaxFuel === undefined || newMaxFuel <= 0 || newMaxFuel === maxFuel) {
+        console.log(`[Bunker] Capacity updated from server - Fuel: ${maxFuel}t, CO2: ${maxCO2}t`);
+      }
+    }
+  }
+}
 
 /**
  * Updates bunker (fuel/CO2) status display and triggers price alerts if thresholds are met.
@@ -129,20 +214,58 @@ export async function updateBunkerStatus(settings) {
     // Silent update - no user feedback for routine updates
     const data = await fetchBunkerPrices();
 
-    currentFuel = (data.user.fuel || 0) / 1000;
-    currentCO2 = (data.user.co2 || 0) / 1000;
-    currentCash = data.user.cash || 0;
+    if (!data.user || data.user.cash === undefined) {
+      console.error('[Bunker Management] API returned invalid data:', data);
+      throw new Error('Failed to fetch bunker data: user.cash is undefined');
+    }
+
+    currentFuel = data.user.fuel / 1000;
+    currentCO2 = data.user.co2 / 1000;
+    currentCash = data.user.cash;
 
     const now = new Date();
-    const utcHours = now.getUTCHours();
-    const utcMinutes = now.getUTCMinutes();
-    const currentTimeSlot = `${String(utcHours).padStart(2, '0')}:${utcMinutes < 30 ? '00' : '30'}`;
+    const localHours = now.getHours(); // Local hours, not UTC (prices are in local time)
+    const localMinutes = now.getMinutes();
+    const currentTimeSlot = `${String(localHours).padStart(2, '0')}:${localMinutes < 30 ? '00' : '30'}`;
 
-    const currentPriceData = data.data.prices.find(p => p.time === currentTimeSlot);
+    let currentPriceData = data.data.prices.find(p => p.time === currentTimeSlot);
 
-    if (currentPriceData) {
+    // If no exact match found, check for event discounted prices
+    if (!currentPriceData) {
+      const discountedFuel = data.data.discounted_fuel;
+      const discountedCO2 = data.data.discounted_co2;
+
+      if (discountedFuel !== null && discountedFuel !== undefined &&
+          discountedCO2 !== null && discountedCO2 !== undefined &&
+          discountedFuel > 0 && discountedCO2 > 0) {
+        // Event prices found - use them directly
+        fuelPrice = discountedFuel;
+        co2Price = discountedCO2;
+        console.log('[Bunker Management] Using event discounted prices - fuel:', fuelPrice, 'co2:', co2Price);
+
+        // Skip normal price update logic below and go straight to display update
+        currentPriceData = { fuel_price: fuelPrice, co2_price: co2Price, time: 'EVENT' };
+      } else {
+        // No timeslot match and no event prices - trigger retry
+        if (window.DEBUG_MODE) {
+          console.warn('[Bunker Management] Time slot not found and no event prices available - retrying in 2s');
+        }
+        setTimeout(() => retryFetchPrices(currentTimeSlot, 1), 2000);
+        return;
+      }
+    }
+
+    // Only update module-level prices if we have valid data (> 0)
+    if (currentPriceData && currentPriceData.fuel_price > 0 && currentPriceData.co2_price > 0) {
       fuelPrice = currentPriceData.fuel_price;
       co2Price = currentPriceData.co2_price;
+    } else if (currentPriceData) {
+      // Log warning if we received price data but it's invalid
+      console.warn('[Bunker Management] ⚠️ Received invalid price data - NOT updating prices:', {
+        fuel: currentPriceData.fuel_price,
+        co2: currentPriceData.co2_price,
+        timeSlot: currentPriceData.time
+      });
     }
 
     const fuelDisplay = document.getElementById('fuelDisplay');
@@ -151,88 +274,107 @@ export async function updateBunkerStatus(settings) {
     const fuelPriceDisplay = document.getElementById('fuelPriceDisplay');
     const co2PriceDisplay = document.getElementById('co2PriceDisplay');
 
-    fuelDisplay.innerHTML = `${formatNumber(Math.floor(currentFuel))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxFuel))} <b>t</b>`;
+    // CRITICAL: Only update displays if we have VALID MAX values (right side > 0)
+    // Left side (current values) CAN be 0 or even negative (CO2) - that's OK!
+    // We only check if maxFuel/maxCO2 > 0 to know we have real data from API
+    // If max values are 0, we got invalid data or no data yet - DO NOT display anything
 
-    if (currentCO2 < 0) {
-      co2Display.innerHTML = `-${formatNumber(Math.floor(Math.abs(currentCO2)))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxCO2))} <b>t</b>`;
-    } else {
-      co2Display.innerHTML = `${formatNumber(Math.floor(currentCO2))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxCO2))} <b>t</b>`;
+    if (maxFuel > 0) {
+      // currentFuel can be 0 (empty tank) - that's fine, we still show it
+      fuelDisplay.innerHTML = `${formatNumber(Math.floor(currentFuel))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxFuel))} <b>t</b>`;
     }
 
-    cashDisplay.textContent = `$${formatNumber(currentCash)}`;
+    if (maxCO2 > 0) {
+      // currentCO2 can be 0 or NEGATIVE - that's fine, we still show it
+      if (currentCO2 < 0) {
+        co2Display.innerHTML = `-${formatNumber(Math.floor(Math.abs(currentCO2)))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxCO2))} <b>t</b>`;
+      } else {
+        co2Display.innerHTML = `${formatNumber(Math.floor(currentCO2))} <b>t</b> <b>/</b> ${formatNumber(Math.floor(maxCO2))} <b>t</b>`;
+      }
+    }
 
-    if (fuelPrice <= settings.fuelThreshold) {
+    // Cash: If we have valid bunker data (maxFuel > 0), show cash even if 0 (user could be broke)
+    // Only skip display if we have NO data yet at all
+    if (maxFuel > 0 || maxCO2 > 0) {
+      cashDisplay.textContent = `$${formatNumber(currentCash)}`;
+    }
+
+    // Only update price display if we have valid prices (> 0), otherwise keep last known value
+    if (fuelPrice && fuelPrice > 0) {
       fuelPriceDisplay.textContent = `$${formatNumber(fuelPrice)}/t`;
-      fuelPriceDisplay.style.color = '#4ade80';
-      fuelPriceDisplay.style.fontWeight = '700';
-    } else {
-      fuelPriceDisplay.textContent = `$${formatNumber(fuelPrice)}/t`;
-      fuelPriceDisplay.style.color = '#9ca3af';
-      fuelPriceDisplay.style.fontWeight = '500';
+      fuelPriceDisplay.className = ''; // Clear existing classes
+
+      // Check if below alert threshold (pulse animation)
+      if (fuelPrice < settings.fuelThreshold) {
+        fuelPriceDisplay.className = 'price-pulse-alert';
+      } else {
+        // Apply standard color based on price ranges
+        if (fuelPrice >= 800) {
+          fuelPriceDisplay.className = 'fuel-red';
+        } else if (fuelPrice >= 600) {
+          fuelPriceDisplay.className = 'fuel-orange';
+        } else if (fuelPrice >= 400) {
+          fuelPriceDisplay.className = 'fuel-blue';
+        } else if (fuelPrice >= 1) {
+          fuelPriceDisplay.className = 'fuel-green';
+        }
+      }
     }
 
-    if (co2Price <= settings.co2Threshold) {
+    // CRITICAL: Only update CO2 price if VALID (> 0)
+    // DO NOT show 0 or invalid values - keep cached value instead
+    if (co2Price !== null && co2Price !== undefined && co2Price > 0) {
       co2PriceDisplay.textContent = `$${formatNumber(co2Price)}/t`;
-      co2PriceDisplay.style.color = '#4ade80';
-      co2PriceDisplay.style.fontWeight = '700';
-    } else {
-      co2PriceDisplay.textContent = `$${formatNumber(co2Price)}/t`;
-      co2PriceDisplay.style.color = '#9ca3af';
-      co2PriceDisplay.style.fontWeight = '500';
-    }
+      co2PriceDisplay.className = ''; // Clear existing classes
 
-    const fuelNeeded = Math.max(0, maxFuel - currentFuel);
-    const co2Needed = Math.max(0, maxCO2 - currentCO2);
-    const fuelCost = fuelNeeded * fuelPrice;
-    const co2Cost = co2Needed * co2Price;
+      // Check if below alert threshold (pulse animation)
+      if (co2Price < settings.co2Threshold) {
+        co2PriceDisplay.className = 'price-pulse-alert';
+      } else {
+        // Apply standard color based on price ranges
+        if (co2Price >= 20) {
+          co2PriceDisplay.className = 'co2-red';
+        } else if (co2Price >= 15) {
+          co2PriceDisplay.className = 'co2-orange';
+        } else if (co2Price >= 10) {
+          co2PriceDisplay.className = 'co2-blue';
+        } else if (co2Price >= 1) {
+          co2PriceDisplay.className = 'co2-green';
+        }
+      }
+    } else if (co2Price !== null && co2Price !== undefined && co2Price < 0) {
+      // Special case: Negative CO2 prices (you get paid!)
+      co2PriceDisplay.textContent = `$${formatNumber(co2Price)}/t`;
+      co2PriceDisplay.className = 'co2-negative';
+    } else if (co2Price === 0) {
+      // Log detailed warning if co2Price is exactly 0 - this should NEVER happen
+      // This means either: 1) Never loaded any prices yet, or 2) API gave us invalid data
+      console.warn('[Bunker Management] ⚠️ CO2 price is ZERO - NOT displaying (keeping cached value in display)', {
+        reason: 'co2Price module variable is still 0 (initial value or invalid API data)',
+        currentPriceDataFound: !!currentPriceData,
+        apiCallSucceeded: !!data,
+        pricesArrayLength: data?.data?.prices?.length || 0,
+        note: 'If this happens on first load, it is normal. If it happens later, check if API call succeeded or if time slot matching failed.'
+      });
+    }
+    // If co2Price is null, undefined, or EXACTLY 0: DO NOTHING - keep last cached value
+
+    const fuelNeeded = Math.ceil(Math.max(0, maxFuel - currentFuel));
+    const co2Needed = Math.ceil(Math.max(0, maxCO2 - currentCO2));
+    const fuelCost = Math.round(fuelNeeded * fuelPrice);
+    const co2Cost = Math.round(co2Needed * co2Price);
 
     document.getElementById('fuelBtn').title = `Buy ${formatNumber(fuelNeeded)}t fuel for $${formatNumber(fuelCost)} (Price: $${fuelPrice}/t)`;
     document.getElementById('co2Btn').title = `Buy ${formatNumber(co2Needed)}t CO2 for $${formatNumber(co2Cost)} (Price: $${co2Price}/t)`;
 
-    const hasPermission = Notification.permission === "granted";
-    const desktopNotifsEnabled = settings.enableDesktopNotifications !== undefined ? settings.enableDesktopNotifications : true;
-
-    if (fuelPrice <= settings.fuelThreshold && lastFuelAlertPrice !== fuelPrice) {
-      lastFuelAlertPrice = fuelPrice;
-
-      if (hasPermission && desktopNotifsEnabled) {
-        await showNotification('⛽ Fuel Price Alert!', {
-          body: `New price: $${fuelPrice}/t`,
-          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>⛽</text></svg>",
-          tag: 'fuel-alert',
-          silent: false
-        });
-      }
-
-      showSideNotification(`⛽ <strong>Fuel Price Alert!</strong><br><br>Current price: <strong style="color: #4ade80;">$${fuelPrice}/ton</strong><br>Your threshold: $${settings.fuelThreshold}/ton`, 'success', null, true);
+    // Cache prices for next page load - only if valid
+    if (window.saveBadgeCache && fuelPrice > 0 && co2Price > 0) {
+      window.saveBadgeCache({ prices: { fuelPrice, co2Price } });
     }
 
-    if (co2Price <= settings.co2Threshold && lastCO2AlertPrice !== co2Price) {
-      lastCO2AlertPrice = co2Price;
-
-      if (hasPermission && desktopNotifsEnabled) {
-        await showNotification('💨 CO2 Price Alert!', {
-          body: `New price: $${co2Price}/t`,
-          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='50%' x='50%' text-anchor='middle' font-size='80'>💨</text></svg>",
-          tag: 'co2-alert',
-          silent: false
-        });
-      }
-
-      showSideNotification(`💨 <strong>CO2 Price Alert!</strong><br><br>Current price: <strong style="color: #4ade80;">$${co2Price}/ton</strong><br>Your threshold: $${settings.co2Threshold}/ton`, 'success', null, true);
-    }
-
-    if (fuelPrice > settings.fuelThreshold) {
-      lastFuelAlertPrice = null;
-    }
-    if (co2Price > settings.co2Threshold) {
-      lastCO2AlertPrice = null;
-    }
-
-    // Trigger auto-rebuy checks (prices already updated above)
-    if (window.triggerAutoRebuyChecks) {
-      window.triggerAutoRebuyChecks(settings);
-    }
+    // Price alerts and auto-rebuy are now handled exclusively by backend
+    // Backend checks prices at :01 and :31 minutes every hour
+    // See: server/autopilot.js - autoRebuyForAllUsers()
 
   } catch (error) {
     console.error('Error updating bunker status:', error);
@@ -277,12 +419,25 @@ export async function updateCampaignsStatus() {
     const badge = document.getElementById('campaignsCount');
     const button = document.getElementById('campaignsBtn');
 
-    if (activeCount === 3) {
-      badge.style.display = 'none';
-    } else {
+    // Only show badge if < 3 campaigns (0, 1, or 2)
+    if (activeCount < 3) {
       badge.textContent = activeCount;
-      badge.style.display = 'block';
-      badge.style.background = '#ef4444';
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+
+    // Update header display
+    const campaignsHeaderDisplay = document.getElementById('campaignsHeaderDisplay');
+    if (campaignsHeaderDisplay) {
+      campaignsHeaderDisplay.textContent = activeCount;
+      if (activeCount >= 3) {
+        campaignsHeaderDisplay.classList.remove('text-danger');
+        campaignsHeaderDisplay.classList.add('text-success');
+      } else {
+        campaignsHeaderDisplay.classList.remove('text-success');
+        campaignsHeaderDisplay.classList.add('text-danger');
+      }
     }
 
     const statusList = requiredTypes.map(type => {
@@ -326,6 +481,11 @@ export async function updateCampaignsStatus() {
 
     lastCampaignsCount = activeCount;
 
+    // Cache campaigns count for next page load
+    if (window.saveBadgeCache) {
+      window.saveBadgeCache({ campaigns: activeCount });
+    }
+
   } catch (error) {
     console.error('Error updating campaigns status:', error);
   }
@@ -358,24 +518,102 @@ export async function updateCampaignsStatus() {
  * // Shows dialog: "Purchase 2,500t fuel for $1,000,000?"
  */
 export async function buyMaxFuel() {
-  const fuelNeeded = Math.max(0, maxFuel - currentFuel);
+  // Check if capacity values are loaded from server
+  if (maxFuel === 0 || maxCO2 === 0) {
+    showSideNotification('⛽ Storage capacity not yet loaded - please wait', 'error');
+    return;
+  }
+
+  // Frontend is DUMB - only use prices from Header (provided by Backend via WebSocket)
+  // Backend is SMART - handles all fallback logic (last price, discounted prices, validation)
+
+  const fuelNeeded = Math.ceil(Math.max(0, maxFuel - currentFuel));
+  console.log(`[Bunker] Tank status - maxFuel: ${maxFuel}t, currentFuel: ${currentFuel}t, fuelNeeded: ${fuelNeeded}t`);
 
   if (fuelNeeded === 0) {
     showSideNotification('⛽ Fuel tank is already full!', 'info');
     return;
   }
 
-  const totalCost = fuelNeeded * fuelPrice;
+  // Get CURRENT cash from cache (not stale module variable)
+  const actualCash = window.updateDataCache?.bunker?.cash || currentCash;
+
+  // Get current price from header display (provided by Backend via WebSocket)
+  // Backend handles: TimeSlot fallback, discounted prices, validation
+  const fuelPriceDisplay = document.getElementById('fuelPriceDisplay');
+  let displayedPrice = 0;
+  let hasDiscount = false;
+  let discountPercentage = 0;
+
+  if (fuelPriceDisplay && fuelPriceDisplay.textContent) {
+    // Parse "$576/t -20%" format
+    const text = fuelPriceDisplay.textContent;
+    const priceStart = text.indexOf('$') + 1;
+    const priceEnd = text.indexOf('/t');
+    if (priceStart > 0 && priceEnd > priceStart) {
+      displayedPrice = parseInt(text.substring(priceStart, priceEnd));
+      const discountStart = text.indexOf('-');
+      const discountEnd = text.indexOf('%');
+      if (discountStart > -1 && discountEnd > discountStart) {
+        hasDiscount = true;
+        discountPercentage = parseInt(text.substring(discountStart + 1, discountEnd));
+      }
+    }
+  }
+
+  // Validation: Price MUST be available from Backend
+  if (displayedPrice === 0) {
+    console.error('[Purchase Fuel] Price not available from Header - Backend has not sent prices yet');
+    showSideNotification('⛽ Price data not yet loaded - please wait for Backend', 'error');
+    return;
+  }
+
+  const eventDiscount = hasDiscount ? { percentage: discountPercentage, type: 'fuel' } : null;
+
+  // Determine price color class (same logic as header)
+  let priceColorClass = '';
+  if (displayedPrice >= 800) {
+    priceColorClass = 'fuel-red';
+  } else if (displayedPrice >= 600) {
+    priceColorClass = 'fuel-orange';
+  } else if (displayedPrice >= 400) {
+    priceColorClass = 'fuel-blue';
+  } else if (displayedPrice >= 1) {
+    priceColorClass = 'fuel-green';
+  }
+
+  if (window.DEBUG_MODE) {
+    console.log(`[Bunker] buyMaxFuel - actualCash: $${actualCash}, currentCash (var): $${currentCash}, displayedPrice: $${displayedPrice}/t (base: $${fuelPrice}/t), hasDiscount: ${hasDiscount}, priceColor: ${priceColorClass}`);
+  }
+
+  // Calculate how much we can afford
+  const maxAffordable = Math.floor(actualCash / displayedPrice);
+  const amountToBuy = Math.min(fuelNeeded, maxAffordable);
+
+  if (window.DEBUG_MODE) {
+    console.log(`[Bunker] Purchase calculation - fuelNeeded: ${fuelNeeded}t, maxAffordable: ${maxAffordable}t, amountToBuy: ${amountToBuy}t`);
+  }
+
+  if (amountToBuy === 0) {
+    showSideNotification('⛽ Insufficient funds to purchase fuel', 'error');
+    return;
+  }
+
+  // Calculate total cost using ACTUAL price (with event discount)
+  const totalCost = Math.round(amountToBuy * displayedPrice);
+  const isPartialFill = amountToBuy < fuelNeeded;
 
   const confirmed = await showConfirmDialog({
     title: '⛽ Purchase Fuel',
-    message: 'Do you want to purchase fuel to fill your tank?',
+    message: isPartialFill
+      ? `Insufficient funds to fill tank completely. Purchase ${formatNumber(amountToBuy)}t instead?`
+      : 'Do you want to purchase fuel to fill your tank?',
     confirmText: 'Buy Fuel',
     details: [
-      { label: 'Amount needed', value: `${formatNumber(fuelNeeded)}t` },
-      { label: 'Price per ton', value: `$${formatNumber(fuelPrice)}/t` },
+      { label: 'Amount', value: `${formatNumber(amountToBuy)}t${isPartialFill ? ` (of ${formatNumber(fuelNeeded)}t needed)` : ''}` },
+      { label: hasDiscount ? `Price (incl -${eventDiscount.percentage}%)` : 'Price', value: `$${formatNumber(displayedPrice)}/t`, className: priceColorClass },
       { label: 'Total Cost', value: `$${formatNumber(totalCost)}` },
-      { label: 'Available Cash', value: `$${formatNumber(currentCash)}` }
+      { label: 'Cash after', value: `$${formatNumber(Math.round(actualCash - totalCost))}` }
     ]
   });
 
@@ -384,18 +622,26 @@ export async function buyMaxFuel() {
   }
 
   try {
-    const data = await apiPurchaseFuel(fuelNeeded);
+    if (window.DEBUG_MODE) {
+      console.log(`[Fuel Purchase] SENDING TO API - amountToBuy: ${amountToBuy}t, Math.round(amountToBuy): ${Math.round(amountToBuy)}t, totalCost: $${totalCost}, actualCash: $${actualCash}, displayedPrice: $${displayedPrice}/t`);
+    }
 
-    if (data.error) {
-      showSideNotification(`⛽ <strong>Purchase Failed</strong><br><br>${data.error}`, 'error');
-    } else {
-      showSideNotification(`⛽ <strong>Fuel Purchased!</strong><br><br>Amount: ${formatNumber(fuelNeeded)}t<br>Cost: $${formatNumber(totalCost)}`, 'success');
-      if (window.debouncedUpdateBunkerStatus) {
-        window.debouncedUpdateBunkerStatus(500);
-      }
+    const data = await apiPurchaseFuel(amountToBuy);
+
+    // Backend broadcasts notification to ALL clients via WebSocket
+    // No need to show notification here - all clients will receive it
+
+    // Still update bunker status locally for immediate feedback
+    if (window.debouncedUpdateBunkerStatus) {
+      window.debouncedUpdateBunkerStatus(500);
     }
   } catch (error) {
-    showSideNotification(`⛽ <strong>Error</strong><br><br>${error.message}`, 'error');
+    // Show actual error message - don't hide failures!
+    console.error('[Fuel Purchase] Error:', error);
+    if (window.DEBUG_MODE) {
+      console.error('[Fuel Purchase] Error details - amountToBuy:', amountToBuy, 'totalCost:', totalCost, 'actualCash:', actualCash, 'displayedPrice:', displayedPrice);
+    }
+    showSideNotification(`⛽ Purchase failed: ${error.message}`, 'error');
   }
 }
 
@@ -426,24 +672,101 @@ export async function buyMaxFuel() {
  * // Shows dialog: "Purchase 25,000t CO2 for $175,000?"
  */
 export async function buyMaxCO2() {
-  const co2Needed = Math.max(0, maxCO2 - currentCO2);
+  // Fetch capacity from API if not loaded yet - NO HARDCODED VALUES!
+  if (maxFuel === 0 || maxCO2 === 0) {
+    try {
+      await updateCapacityFromAPI();
+    } catch (error) {
+      showSideNotification('💨 Cannot purchase - failed to fetch storage capacity', 'error');
+      return;
+    }
+  }
+
+  // Frontend is DUMB - only use prices from Header (provided by Backend via WebSocket)
+  // Backend is SMART - handles all fallback logic (last price, discounted prices, validation)
+
+  const co2Needed = Math.ceil(Math.max(0, maxCO2 - currentCO2));
 
   if (co2Needed === 0) {
     showSideNotification('💨 CO2 storage is already full!', 'info');
     return;
   }
 
-  const totalCost = co2Needed * co2Price;
+  // Get CURRENT cash from cache (not stale module variable)
+  const actualCash = window.updateDataCache?.bunker?.cash || currentCash;
+
+  // Get current price from header display (provided by Backend via WebSocket)
+  // Backend handles: TimeSlot fallback, discounted prices, validation
+  const co2PriceDisplay = document.getElementById('co2PriceDisplay');
+  let displayedPrice = 0;
+  let hasDiscount = false;
+  let discountPercentage = 0;
+
+  if (co2PriceDisplay && co2PriceDisplay.textContent) {
+    // Parse "$24/t -20%" format
+    const text = co2PriceDisplay.textContent;
+    const priceStart = text.indexOf('$') + 1;
+    const priceEnd = text.indexOf('/t');
+    if (priceStart > 0 && priceEnd > priceStart) {
+      displayedPrice = parseInt(text.substring(priceStart, priceEnd));
+      const discountStart = text.indexOf('-');
+      const discountEnd = text.indexOf('%');
+      if (discountStart > -1 && discountEnd > discountStart) {
+        hasDiscount = true;
+        discountPercentage = parseInt(text.substring(discountStart + 1, discountEnd));
+      }
+    }
+  }
+
+  // Validation: Price MUST be available from Backend
+  if (displayedPrice === 0) {
+    console.error('[Purchase CO2] Price not available from Header - Backend has not sent prices yet');
+    showSideNotification('💨 Price data not yet loaded - please wait for Backend', 'error');
+    return;
+  }
+
+  const eventDiscount = hasDiscount ? { percentage: discountPercentage, type: 'co2' } : null;
+
+  // Determine price color class (same logic as header)
+  let priceColorClass = '';
+  if (displayedPrice >= 20) {
+    priceColorClass = 'co2-red';
+  } else if (displayedPrice >= 15) {
+    priceColorClass = 'co2-orange';
+  } else if (displayedPrice >= 10) {
+    priceColorClass = 'co2-blue';
+  } else if (displayedPrice >= 1) {
+    priceColorClass = 'co2-green';
+  }
+
+  // Calculate how much we can afford
+  const maxAffordable = Math.floor(actualCash / displayedPrice);
+  const amountToBuy = Math.min(co2Needed, maxAffordable);
+
+  if (window.DEBUG_MODE) {
+    console.log(`[Bunker] buyMaxCO2 - actualCash: $${actualCash}, maxAffordable: ${maxAffordable}t, amountToBuy: ${amountToBuy}t`);
+  }
+
+  if (amountToBuy === 0) {
+    showSideNotification('💨 Insufficient funds to purchase CO2', 'error');
+    return;
+  }
+
+  // Calculate total cost using ACTUAL price (with event discount)
+  const totalCost = Math.round(amountToBuy * displayedPrice);
+  const isPartialFill = amountToBuy < co2Needed;
 
   const confirmed = await showConfirmDialog({
-    title: '💨 Purchase CO2 Quota',
-    message: 'Do you want to purchase CO2 quota to fill your storage?',
+    title: '💨 Purchase CO2',
+    message: isPartialFill
+      ? `Insufficient funds to fill storage completely. Purchase ${formatNumber(amountToBuy)}t instead?`
+      : 'Do you want to purchase CO2 to fill your storage?',
     confirmText: 'Buy CO2',
     details: [
-      { label: 'Amount needed', value: `${formatNumber(co2Needed)}t` },
-      { label: 'Price per ton', value: `$${formatNumber(co2Price)}/t` },
+      { label: 'Amount', value: `${formatNumber(amountToBuy)}t${isPartialFill ? ` (of ${formatNumber(co2Needed)}t needed)` : ''}` },
+      { label: hasDiscount ? `Price (incl -${eventDiscount.percentage}%)` : 'Price', value: `$${formatNumber(displayedPrice)}/t`, className: priceColorClass },
       { label: 'Total Cost', value: `$${formatNumber(totalCost)}` },
-      { label: 'Available Cash', value: `$${formatNumber(currentCash)}` }
+      { label: 'Cash after', value: `$${formatNumber(Math.round(actualCash - totalCost))}` }
     ]
   });
 
@@ -452,18 +775,26 @@ export async function buyMaxCO2() {
   }
 
   try {
-    const data = await apiPurchaseCO2(co2Needed);
+    if (window.DEBUG_MODE) {
+      console.log(`[CO2 Purchase] SENDING TO API - amountToBuy: ${amountToBuy}t, Math.round(amountToBuy): ${Math.round(amountToBuy)}t, totalCost: $${totalCost}, actualCash: $${actualCash}, displayedPrice: $${displayedPrice}/t`);
+    }
 
-    if (data.error) {
-      showSideNotification(`💨 <strong>Purchase Failed</strong><br><br>${data.error}`, 'error');
-    } else {
-      showSideNotification(`💨 <strong>CO2 Purchased!</strong><br><br>Amount: ${formatNumber(co2Needed)}t<br>Cost: $${formatNumber(totalCost)}`, 'success');
-      if (window.debouncedUpdateBunkerStatus) {
-        window.debouncedUpdateBunkerStatus(500);
-      }
+    const data = await apiPurchaseCO2(amountToBuy);
+
+    // Backend broadcasts notification to ALL clients via WebSocket
+    // No need to show notification here - all clients will receive it
+
+    // Still update bunker status locally for immediate feedback
+    if (window.debouncedUpdateBunkerStatus) {
+      window.debouncedUpdateBunkerStatus(500);
     }
   } catch (error) {
-    showSideNotification(`💨 <strong>Error</strong><br><br>${error.message}`, 'error');
+    // Show actual error message - don't hide failures!
+    console.error('[CO2 Purchase] Error:', error);
+    if (window.DEBUG_MODE) {
+      console.error('[CO2 Purchase] Error details - amountToBuy:', amountToBuy, 'totalCost:', totalCost, 'actualCash:', actualCash, 'displayedPrice:', displayedPrice);
+    }
+    showSideNotification(`💨 Purchase failed: ${error.message}`, 'error');
   }
 }
 

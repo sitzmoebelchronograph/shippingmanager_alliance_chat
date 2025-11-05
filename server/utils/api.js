@@ -16,7 +16,7 @@
  * - Centralizes all game API communication in one module
  * - Connection pooling reduces latency (reuses TCP connections)
  * - State caching reduces API load (important for rate limiting)
- * - Session cookie injected from environment (extracted by run.js)
+ * - Session cookie loaded from encrypted storage via session-manager
  * - Graceful degradation when user not in alliance
  *
  * Connection Pooling Strategy:
@@ -47,6 +47,7 @@
 const axios = require('axios');
 const https = require('https');
 const config = require('../config');
+const logger = require('./logger');
 
 /**
  * User's alliance ID (null if not in alliance)
@@ -73,6 +74,47 @@ let USER_COMPANY_NAME = null;
 const userNameCache = new Map();
 
 /**
+ * API Request Statistics Tracker
+ * Tracks all requests to shippingmanager.cc for monitoring rate limits and usage patterns
+ */
+const apiStats = {
+  totalRequests: 0,
+  requestsByEndpoint: new Map(),
+  startTime: Date.now(),
+  lastResetTime: Date.now(),
+  requestsLastMinute: 0,
+  requestTimestamps: [], // Store timestamps with endpoints for last minute calculation
+  lastMinuteByEndpoint: new Map() // Track requests per endpoint in last minute
+};
+
+// Log statistics every minute
+setInterval(() => {
+  const now = Date.now();
+
+  // Calculate requests in last minute
+  const oneMinuteAgo = now - 60000;
+  apiStats.requestTimestamps = apiStats.requestTimestamps.filter(item => item.time > oneMinuteAgo);
+  const requestsLastMinute = apiStats.requestTimestamps.length;
+
+  // Count requests by endpoint in last minute
+  const lastMinuteByEndpoint = new Map();
+  apiStats.requestTimestamps.forEach(item => {
+    const count = lastMinuteByEndpoint.get(item.endpoint) || 0;
+    lastMinuteByEndpoint.set(item.endpoint, count + 1);
+  });
+
+  // Get top 10 endpoints from last minute only
+  const sortedEndpoints = Array.from(lastMinuteByEndpoint.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  // Build compact one-line stats
+  const topEndpointsStr = sortedEndpoints.map(([endpoint, count]) => `${endpoint}:${count}x`).join(', ');
+
+  logger.log(`[API Stats] ${requestsLastMinute} req/min | Top 10: ${topEndpointsStr}`);
+}, 60000); // 1 minute = 60000ms
+
+/**
  * HTTPS agent with Keep-Alive for connection pooling and performance optimization.
  *
  * This agent maintains persistent TCP connections to the game API server, reducing
@@ -83,7 +125,7 @@ const userNameCache = new Map();
  * - keepAliveMsecs: 30s - TCP keep-alive packets every 30 seconds
  * - maxSockets: 10 - Limits concurrent connections (avoids API server overload)
  * - maxFreeSockets: 5 - Keeps 5 idle connections ready for immediate reuse
- * - timeout: 30s - Socket timeout (prevents hanging connections)
+ * - timeout: 120s - Socket timeout (allows very slow endpoints like chat/messenger to complete)
  * - scheduling: 'lifo' - Uses most recently used socket first (better cache locality)
  *
  * Anti-Detection Benefits:
@@ -99,7 +141,7 @@ const httpsAgent = new https.Agent({
   keepAliveMsecs: 30000,          // Keep connections alive for 30 seconds
   maxSockets: 10,                 // Max 10 simultaneous connections (good for anti-detection)
   maxFreeSockets: 5,              // Max 5 idle sockets
-  timeout: 30000,                 // Socket timeout 30s
+  timeout: 120000,                // Socket timeout 120s (unified timeout for large API responses)
   scheduling: 'lifo'              // Use most recently used socket first
 });
 
@@ -115,13 +157,13 @@ const httpsAgent = new https.Agent({
  * - Mimics browser requests (headers, user agent, origin)
  * - Uses Keep-Alive agent for connection reuse
  * - Consistent error handling across all API calls
- * - 30-second timeout prevents hanging requests
+ * - Configurable timeout (default 30s, extended for slow endpoints like messenger)
  *
  * Authentication:
  * - Session cookie injected via config.SESSION_COOKIE
- * - Cookie extracted from Steam client by run.js Python script
+ * - Cookie extracted from Steam client by start.py and stored in encrypted session storage
  * - Provides full account access (same as logged-in browser session)
- * - Cookie never stored in files (only in environment variable)
+ * - Cookie stored encrypted in session-manager (AES-256-GCM)
  *
  * Headers:
  * - User-Agent: Mozilla/5.0 (looks like browser, not bot)
@@ -145,6 +187,7 @@ const httpsAgent = new https.Agent({
  * @param {string} endpoint - API endpoint (e.g., '/alliance/get-chat-feed')
  * @param {string} [method='POST'] - HTTP method (GET, POST, etc.)
  * @param {Object} [body={}] - Request payload (will be JSON stringified)
+ * @param {number} [timeout=90000] - Request timeout in milliseconds (default 90s)
  * @returns {Promise<Object>} API response data (already parsed from JSON)
  * @throws {Error} When API request fails (network error or HTTP error status)
  *
@@ -157,30 +200,161 @@ const httpsAgent = new https.Agent({
  * // Get user settings (default POST method, empty body)
  * const userData = await apiCall('/user/get-user-settings');
  * console.log(userData.user.company_name);
+ *
+ * @example
+ * // Slow endpoint with extended timeout (60 seconds)
+ * const chats = await apiCall('/messenger/get-chats', 'POST', {}, 60000);
  */
-async function apiCall(endpoint, method = 'POST', body = {}) {
+async function apiCall(endpoint, method = 'POST', body = {}, timeout = 90000, retryCount = 0) {
+  const maxRetries = 3;
+
+  // Track API request
+  apiStats.totalRequests++;
+  apiStats.requestTimestamps.push({ time: Date.now(), endpoint: endpoint });
+  const currentCount = apiStats.requestsByEndpoint.get(endpoint) || 0;
+  apiStats.requestsByEndpoint.set(endpoint, currentCount + 1);
+
   try {
+    // Determine if we should send as JSON or form-urlencoded
+    // Empty body should be sent as form-urlencoded with empty string
+    const isEmptyBody = !body || (typeof body === 'object' && Object.keys(body).length === 0);
+    const requestData = isEmptyBody ? '' : body;
+    const contentType = isEmptyBody ? 'application/x-www-form-urlencoded' : 'application/json';
+
     const response = await axios({
       method,
       url: `${config.SHIPPING_MANAGER_API}${endpoint}`,
-      data: body,
+      data: requestData,
       headers: {
         'Accept': 'application/json, text/plain, */*',
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0',
+        'Content-Type': contentType,
+        'Game-Version': '1.0.313',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
         'Origin': 'https://shippingmanager.cc',
+        'Referer': 'https://shippingmanager.cc/loading',
         'Cookie': `shipping_manager_session=${config.SESSION_COOKIE}`
       },
       httpsAgent: httpsAgent,      // Use Keep-Alive agent
-      timeout: 30000                // Request timeout 30s
+      timeout: timeout              // Request timeout (configurable, default 90s)
     });
     return response.data;
   } catch (error) {
-    const errorMessage = error.response
-      ? `Request failed with status code ${error.response.status}`
-      : error.message;
-    console.error(`API Error: ${endpoint} ${errorMessage}`);
-    throw new Error(errorMessage);
+    if (error.response) {
+      // API responded with error status - return the data so we can see actual errors
+      logger.error(`API Error: ${endpoint} - Status ${error.response.status}`);
+      logger.error(`Response data:`, JSON.stringify(error.response.data, null, 2));
+
+      // Special handling for 401 Unauthorized - this is critical
+      if (error.response.status === 401) {
+        logger.error('[CRITICAL] 401 Unauthorized - Session cookie is invalid!');
+        logger.error('[CRITICAL] Endpoint:', endpoint);
+        logger.error('[CRITICAL] This means the session cookie cannot authenticate.');
+        const cookiePreview = config.SESSION_COOKIE ?
+          `${config.SESSION_COOKIE.substring(0, 10)}...${config.SESSION_COOKIE.substring(config.SESSION_COOKIE.length - 10)}` :
+          'NONE';
+        logger.error('[CRITICAL] Cookie preview:', cookiePreview);
+        logger.error('[CRITICAL] Cookie length:', config.SESSION_COOKIE ? config.SESSION_COOKIE.length : 0);
+      }
+
+      // Return error response with actual API error message
+      return {
+        success: false,
+        error: error.response.data?.error || `Request failed with status ${error.response.status}`,
+        message: error.response.data?.message || error.response.data?.error,
+        statusCode: error.response.status,
+        ...error.response.data
+      };
+    } else {
+      // Network error or timeout
+      const isRetryableError = error.code === 'ECONNRESET' ||
+                               error.code === 'ETIMEDOUT' ||
+                               error.code === 'ECONNREFUSED' ||
+                               error.message.includes('socket hang up') ||
+                               error.message.includes('timeout');
+
+      // Retry with exponential backoff for network errors
+      if (isRetryableError && retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        logger.log(`[API Retry] ${endpoint} - Network error (${error.message}), retrying in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        await sleep(delay);
+        return apiCall(endpoint, method, body, timeout, retryCount + 1);
+      }
+
+      // Max retries reached or non-retryable error
+      logger.error(`API Error: ${endpoint} - ${error.message}`);
+      throw new Error(error.message);
+    }
+  }
+}
+
+/**
+ * Sleep helper for retry delays
+ * @param {number} ms - Milliseconds to sleep
+ * @returns {Promise<void>}
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Makes API call with automatic retry on network errors.
+ *
+ * This wrapper around apiCall() handles transient network failures by automatically
+ * retrying failed requests. Common network errors include:
+ * - "socket hang up" (ECONNRESET) - Connection closed unexpectedly
+ * - "ETIMEDOUT" - Request timeout
+ * - "ENOTFOUND" - DNS lookup failed
+ *
+ * Retry Strategy:
+ * - 3 attempts maximum (initial + 2 retries)
+ * - Exponential backoff: 1s, 2s between attempts
+ * - Only retries on network errors (not HTTP 4xx/5xx errors)
+ * - Logs retry attempts to console
+ *
+ * Why This Is Needed:
+ * - Game API sometimes has socket errors under load
+ * - Temporary network glitches should not fail operations
+ * - Automatic retry is user-friendly (no manual refresh needed)
+ * - Exponential backoff prevents overwhelming struggling API
+ *
+ * @function apiCallWithRetry
+ * @param {string} endpoint - API endpoint (e.g., '/game/index')
+ * @param {string} [method='POST'] - HTTP method
+ * @param {Object} [body={}] - Request payload
+ * @param {number} [timeout=90000] - Request timeout in milliseconds
+ * @param {number} [maxRetries=3] - Maximum retry attempts
+ * @returns {Promise<Object>} API response data
+ * @throws {Error} When all retry attempts fail
+ *
+ * @example
+ * // Fetch vessels with automatic retry
+ * const data = await apiCallWithRetry('/game/index', 'POST', {});
+ */
+async function apiCallWithRetry(endpoint, method = 'POST', body = {}, timeout = 90000, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await apiCall(endpoint, method, body, timeout);
+    } catch (error) {
+      // Check if this is a network error that should be retried
+      const isNetworkError = error.message && (
+        error.message.includes('socket hang up') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('ETIMEDOUT') ||
+        error.message.includes('ENOTFOUND') ||
+        error.message.includes('ECONNREFUSED')
+      );
+
+      // If network error and we have retries left, try again
+      if (isNetworkError && attempt < maxRetries) {
+        const delay = 1000 * attempt; // Exponential backoff: 1s, 2s
+        logger.log(`[API Retry] ${endpoint} failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
+        await sleep(delay);
+        continue;
+      }
+
+      // Either not a network error, or we're out of retries
+      throw error;
+    }
   }
 }
 
@@ -304,28 +478,64 @@ async function getCompanyName(userId) {
  */
 async function initializeAlliance() {
   try {
+    // Debug: Show cookie info (first and last 10 chars for security)
+    const cookie = config.SESSION_COOKIE;
+    const cookiePreview = cookie ? `${cookie.substring(0, 10)}...${cookie.substring(cookie.length - 10)}` : 'NONE';
+    logger.log(`[Session] Initializing with cookie: ${cookiePreview} (length: ${cookie ? cookie.length : 0})`);
+
     // 1. Load User ID and Company Name first
+    logger.log(`[Session] Calling API: /user/get-user-settings...`);
     const userData = await apiCall('/user/get-user-settings', 'POST', {});
+
+    // Check if API call failed
+    if (!userData || userData.success === false || userData.error) {
+      logger.error('[FATAL] API call to /user/get-user-settings failed!');
+      logger.error('[FATAL] Response:', JSON.stringify(userData, null, 2));
+      logger.error('[FATAL] This usually means:');
+      logger.error('[FATAL]   1. Session cookie is invalid or expired');
+      logger.error('[FATAL]   2. Session cookie is for wrong user');
+      logger.error('[FATAL]   3. Game API rejected the request');
+      logger.error('[FATAL] Cookie used:', cookiePreview);
+      throw new Error(`Session validation failed: ${userData.error || userData.message || 'Unknown error'}`);
+    }
+
+    // Check if user data structure is correct
+    if (!userData.user || !userData.user.id) {
+      logger.error('[FATAL] API response missing user data!');
+      logger.error('[FATAL] Response structure:', JSON.stringify(userData, null, 2));
+      throw new Error('Invalid API response structure - missing user data');
+    }
+
     USER_ID = userData.user.id;
     USER_COMPANY_NAME = userData.user.company_name;
-    console.log(`✓ User loaded: ${USER_COMPANY_NAME} (ID: ${USER_ID})`);
+    logger.debug(`[Session] User loaded: ${USER_COMPANY_NAME} (ID: ${USER_ID})`);
+    logger.log(`[Session] User login successful`);
 
     // 2. Try to load Alliance ID
     try {
       const allianceData = await apiCall('/alliance/get-user-alliance', 'POST', {});
       if (allianceData.data && allianceData.data.alliance && allianceData.data.alliance.id) {
         ALLIANCE_ID = allianceData.data.alliance.id;
-        console.log(`✓ Alliance loaded: ${allianceData.data.alliance.name} (ID: ${ALLIANCE_ID})`);
+        logger.debug(`[Session] Alliance loaded: ${allianceData.data.alliance.name} (ID: ${ALLIANCE_ID})`);
+        logger.log(`[Session] Alliance loaded`);
       } else {
         ALLIANCE_ID = null;
-        console.log(`⚠ User is not in an alliance`);
+        logger.debug(`[Session] User is not in an alliance`);
       }
     } catch (allianceError) {
       ALLIANCE_ID = null;
-      console.log(`⚠ User is not in an alliance`);
+      logger.debug(`[Session] User is not in an alliance`);
     }
   } catch (error) {
-    console.error('Failed to initialize:', error.message);
+    logger.error('[FATAL] ======================================');
+    logger.error('[FATAL] SESSION INITIALIZATION FAILED');
+    logger.error('[FATAL] ======================================');
+    logger.error('[FATAL] Error message:', error.message);
+    logger.error('[FATAL] Error stack:', error.stack);
+    logger.error('[FATAL] ======================================');
+    logger.error('[FATAL] The session cookie is invalid or expired.');
+    logger.error('[FATAL] Please restart the application and select a valid session.');
+    logger.error('[FATAL] ======================================');
     process.exit(1);
   }
 }
@@ -384,10 +594,14 @@ async function getChatFeed() {
   }
 
   try {
+    // Unified 90s timeout for chat feed (can be very slow with many messages)
     const data = await apiCall('/alliance/get-chat-feed', 'POST', { alliance_id: ALLIANCE_ID });
     return data.data.chat_feed;
   } catch (error) {
-    console.error('Error loading chat feed:', error.message);
+    // Silently handle socket hang ups (common with slow API) - only log other errors
+    if (!error.message.includes('socket hang up') && !error.message.includes('ECONNRESET')) {
+      logger.error('Error loading chat feed:', error.message);
+    }
     return [];
   }
 }
@@ -447,6 +661,7 @@ function getUserCompanyName() {
 
 module.exports = {
   apiCall,
+  apiCallWithRetry,
   getCompanyName,
   initializeAlliance,
   getChatFeed,

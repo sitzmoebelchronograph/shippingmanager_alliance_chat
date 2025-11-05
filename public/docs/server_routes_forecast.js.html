@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>server/routes/forecast.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Dark theme matching app style - carefully scoped to not break layout */
+        html, body {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            overflow-x: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Custom scrollbar styling for all browsers */
+        * {
+            scrollbar-width: thin !important;
+            scrollbar-color: #404040 #1a1a1a !important;
+        }
+
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        *::-webkit-scrollbar {
+            width: 6px !important;
+            height: 6px !important;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #1a1a1a !important;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #404040 !important;
+            border-radius: 3px !important;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #505050 !important;
+        }
+
+        /* Navigation sidebar - remove padding and white borders */
+        nav {
+            background-color: #242424 !important;
+            border-right: 1px solid #404040 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+        }
+        nav h2, nav h3 {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #404040 !important;
+            padding: 10px 15px !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
+        nav h3 {
+            font-size: 13px !important;
+        }
+        nav ul {
+            padding: 0 !important;
+            margin: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li {
+            list-style: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #242424 !important;
+        }
+        nav ul li a {
+            color: #c9d1d9 !important;
+            display: block !important;
+            padding: 8px 15px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            background-color: #242424 !important;
+            margin: 0 !important;
+            border: none !important;
+            font-size: 14px !important;
+        }
+        nav ul li a:hover {
+            color: #60a5fa !important;
+            background-color: rgba(96, 165, 250, 0.1) !important;
+        }
+        /* Module links (direct children of nav > ul > li) */
+        nav > ul > li > a {
+            color: #60a5fa !important;
+            font-weight: 600 !important;
+            padding: 10px 15px !important;
+            font-size: 14px !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: 12px !important;
+        }
+        nav > ul > li > a:hover {
+            background-color: rgba(96, 165, 250, 0.15) !important;
+        }
+        /* Sub-items (methods/functions) indented */
+        nav ul.methods {
+            padding-left: 15px !important;
+        }
+        nav ul.methods li a {
+            color: #9ca3af !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 400 !important;
+        }
+        nav ul.methods li a:hover {
+            color: #c9d1d9 !important;
+        }
+        nav > h2:first-child {
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            padding: 12px 15px !important;
+        }
+
+        /* Main content area - dark background */
+        #main {
+            background-color: #1a1a1a !important;
+            padding: 20px !important;
+        }
+
+        /* Article and sections - ensure dark background */
+        article, section, .container-overview, .description {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Images - style demo images */
+        img {
+            max-width: 100% !important;
+            height: auto !important;
+            border: 1px solid #404040 !important;
+            border-radius: 8px !important;
+            margin: 20px 0 !important;
+        }
+
+        /* Links */
+        a {
+            color: #60a5fa !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #93c5fd !important;
+            text-decoration: underline !important;
+        }
+
+        /* Headings */
+        h1, h2, h3, h4, h5, h6 {
+            color: #e0e0e0 !important;
+            border-bottom-color: #404040 !important;
+            background-color: transparent !important;
+        }
+        h4.name {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+        }
+
+        /* Code blocks */
+        pre {
+            background-color: #0d1117 !important;
+            border: 1px solid #404040 !important;
+        }
+        pre code {
+            background-color: transparent !important;
+        }
+        code {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        /* Tables */
+        table {
+            border-color: #404040 !important;
+            background-color: #1a1a1a !important;
+        }
+        table thead tr {
+            background-color: #242424 !important;
+        }
+        table tbody tr {
+            background-color: #1a1a1a !important;
+        }
+        table tbody tr:nth-child(even) {
+            background-color: #1f1f1f !important;
+        }
+        table td, table th {
+            border-color: #404040 !important;
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+        .params .name, .props .name {
+            color: #10b981 !important;
+            font-family: 'Courier New', monospace !important;
+        }
+
+        /* Descriptions and details */
+        .description, .details, dt, dd, p, ul, ol, dl {
+            color: #e0e0e0 !important;
+            background-color: transparent !important;
+        }
+
+        /* Types */
+        .type-signature {
+            color: #a78bfa !important;
+        }
+
+        /* Source links */
+        .details .details-item-container {
+            border-left-color: #404040 !important;
+        }
+
+        /* Breadcrumbs */
+        .page-title {
+            color: #e0e0e0 !important;
+        }
+
+        /* Search */
+        #nav-search {
+            background-color: #2a2a2a !important;
+            border: 1px solid #404040 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Mobile nav trigger */
+        .navicon-button {
+            background-color: #2a2a2a !important;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #1a1a1a !important;
+            color: #9ca3af !important;
+            border-top: 1px solid #404040 !important;
+            text-align: center !important;
+            padding: 20px !important;
+        }
+
+        /* Remove horizontal scrollbar and white borders */
+        * {
+            box-sizing: border-box !important;
+        }
+    </style>
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">README</a></h2><h3>Tutorials</h3><ul><li><a href="tutorial-build-guide.html">Build Guide</a></li><li><a href="tutorial-installation-guide.html">Installation Guide</a></li></ul><h3>Classes</h3><ul><li><a href="module-server_chatbot-ChatBot.html">ChatBot</a><ul class='methods'><li data-type='method'><a href="module-server_chatbot-ChatBot.html#executeCommand">executeCommand</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#findCustomCommand">findCustomCommand</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#generateForecastText">generateForecastText</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#getDefaultChatBotObject">getDefaultChatBotObject</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#handleForecastCommand">handleForecastCommand</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#handleHelpCommand">handleHelpCommand</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#initialize">initialize</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#isCommandAllowedInChannel">isCommandAllowedInChannel</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#isOnCooldown">isOnCooldown</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#mapChatBotObjectToFlatSettings">mapChatBotObjectToFlatSettings</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#mapSettingsToChatBotObject">mapSettingsToChatBotObject</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#processAllianceMessage">processAllianceMessage</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#processPrivateMessage">processPrivateMessage</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#resolveCommandName">resolveCommandName</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#scheduleDailyForecast">scheduleDailyForecast</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#sendAllianceMessage">sendAllianceMessage</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#sendDailyForecast">sendDailyForecast</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#sendErrorMessage">sendErrorMessage</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#sendPrivateMessage">sendPrivateMessage</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#sendResponse">sendResponse</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#setupScheduledTasks">setupScheduledTasks</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#updateCooldown">updateCooldown</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#updateSettings">updateSettings</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#validateCommandArguments">validateCommandArguments</a></li><li data-type='method'><a href="module-server_chatbot-ChatBot.html#validateForecastArguments">validateForecastArguments</a></li></ul></li></ul><h3>Modules</h3><ul><li><a href="module-api.html">api</a><ul class='methods'><li data-type='method'><a href="module-api.html#.activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-api.html#.deleteChat">deleteChat</a></li><li data-type='method'><a href="module-api.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-api.html#.departVessel">departVessel</a></li><li data-type='method'><a href="module-api.html#.departVessels">departVessels</a></li><li data-type='method'><a href="module-api.html#.doWearMaintenanceBulk">doWearMaintenanceBulk</a></li><li data-type='method'><a href="module-api.html#.fetchAcquirableVessels">fetchAcquirableVessels</a></li><li data-type='method'><a href="module-api.html#.fetchAllianceMembers">fetchAllianceMembers</a></li><li data-type='method'><a href="module-api.html#.fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-api.html#.fetchBunkerPrices">fetchBunkerPrices</a></li><li data-type='method'><a href="module-api.html#.fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-api.html#.fetchChat">fetchChat</a></li><li data-type='method'><a href="module-api.html#.fetchContacts">fetchContacts</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerChats">fetchMessengerChats</a></li><li data-type='method'><a href="module-api.html#.fetchMessengerMessages">fetchMessengerMessages</a></li><li data-type='method'><a href="module-api.html#.fetchUserCompany">fetchUserCompany</a></li><li data-type='method'><a href="module-api.html#.fetchUserSettings">fetchUserSettings</a></li><li data-type='method'><a href="module-api.html#.fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-api.html#.getCompanyNameCached">getCompanyNameCached</a></li><li data-type='method'><a href="module-api.html#.getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-api.html#.markChatAsRead">markChatAsRead</a></li><li data-type='method'><a href="module-api.html#.purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-api.html#.purchaseFuel">purchaseFuel</a></li><li data-type='method'><a href="module-api.html#.purchaseVessel">purchaseVessel</a></li><li data-type='method'><a href="module-api.html#.searchUsers">searchUsers</a></li><li data-type='method'><a href="module-api.html#.sendChatMessage">sendChatMessage</a></li><li data-type='method'><a href="module-api.html#.sendPrivateMessage">sendPrivateMessage</a></li></ul></li><li><a href="module-app.html">app</a></li><li><a href="module-automation.html">automation</a><ul class='methods'><li data-type='method'><a href="module-automation.html#.initAutomation">initAutomation</a></li><li data-type='method'><a href="module-automation.html#.runAutomationChecks">runAutomationChecks</a></li><li data-type='method'><a href="module-automation.html#.triggerAutoRebuyChecks">triggerAutoRebuyChecks</a></li><li data-type='method'><a href="module-automation.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-automation.html#~checkAutoCampaignRenewal">checkAutoCampaignRenewal</a></li><li data-type='method'><a href="module-automation.html#~checkAutoDepartAll">checkAutoDepartAll</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyCO2">checkAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~checkAutoRebuyFuel">checkAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyCO2">performAutoRebuyCO2</a></li><li data-type='method'><a href="module-automation.html#~performAutoRebuyFuel">performAutoRebuyFuel</a></li><li data-type='method'><a href="module-automation.html#~sendAutoPilotFeedback">sendAutoPilotFeedback</a></li><li data-type='method'><a href="module-automation.html#~showCenterAlert">showCenterAlert</a></li><li data-type='method'><a href="module-automation.html#~updateAutoDepartLabel">updateAutoDepartLabel</a></li></ul></li><li><a href="module-bunker-management.html">bunker-management</a><ul class='methods'><li data-type='method'><a href="module-bunker-management.html#.buyMaxCO2">buyMaxCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.buyMaxFuel">buyMaxFuel</a></li><li data-type='method'><a href="module-bunker-management.html#.getCurrentBunkerState">getCurrentBunkerState</a></li><li data-type='method'><a href="module-bunker-management.html#.setCapacityFromBunkerUpdate">setCapacityFromBunkerUpdate</a></li><li data-type='method'><a href="module-bunker-management.html#.updateBunkerStatus">updateBunkerStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCampaignsStatus">updateCampaignsStatus</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCO2">updateCurrentCO2</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentCash">updateCurrentCash</a></li><li data-type='method'><a href="module-bunker-management.html#.updateCurrentFuel">updateCurrentFuel</a></li><li data-type='method'><a href="module-bunker-management.html#~retryFetchPrices">retryFetchPrices</a></li></ul></li><li><a href="module-chat.html">chat</a><ul class='methods'><li data-type='method'><a href="module-chat.html#.displayMessages">displayMessages</a></li><li data-type='method'><a href="module-chat.html#.handleMessageInput">handleMessageInput</a></li><li data-type='method'><a href="module-chat.html#.initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-chat.html#.loadAllianceMembers">loadAllianceMembers</a></li><li data-type='method'><a href="module-chat.html#.loadMessages">loadMessages</a></li><li data-type='method'><a href="module-chat.html#.parseMessageWithMentions">parseMessageWithMentions</a></li><li data-type='method'><a href="module-chat.html#.sendMessage">sendMessage</a></li><li data-type='method'><a href="module-chat.html#.setChatScrollListener">setChatScrollListener</a></li><li data-type='method'><a href="module-chat.html#~attemptReconnect">attemptReconnect</a></li><li data-type='method'><a href="module-chat.html#~displaySuggestions">displaySuggestions</a></li><li data-type='method'><a href="module-chat.html#~formatLocalTime">formatLocalTime</a></li><li data-type='method'><a href="module-chat.html#~handleAnchorUpdate">handleAnchorUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleAutoCoopComplete">handleAutoCoopComplete</a></li><li data-type='method'><a href="module-chat.html#~handleAutoCoopNoTargets">handleAutoCoopNoTargets</a></li><li data-type='method'><a href="module-chat.html#~handleAutopilotDepartStart">handleAutopilotDepartStart</a></li><li data-type='method'><a href="module-chat.html#~handleBackendAutoRepairComplete">handleBackendAutoRepairComplete</a></li><li data-type='method'><a href="module-chat.html#~handleBunkerUpdate">handleBunkerUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleCO2Purchased">handleCO2Purchased</a></li><li data-type='method'><a href="module-chat.html#~handleCampaignStatusUpdate">handleCampaignStatusUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleCampaignsRenewed">handleCampaignsRenewed</a></li><li data-type='method'><a href="module-chat.html#~handleCoopUpdate">handleCoopUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleFuelPurchased">handleFuelPurchased</a></li><li data-type='method'><a href="module-chat.html#~handleGenericNotification">handleGenericNotification</a></li><li data-type='method'><a href="module-chat.html#~handleHeaderDataUpdate">handleHeaderDataUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleHijackingUpdate">handleHijackingUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleMentionAutocomplete">handleMentionAutocomplete</a></li><li data-type='method'><a href="module-chat.html#~handleMessengerUpdate">handleMessengerUpdate</a></li><li data-type='method'><a href="module-chat.html#~handlePriceAlert">handlePriceAlert</a></li><li data-type='method'><a href="module-chat.html#~handlePriceUpdate">handlePriceUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleRepairCountUpdate">handleRepairCountUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleUnreadMessagesUpdate">handleUnreadMessagesUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleUserActionNotification">handleUserActionNotification</a></li><li data-type='method'><a href="module-chat.html#~handleVesselCountUpdate">handleVesselCountUpdate</a></li><li data-type='method'><a href="module-chat.html#~handleVesselsDepartComplete">handleVesselsDepartComplete</a></li><li data-type='method'><a href="module-chat.html#~handleVesselsDeparted">handleVesselsDeparted</a></li><li data-type='method'><a href="module-chat.html#~handleVesselsFailed">handleVesselsFailed</a></li><li data-type='method'><a href="module-chat.html#~handleVesselsRepaired">handleVesselsRepaired</a></li><li data-type='method'><a href="module-chat.html#~hideMemberSuggestions">hideMemberSuggestions</a></li><li data-type='method'><a href="module-chat.html#~insertMention">insertMention</a></li><li data-type='method'><a href="module-chat.html#~registerUsernameClickEvents">registerUsernameClickEvents</a></li></ul></li><li><a href="module-coop.html">coop</a><ul class='methods'><li data-type='method'><a href="module-coop.html#.closeCoopOverlay">closeCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.fetchCoopData">fetchCoopData</a></li><li data-type='method'><a href="module-coop.html#.sendCoopMax">sendCoopMax</a></li><li data-type='method'><a href="module-coop.html#.showCoopOverlay">showCoopOverlay</a></li><li data-type='method'><a href="module-coop.html#.updateCoopBadge">updateCoopBadge</a></li><li data-type='method'><a href="module-coop.html#~renderMemberCard">renderMemberCard</a></li></ul></li><li><a href="module-desktop-notification-templates.html">desktop-notification-templates</a><ul class='methods'><li data-type='method'><a href="module-desktop-notification-templates.html#.createDesktopNotification">createDesktopNotification</a></li><li data-type='method'><a href="module-desktop-notification-templates.html#.getDefaultEmoji">getDefaultEmoji</a></li><li data-type='method'><a href="module-desktop-notification-templates.html#.getNotificationTypes">getNotificationTypes</a></li><li data-type='method'><a href="module-desktop-notification-templates.html#.isValidNotificationType">isValidNotificationType</a></li><li data-type='method'><a href="module-desktop-notification-templates.html#.notifyAlert">notifyAlert</a></li><li data-type='method'><a href="module-desktop-notification-templates.html#.notifyError">notifyError</a></li><li data-type='method'><a href="module-desktop-notification-templates.html#.notifySuccess">notifySuccess</a></li><li data-type='method'><a href="module-desktop-notification-templates.html#.notifyWarning">notifyWarning</a></li></ul></li><li><a href="module-event-info.html">event-info</a><ul class='methods'><li data-type='method'><a href="module-event-info.html#.initEventInfo">initEventInfo</a></li><li data-type='method'><a href="module-event-info.html#.openEventModal">openEventModal</a></li><li data-type='method'><a href="module-event-info.html#.updateEventData">updateEventData</a></li><li data-type='method'><a href="module-event-info.html#~startEventTimer">startEventTimer</a></li></ul></li><li><a href="module-forecast-calendar.html">forecast-calendar</a><ul class='methods'><li data-type='method'><a href="module-forecast-calendar.html#.initForecastCalendar">initForecastCalendar</a></li><li data-type='method'><a href="module-forecast-calendar.html#.updateEventDiscount">updateEventDiscount</a></li><li data-type='method'><a href="module-forecast-calendar.html#~createTableHTML">createTableHTML</a></li><li data-type='method'><a href="module-forecast-calendar.html#~formatDate">formatDate</a></li><li data-type='method'><a href="module-forecast-calendar.html#~getBrowserTimezone">getBrowserTimezone</a></li><li data-type='method'><a href="module-forecast-calendar.html#~getCo2Class">getCo2Class</a></li><li data-type='method'><a href="module-forecast-calendar.html#~getCurrentVisibleDay">getCurrentVisibleDay</a></li><li data-type='method'><a href="module-forecast-calendar.html#~getFuelClass">getFuelClass</a></li><li data-type='method'><a href="module-forecast-calendar.html#~isEventActiveAtTime">isEventActiveAtTime</a></li><li data-type='method'><a href="module-forecast-calendar.html#~isEventActiveOnDay">isEventActiveOnDay</a></li><li data-type='method'><a href="module-forecast-calendar.html#~loadForecastData">loadForecastData</a></li><li data-type='method'><a href="module-forecast-calendar.html#~preloadMonth">preloadMonth</a></li><li data-type='method'><a href="module-forecast-calendar.html#~renderBook">renderBook</a></li><li data-type='method'><a href="module-forecast-calendar.html#~updateEventBadge">updateEventBadge</a></li></ul></li><li><a href="module-messenger.html">messenger</a><ul class='methods'><li data-type='method'><a href="module-messenger.html#.closeAllChats">closeAllChats</a></li><li data-type='method'><a href="module-messenger.html#.closeChatSelection">closeChatSelection</a></li><li data-type='method'><a href="module-messenger.html#.openMessenger">openMessenger</a></li><li data-type='method'><a href="module-messenger.html#.openNewChat">openNewChat</a></li><li data-type='method'><a href="module-messenger.html#.showAllChats">showAllChats</a></li><li data-type='method'><a href="module-messenger.html#.updateUnreadBadge">updateUnreadBadge</a></li><li data-type='method'><a href="module-messenger.html#~formatTimestamp">formatTimestamp</a></li><li data-type='method'><a href="module-messenger.html#~loadPrivateMessages">loadPrivateMessages</a></li><li data-type='method'><a href="module-messenger.html#~startHijackingPolling">startHijackingPolling</a></li><li data-type='method'><a href="module-messenger.html#~stopHijackingPolling">stopHijackingPolling</a></li></ul></li><li><a href="module-public_js_modules_hijacking.html">public/js/modules/hijacking</a><ul class='methods'><li data-type='method'><a href="module-public_js_modules_hijacking.html#.closeHijackingInbox">closeHijackingInbox</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#.openHijackingInbox">openHijackingInbox</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#.updateHijackedVesselsDisplay">updateHijackedVesselsDisplay</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#.updateHijackingBadge">updateHijackingBadge</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#~deleteCase">deleteCase</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#~escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#~formatTimestamp">formatTimestamp</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#~openCaseDetails">openCaseDetails</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#~refreshHijackingBadge">refreshHijackingBadge</a></li><li data-type='method'><a href="module-public_js_modules_hijacking.html#~renderCaseList">renderCaseList</a></li></ul></li><li><a href="module-server_automation.html">server/automation</a><ul class='methods'><li data-type='method'><a href="module-server_automation.html#~getRandomInterval">getRandomInterval</a></li><li data-type='method'><a href="module-server_automation.html#~initialize">initialize</a></li><li data-type='method'><a href="module-server_automation.html#~loadSettings">loadSettings</a></li><li data-type='method'><a href="module-server_automation.html#~parseInterval">parseInterval</a></li><li data-type='method'><a href="module-server_automation.html#~restartAutoRepair">restartAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~runAutoRepair">runAutoRepair</a></li><li data-type='method'><a href="module-server_automation.html#~scheduleAutoRepair">scheduleAutoRepair</a></li></ul></li><li><a href="module-server_autopilot.html">server/autopilot</a><ul class='methods'><li data-type='method'><a href="module-server_autopilot.html#~acceptRansomWithRetry">acceptRansomWithRetry</a></li><li data-type='method'><a href="module-server_autopilot.html#~analyzeVesselDepartures">analyzeVesselDepartures</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoAnchorPointPurchase">autoAnchorPointPurchase</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoCampaignRenewal">autoCampaignRenewal</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoCoop">autoCoop</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoDepartVessels">autoDepartVessels</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoNegotiateHijacking">autoNegotiateHijacking</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoRebuyAll">autoRebuyAll</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoRebuyCO2">autoRebuyCO2</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoRebuyFuel">autoRebuyFuel</a></li><li data-type='method'><a href="module-server_autopilot.html#~autoRepairVessels">autoRepairVessels</a></li><li data-type='method'><a href="module-server_autopilot.html#~calculatePendingAnchorPoints">calculatePendingAnchorPoints</a></li><li data-type='method'><a href="module-server_autopilot.html#~calculateRemainingDemand">calculateRemainingDemand</a></li><li data-type='method'><a href="module-server_autopilot.html#~checkPriceAlerts">checkPriceAlerts</a></li><li data-type='method'><a href="module-server_autopilot.html#~countActiveCampaignTypes">countActiveCampaignTypes</a></li><li data-type='method'><a href="module-server_autopilot.html#~departVessels">departVessels</a></li><li data-type='method'><a href="module-server_autopilot.html#~fetchAllianceDataCached">fetchAllianceDataCached</a></li><li data-type='method'><a href="module-server_autopilot.html#~fetchCoopDataCached">fetchCoopDataCached</a></li><li data-type='method'><a href="module-server_autopilot.html#~getCachedCapacity">getCachedCapacity</a></li><li data-type='method'><a href="module-server_autopilot.html#~getCaseWithRetry">getCaseWithRetry</a></li><li data-type='method'><a href="module-server_autopilot.html#~getTotalCapacity">getTotalCapacity</a></li><li data-type='method'><a href="module-server_autopilot.html#~initializeAutopilotState">initializeAutopilotState</a></li><li data-type='method'><a href="module-server_autopilot.html#~isAutopilotPaused">isAutopilotPaused</a></li><li data-type='method'><a href="module-server_autopilot.html#~mainEventLoop">mainEventLoop</a></li><li data-type='method'><a href="module-server_autopilot.html#~pauseAutopilot">pauseAutopilot</a></li><li data-type='method'><a href="module-server_autopilot.html#~processHijackingCase">processHijackingCase</a></li><li data-type='method'><a href="module-server_autopilot.html#~refreshHijackingBadge">refreshHijackingBadge</a></li><li data-type='method'><a href="module-server_autopilot.html#~resumeAutopilot">resumeAutopilot</a></li><li data-type='method'><a href="module-server_autopilot.html#~setBroadcastFunction">setBroadcastFunction</a></li><li data-type='method'><a href="module-server_autopilot.html#~startMainEventLoop">startMainEventLoop</a></li><li data-type='method'><a href="module-server_autopilot.html#~submitOfferWithRetry">submitOfferWithRetry</a></li><li data-type='method'><a href="module-server_autopilot.html#~tryUpdateAllData">tryUpdateAllData</a></li><li data-type='method'><a href="module-server_autopilot.html#~updateAllData">updateAllData</a></li><li data-type='method'><a href="module-server_autopilot.html#~updateCampaigns">updateCampaigns</a></li><li data-type='method'><a href="module-server_autopilot.html#~updatePrices">updatePrices</a></li><li data-type='method'><a href="module-server_autopilot.html#~updateRepairCount">updateRepairCount</a></li><li data-type='method'><a href="module-server_autopilot.html#~updateUnreadMessages">updateUnreadMessages</a></li><li data-type='method'><a href="module-server_autopilot.html#~updateVesselCount">updateVesselCount</a></li></ul></li><li><a href="module-server_cache.html">server/cache</a><ul class='methods'><li data-type='method'><a href="module-server_cache.html#~clearAllCaches">clearAllCaches</a></li><li data-type='method'><a href="module-server_cache.html#~getAllianceCache">getAllianceCache</a></li><li data-type='method'><a href="module-server_cache.html#~getCampaignCache">getCampaignCache</a></li><li data-type='method'><a href="module-server_cache.html#~getCompanyCache">getCompanyCache</a></li><li data-type='method'><a href="module-server_cache.html#~getCoopCache">getCoopCache</a></li><li data-type='method'><a href="module-server_cache.html#~invalidateCampaignCache">invalidateCampaignCache</a></li><li data-type='method'><a href="module-server_cache.html#~invalidateCoopCache">invalidateCoopCache</a></li><li data-type='method'><a href="module-server_cache.html#~isCacheValid">isCacheValid</a></li><li data-type='method'><a href="module-server_cache.html#~setAllianceCache">setAllianceCache</a></li><li data-type='method'><a href="module-server_cache.html#~setCampaignCache">setCampaignCache</a></li><li data-type='method'><a href="module-server_cache.html#~setCompanyCache">setCompanyCache</a></li><li data-type='method'><a href="module-server_cache.html#~setCoopCache">setCoopCache</a></li></ul></li><li><a href="module-server_certificate.html">server/certificate</a><ul class='methods'><li data-type='method'><a href="module-server_certificate.html#~createHttpsServer">createHttpsServer</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCA">generateCA</a></li><li data-type='method'><a href="module-server_certificate.html#~generateCertificate">generateCertificate</a></li><li data-type='method'><a href="module-server_certificate.html#~getNetworkIPs">getNetworkIPs</a></li><li data-type='method'><a href="module-server_certificate.html#~loadCertificate">loadCertificate</a></li></ul></li><li><a href="module-server_chatbot.html">server/chatbot</a></li><li><a href="module-server_config.html">server/config</a><ul class='methods'><li data-type='method'><a href="module-server_config.html#~getAppDataDir">getAppDataDir</a></li><li data-type='method'><a href="module-server_config.html#~getLocalAppDataDir">getLocalAppDataDir</a></li><li data-type='method'><a href="module-server_config.html#~getLogDir">getLogDir</a></li><li data-type='method'><a href="module-server_config.html#~getSessionCookie">getSessionCookie</a></li><li data-type='method'><a href="module-server_config.html#~getSettingsDir">getSettingsDir</a></li><li data-type='method'><a href="module-server_config.html#~loadStartupSettings">loadStartupSettings</a></li><li data-type='method'><a href="module-server_config.html#~setSessionCookie">setSessionCookie</a></li></ul></li><li><a href="module-server_gameapi.html">server/gameapi</a><ul class='methods'><li data-type='method'><a href="module-server_gameapi.html#~activateCampaign">activateCampaign</a></li><li data-type='method'><a href="module-server_gameapi.html#~bulkRepairVessels">bulkRepairVessels</a></li><li data-type='method'><a href="module-server_gameapi.html#~departVessel">departVessel</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchAssignedPorts">fetchAssignedPorts</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchAutoPrice">fetchAutoPrice</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchBunkerState">fetchBunkerState</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchCampaigns">fetchCampaigns</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchEventData">fetchEventData</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchPrices">fetchPrices</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchRepairCount">fetchRepairCount</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchUnreadMessages">fetchUnreadMessages</a></li><li data-type='method'><a href="module-server_gameapi.html#~fetchVessels">fetchVessels</a></li><li data-type='method'><a href="module-server_gameapi.html#~getMaintenanceCost">getMaintenanceCost</a></li><li data-type='method'><a href="module-server_gameapi.html#~purchaseCO2">purchaseCO2</a></li><li data-type='method'><a href="module-server_gameapi.html#~purchaseFuel">purchaseFuel</a></li></ul></li><li><a href="module-server_middleware_index.html">server/middleware/index</a><ul class='methods'><li data-type='method'><a href="module-server_middleware_index.html#~setupMiddleware">setupMiddleware</a></li></ul></li><li><a href="module-server_routes_alliance.html">server/routes/alliance</a><ul class='methods'><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/alliance-members">GET /api/alliance-members</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.GET/api/chat">GET /api/chat</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/company-name">POST /api/company-name</a></li><li data-type='method'><a href="module-server_routes_alliance.html#.POST/api/send-message">POST /api/send-message</a></li></ul></li><li><a href="module-server_routes_anchor.html">server/routes/anchor</a></li><li><a href="module-server_routes_coop.html">server/routes/coop</a><ul class='methods'><li data-type='method'><a href="module-server_routes_coop.html#.GET/api/coop/data">GET /api/coop/data</a></li><li data-type='method'><a href="module-server_routes_coop.html#.POST/api/coop/send-max">POST /api/coop/send-max</a></li></ul></li><li><a href="module-server_routes_forecast.html">server/routes/forecast</a><ul class='methods'><li data-type='method'><a href="module-server_routes_forecast.html#~convertCESTToTimezone">convertCESTToTimezone</a></li><li data-type='method'><a href="module-server_routes_forecast.html#~generateChatbotText">generateChatbotText</a></li><li data-type='method'><a href="module-server_routes_forecast.html#~generateMetadata">generateMetadata</a></li><li data-type='method'><a href="module-server_routes_forecast.html#~getForecastDataPath">getForecastDataPath</a></li><li data-type='method'><a href="module-server_routes_forecast.html#~getNextDayData">getNextDayData</a></li><li data-type='method'><a href="module-server_routes_forecast.html#~getPreviousDayData">getPreviousDayData</a></li><li data-type='method'><a href="module-server_routes_forecast.html#~getServerLocalTimezone">getServerLocalTimezone</a></li><li data-type='method'><a href="module-server_routes_forecast.html#~getTimezoneOffsetHours">getTimezoneOffsetHours</a></li><li data-type='method'><a href="module-server_routes_forecast.html#~getValidTimezones">getValidTimezones</a></li></ul></li><li><a href="module-server_routes_game.html">server/routes/game</a></li><li><a href="module-server_routes_health.html">server/routes/health</a></li><li><a href="module-server_routes_messenger.html">server/routes/messenger</a><ul class='methods'><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/contact/get-contacts">GET /api/contact/get-contacts</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/hijacking/get-cases">GET /api/hijacking/get-cases</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.GET/api/messenger/get-chats">GET /api/messenger/get-chats</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/delete-chat">POST /api/messenger/delete-chat</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/get-messages">POST /api/messenger/get-messages</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/messenger/send-private">POST /api/messenger/send-private</a></li><li data-type='method'><a href="module-server_routes_messenger.html#.POST/api/user/search">POST /api/user/search</a></li><li data-type='method'><a href="module-server_routes_messenger.html#~migrateHijackHistory">migrateHijackHistory</a></li></ul></li><li><a href="module-server_routes_settings.html">server/routes/settings</a><ul class='methods'><li data-type='method'><a href="module-server_routes_settings.html#.GET/api/settings">GET /api/settings</a></li><li data-type='method'><a href="module-server_routes_settings.html#.POST/api/settings">POST /api/settings</a></li></ul></li><li><a href="module-server_scheduler.html">server/scheduler</a><ul class='methods'><li data-type='method'><a href="module-server_scheduler.html#~initScheduler">initScheduler</a></li><li data-type='method'><a href="module-server_scheduler.html#~isServerReady">isServerReady</a></li></ul></li><li><a href="module-server_settings-schema.html">server/settings-schema</a><ul class='methods'><li data-type='method'><a href="module-server_settings-schema.html#~getDefault">getDefault</a></li><li data-type='method'><a href="module-server_settings-schema.html#~getDefaults">getDefaults</a></li><li data-type='method'><a href="module-server_settings-schema.html#~getRequiredKeys">getRequiredKeys</a></li><li data-type='method'><a href="module-server_settings-schema.html#~getSettingsFilePath">getSettingsFilePath</a></li><li data-type='method'><a href="module-server_settings-schema.html#~initializeSettings">initializeSettings</a></li><li data-type='method'><a href="module-server_settings-schema.html#~saveSettings">saveSettings</a></li><li data-type='method'><a href="module-server_settings-schema.html#~validateSettings">validateSettings</a></li><li data-type='method'><a href="module-server_settings-schema.html#~validateValue">validateValue</a></li></ul></li><li><a href="module-server_state.html">server/state</a><ul class='methods'><li data-type='method'><a href="module-server_state.html#~getAutopilotState">getAutopilotState</a></li><li data-type='method'><a href="module-server_state.html#~getBunkerState">getBunkerState</a></li><li data-type='method'><a href="module-server_state.html#~getCampaignStatus">getCampaignStatus</a></li><li data-type='method'><a href="module-server_state.html#~getCoopData">getCoopData</a></li><li data-type='method'><a href="module-server_state.html#~getEventData">getEventData</a></li><li data-type='method'><a href="module-server_state.html#~getHeaderData">getHeaderData</a></li><li data-type='method'><a href="module-server_state.html#~getLastCO2Alert">getLastCO2Alert</a></li><li data-type='method'><a href="module-server_state.html#~getLastFuelAlert">getLastFuelAlert</a></li><li data-type='method'><a href="module-server_state.html#~getPrices">getPrices</a></li><li data-type='method'><a href="module-server_state.html#~getRepairCount">getRepairCount</a></li><li data-type='method'><a href="module-server_state.html#~getSettings">getSettings</a></li><li data-type='method'><a href="module-server_state.html#~getUserState">getUserState</a></li><li data-type='method'><a href="module-server_state.html#~getVesselCounts">getVesselCounts</a></li><li data-type='method'><a href="module-server_state.html#~isAutopilotPaused">isAutopilotPaused</a></li><li data-type='method'><a href="module-server_state.html#~setAutopilotPaused">setAutopilotPaused</a></li><li data-type='method'><a href="module-server_state.html#~setAutopilotState">setAutopilotState</a></li><li data-type='method'><a href="module-server_state.html#~setLastCO2Alert">setLastCO2Alert</a></li><li data-type='method'><a href="module-server_state.html#~setLastFuelAlert">setLastFuelAlert</a></li><li data-type='method'><a href="module-server_state.html#~updateBunkerState">updateBunkerState</a></li><li data-type='method'><a href="module-server_state.html#~updateCampaignStatus">updateCampaignStatus</a></li><li data-type='method'><a href="module-server_state.html#~updateCoopData">updateCoopData</a></li><li data-type='method'><a href="module-server_state.html#~updateEventData">updateEventData</a></li><li data-type='method'><a href="module-server_state.html#~updateHeaderData">updateHeaderData</a></li><li data-type='method'><a href="module-server_state.html#~updatePrices">updatePrices</a></li><li data-type='method'><a href="module-server_state.html#~updateRepairCount">updateRepairCount</a></li><li data-type='method'><a href="module-server_state.html#~updateSettings">updateSettings</a></li><li data-type='method'><a href="module-server_state.html#~updateVesselCounts">updateVesselCounts</a></li></ul></li><li><a href="module-server_utils_api.html">server/utils/api</a><ul class='methods'><li data-type='method'><a href="module-server_utils_api.html#~apiCall">apiCall</a></li><li data-type='method'><a href="module-server_utils_api.html#~apiCallWithRetry">apiCallWithRetry</a></li><li data-type='method'><a href="module-server_utils_api.html#~getAllianceId">getAllianceId</a></li><li data-type='method'><a href="module-server_utils_api.html#~getChatFeed">getChatFeed</a></li><li data-type='method'><a href="module-server_utils_api.html#~getCompanyName">getCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserCompanyName">getUserCompanyName</a></li><li data-type='method'><a href="module-server_utils_api.html#~getUserId">getUserId</a></li><li data-type='method'><a href="module-server_utils_api.html#~initializeAlliance">initializeAlliance</a></li><li data-type='method'><a href="module-server_utils_api.html#~sleep">sleep</a></li></ul></li><li><a href="module-server_utils_encryption.html">server/utils/encryption</a><ul class='methods'><li data-type='method'><a href="module-server_utils_encryption.html#~decryptData">decryptData</a></li><li data-type='method'><a href="module-server_utils_encryption.html#~deleteEncryptedData">deleteEncryptedData</a></li><li data-type='method'><a href="module-server_utils_encryption.html#~encryptData">encryptData</a></li><li data-type='method'><a href="module-server_utils_encryption.html#~getEncryptionInfo">getEncryptionInfo</a></li><li data-type='method'><a href="module-server_utils_encryption.html#~getMachineKey">getMachineKey</a></li><li data-type='method'><a href="module-server_utils_encryption.html#~isEncrypted">isEncrypted</a></li></ul></li><li><a href="module-server_utils_logger.html">server/utils/logger</a><ul class='methods'><li data-type='method'><a href="module-server_utils_logger.html#~debug">debug</a></li><li data-type='method'><a href="module-server_utils_logger.html#~error">error</a></li><li data-type='method'><a href="module-server_utils_logger.html#~isDebugMode">isDebugMode</a></li><li data-type='method'><a href="module-server_utils_logger.html#~loadLogLevel">loadLogLevel</a></li><li data-type='method'><a href="module-server_utils_logger.html#~log">log</a></li><li data-type='method'><a href="module-server_utils_logger.html#~warn">warn</a></li></ul></li><li><a href="module-server_utils_session-manager.html">server/utils/session-manager</a><ul class='methods'><li data-type='method'><a href="module-server_utils_session-manager.html#~deleteSession">deleteSession</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~getAllUserIds">getAllUserIds</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~getAvailableSessions">getAvailableSessions</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~getSession">getSession</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~getSessionsPath">getSessionsPath</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~hasSession">hasSession</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~loadAllSessions">loadAllSessions</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~loadSessions">loadSessions</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~migrateToEncrypted">migrateToEncrypted</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~saveSession">saveSession</a></li><li data-type='method'><a href="module-server_utils_session-manager.html#~saveSessions">saveSessions</a></li></ul></li><li><a href="module-server_websocket.html">server/websocket</a><ul class='methods'><li data-type='method'><a href="module-server_websocket.html#~broadcast">broadcast</a></li><li data-type='method'><a href="module-server_websocket.html#~broadcastBunkerUpdate">broadcastBunkerUpdate</a></li><li data-type='method'><a href="module-server_websocket.html#~broadcastToUser">broadcastToUser</a></li><li data-type='method'><a href="module-server_websocket.html#~getCachedHijackingCase">getCachedHijackingCase</a></li><li data-type='method'><a href="module-server_websocket.html#~getCachedMessengerChats">getCachedMessengerChats</a></li><li data-type='method'><a href="module-server_websocket.html#~getProcessedMessageIds">getProcessedMessageIds</a></li><li data-type='method'><a href="module-server_websocket.html#~getProcessedMessagesCachePath">getProcessedMessagesCachePath</a></li><li data-type='method'><a href="module-server_websocket.html#~initWebSocket">initWebSocket</a></li><li data-type='method'><a href="module-server_websocket.html#~loadProcessedMessageCache">loadProcessedMessageCache</a></li><li data-type='method'><a href="module-server_websocket.html#~performChatRefresh">performChatRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~performHijackingRefresh">performHijackingRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~performMessengerRefresh">performMessengerRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~saveProcessedMessageCache">saveProcessedMessageCache</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~startChatAutoRefresh">startChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~startHijackingAutoRefresh">startHijackingAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~startMessengerAutoRefresh">startMessengerAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopChatAutoRefresh">stopChatAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopHijackingAutoRefresh">stopHijackingAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~stopMessengerAutoRefresh">stopMessengerAutoRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~triggerImmediateChatRefresh">triggerImmediateChatRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~triggerImmediateHijackingRefresh">triggerImmediateHijackingRefresh</a></li><li data-type='method'><a href="module-server_websocket.html#~triggerImmediateMessengerRefresh">triggerImmediateMessengerRefresh</a></li></ul></li><li><a href="module-ui-dialogs.html">ui-dialogs</a><ul class='methods'><li data-type='method'><a href="module-ui-dialogs.html#.buyCampaign">buyCampaign</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeCampaignsOverlay">closeCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.closeSettings">closeSettings</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showCampaignsOverlay">showCampaignsOverlay</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showConfirmDialog">showConfirmDialog</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showContactList">showContactList</a></li><li data-type='method'><a href="module-ui-dialogs.html#.showSettings">showSettings</a></li></ul></li><li><a href="module-utils.html">utils</a><ul class='methods'><li data-type='method'><a href="module-utils.html#.escapeHtml">escapeHtml</a></li><li data-type='method'><a href="module-utils.html#.formatNumber">formatNumber</a></li><li data-type='method'><a href="module-utils.html#.registerServiceWorker">registerServiceWorker</a></li><li data-type='method'><a href="module-utils.html#.renderStars">renderStars</a></li><li data-type='method'><a href="module-utils.html#.requestNotificationPermission">requestNotificationPermission</a></li><li data-type='method'><a href="module-utils.html#.showNotification">showNotification</a></li><li data-type='method'><a href="module-utils.html#.showSideNotification">showSideNotification</a></li></ul></li><li><a href="module-vessel-management.html">vessel-management</a><ul class='methods'><li data-type='method'><a href="module-vessel-management.html#.departAllVessels">departAllVessels</a></li><li data-type='method'><a href="module-vessel-management.html#.purchaseSingleVessel">purchaseSingleVessel</a></li><li data-type='method'><a href="module-vessel-management.html#.updateVesselCount">updateVesselCount</a></li><li data-type='method'><a href="module-vessel-management.html#~createVesselCard">createVesselCard</a></li><li data-type='method'><a href="module-vessel-management.html#~displayFilteredVessels">displayFilteredVessels</a></li><li data-type='method'><a href="module-vessel-management.html#~getAvailableAnchorSlots">getAvailableAnchorSlots</a></li><li data-type='method'><a href="module-vessel-management.html#~getCO2EfficiencyClass">getCO2EfficiencyClass</a></li><li data-type='method'><a href="module-vessel-management.html#~getCapacityDisplay">getCapacityDisplay</a></li><li data-type='method'><a href="module-vessel-management.html#~getFuelEfficiencyClass">getFuelEfficiencyClass</a></li><li data-type='method'><a href="module-vessel-management.html#~loadMorePendingVessels">loadMorePendingVessels</a></li><li data-type='method'><a href="module-vessel-management.html#~loadMoreVessels">loadMoreVessels</a></li><li data-type='method'><a href="module-vessel-management.html#~populateDynamicFilters">populateDynamicFilters</a></li><li data-type='method'><a href="module-vessel-management.html#~preloadCommonVesselImages">preloadCommonVesselImages</a></li><li data-type='method'><a href="module-vessel-management.html#~preloadVesselImage">preloadVesselImage</a></li><li data-type='method'><a href="module-vessel-management.html#~refreshVesselCardsIfVisible">refreshVesselCardsIfVisible</a></li><li data-type='method'><a href="module-vessel-management.html#~showBulkRepairDialog">showBulkRepairDialog</a></li><li data-type='method'><a href="module-vessel-management.html#~updateCapacityDropdowns">updateCapacityDropdowns</a></li><li data-type='method'><a href="module-vessel-management.html#~vesselPassesFilters">vesselPassesFilters</a></li></ul></li><li><a href="module-vessel-selling.html">vessel-selling</a><ul class='methods'><li data-type='method'><a href="module-vessel-selling.html#.bulkSellVessels">bulkSellVessels</a></li><li data-type='method'><a href="module-vessel-selling.html#.closeSellVesselsOverlay">closeSellVesselsOverlay</a></li><li data-type='method'><a href="module-vessel-selling.html#.openSellVesselsOverlay">openSellVesselsOverlay</a></li><li data-type='method'><a href="module-vessel-selling.html#.setSellFilter">setSellFilter</a></li><li data-type='method'><a href="module-vessel-selling.html#.showSellCart">showSellCart</a></li><li data-type='method'><a href="module-vessel-selling.html#~displaySellVessels">displaySellVessels</a></li><li data-type='method'><a href="module-vessel-selling.html#~getCO2EfficiencyClass">getCO2EfficiencyClass</a></li><li data-type='method'><a href="module-vessel-selling.html#~getCapacityDisplay">getCapacityDisplay</a></li><li data-type='method'><a href="module-vessel-selling.html#~getFuelEfficiencyClass">getFuelEfficiencyClass</a></li><li data-type='method'><a href="module-vessel-selling.html#~groupVesselsByModel">groupVesselsByModel</a></li><li data-type='method'><a href="module-vessel-selling.html#~loadUserVesselsForSale">loadUserVesselsForSale</a></li><li data-type='method'><a href="module-vessel-selling.html#~removeVesselSelectionFromCart">removeVesselSelectionFromCart</a></li><li data-type='method'><a href="module-vessel-selling.html#~sellVessels">sellVessels</a></li><li data-type='method'><a href="module-vessel-selling.html#~toggleVesselSelection">toggleVesselSelection</a></li><li data-type='method'><a href="module-vessel-selling.html#~updateBulkSellButton">updateBulkSellButton</a></li><li data-type='method'><a href="module-vessel-selling.html#~updateSelectButtonState">updateSelectButtonState</a></li><li data-type='method'><a href="module-vessel-selling.html#~updateVesselSelectionInCart">updateVesselSelectionInCart</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#express">express</a></li><li><a href="global.html#lockBulkBuyButton">lockBulkBuyButton</a></li><li><a href="global.html#lockCo2Button">lockCo2Button</a></li><li><a href="global.html#lockCoopButtons">lockCoopButtons</a></li><li><a href="global.html#lockDepartButton">lockDepartButton</a></li><li><a href="global.html#lockFuelButton">lockFuelButton</a></li><li><a href="global.html#lockRepairButton">lockRepairButton</a></li><li><a href="global.html#showAnchorTimer">showAnchorTimer</a></li><li><a href="global.html#unlockBulkBuyButton">unlockBulkBuyButton</a></li><li><a href="global.html#unlockCo2Button">unlockCo2Button</a></li><li><a href="global.html#unlockCoopButtons">unlockCoopButtons</a></li><li><a href="global.html#unlockDepartButton">unlockDepartButton</a></li><li><a href="global.html#unlockFuelButton">unlockFuelButton</a></li><li><a href="global.html#unlockRepairButton">unlockRepairButton</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">server/routes/forecast.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Forecast API Route - Clean Timezone Implementation
+ *
+ * APPROACH:
+ * - Source data (forecast.json) is ALWAYS in CEST (UTC+2) - never changes
+ * - API converts from CEST to requested timezone (default: server local timezone)
+ * - All timezone calculations happen server-side
+ * - Response includes clear metadata about source and delivered timezone
+ *
+ * @module server/routes/forecast
+ */
+
+const express = require('express');
+const router = express.Router();
+const fs = require('fs').promises;
+const path = require('path');
+const logger = require('../utils/logger');
+const { getLocalAppDataDir } = require('../config');
+
+/**
+ * Get forecast data file path based on execution mode
+ * @returns {string} Path to forecast.json
+ */
+function getForecastDataPath() {
+    if (process.pkg) {
+        // Running as .exe - use AppData\Local (machine-specific cache data)
+        return path.join(getLocalAppDataDir(), 'ShippingManagerCoPilot', 'data', 'forecast', 'forecast.json');
+    }
+    // Running from source - use project directory
+    return path.join(__dirname, '../../data/forecast/forecast.json');
+}
+
+/**
+ * Get UTC offset for timezone abbreviations
+ * @param {string} timezone - Timezone abbreviation (e.g., "PST", "CEST", "UTC")
+ * @returns {number} UTC offset in hours
+ */
+function getTimezoneOffsetHours(timezone) {
+    const timezoneOffsets = {
+        // North America
+        'PST': -8, 'PDT': -7,  // Pacific
+        'MST': -7, 'MDT': -6,  // Mountain
+        'CST': -6, 'CDT': -5,  // Central US
+        'EST': -5, 'EDT': -4,  // Eastern
+
+        // Europe
+        'GMT': 0,  'BST': 1,   // UK
+        'WET': 0,  'WEST': 1,  // Western Europe
+        'CET': 1,  'CEST': 2,  // Central Europe
+        'EET': 2,  'EEST': 3,  // Eastern Europe
+
+        // Asia
+        'JST': 9,              // Japan
+        'KST': 9,              // Korea
+        'CST_CHINA': 8,        // China
+        'IST': 5.5,            // India
+
+        // Australia
+        'AEST': 10, 'AEDT': 11,// Australia Eastern
+        'ACST': 9.5, 'ACDT': 10.5,// Australia Central
+        'AWST': 8,             // Australia Western
+
+        // New Zealand
+        'NZST': 12, 'NZDT': 13,
+
+        // Other
+        'UTC': 0,
+        'Z': 0
+    };
+
+    const normalized = timezone.toUpperCase();
+    if (timezoneOffsets.hasOwnProperty(normalized)) {
+        return timezoneOffsets[normalized];
+    }
+
+    return null; // Invalid timezone
+}
+
+/**
+ * Get all valid timezone abbreviations
+ * @returns {string[]} Array of valid timezone strings
+ */
+function getValidTimezones() {
+    return [
+        'PST', 'PDT', 'MST', 'MDT', 'CST', 'CDT', 'EST', 'EDT',
+        'GMT', 'BST', 'WET', 'WEST', 'CET', 'CEST', 'EET', 'EEST',
+        'JST', 'KST', 'IST',
+        'AEST', 'AEDT', 'ACST', 'ACDT', 'AWST',
+        'NZST', 'NZDT',
+        'UTC'
+    ];
+}
+
+/**
+ * Detect server's local timezone
+ * @returns {Object} Timezone info { name, utcOffset, offsetString }
+ */
+function getServerLocalTimezone() {
+    const now = new Date();
+
+    // Get UTC offset in hours
+    const offsetMinutes = -now.getTimezoneOffset();
+    const offsetHours = offsetMinutes / 60;
+
+    // Determine if DST is active (for European timezones)
+    const jan = new Date(now.getFullYear(), 0, 1);
+    const jul = new Date(now.getFullYear(), 6, 1);
+    const isDST = now.getTimezoneOffset() &lt; Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+
+    // Try to get timezone name
+    let timezoneName = 'UTC';
+
+    // For Central European timezone (most common case)
+    if (offsetHours === 1 &amp;&amp; !isDST) {
+        timezoneName = 'CET';
+    } else if (offsetHours === 2 &amp;&amp; isDST) {
+        timezoneName = 'CEST';
+    } else if (offsetHours === 0) {
+        timezoneName = 'UTC';
+    } else {
+        // Generic fallback
+        timezoneName = `UTC${offsetHours >= 0 ? '+' : ''}${offsetHours}`;
+    }
+
+    return {
+        name: timezoneName,
+        utcOffset: offsetHours,
+        offsetString: `UTC${offsetHours >= 0 ? '+' : ''}${offsetHours}`,
+        isDST: isDST
+    };
+}
+
+/**
+ * Get data for previous day, handling month boundaries
+ * @param {Array} forecastData - All forecast data
+ * @param {number} currentDay - Current day number
+ * @returns {Object|null} Previous day data or null if not available
+ */
+function getPreviousDayData(forecastData, currentDay) {
+    if (currentDay > 1) {
+        // Simple case: previous day in same month
+        return forecastData.find(d => d.day === currentDay - 1);
+    }
+
+    // Day 1: need last day of previous month
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-indexed
+
+    // Get last day of previous month
+    const lastDayOfPrevMonth = new Date(year, month, 0).getDate();
+
+    return forecastData.find(d => d.day === lastDayOfPrevMonth);
+}
+
+/**
+ * Get data for next day, handling month boundaries
+ * @param {Array} forecastData - All forecast data
+ * @param {number} currentDay - Current day number
+ * @returns {Object|null} Next day data or null if not available
+ */
+function getNextDayData(forecastData, currentDay) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-indexed
+
+    // Get last day of current month
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+
+    if (currentDay &lt; lastDayOfMonth) {
+        // Simple case: next day in same month
+        return forecastData.find(d => d.day === currentDay + 1);
+    }
+
+    // Last day of month: need day 1 of next month
+    return forecastData.find(d => d.day === 1);
+}
+
+/**
+ * Convert CEST (UTC+2) forecast data to target timezone
+ *
+ * @param {Array} forecastData - Original data in CEST
+ * @param {string} targetTimezone - Target timezone abbreviation
+ * @param {number} requestedDay - Specific day to convert (optional)
+ * @returns {Object} { success, data, error }
+ */
+function convertCESTToTimezone(forecastData, targetTimezone, requestedDay = null) {
+    // Get UTC offsets
+    const sourceOffset = 2; // CEST is always UTC+2
+    const targetOffset = getTimezoneOffsetHours(targetTimezone);
+
+    if (targetOffset === null) {
+        return {
+            success: false,
+            error: 'Invalid timezone',
+            message: `Timezone "${targetTimezone}" not recognized`,
+            valid_timezones: getValidTimezones()
+        };
+    }
+
+    // Calculate hour offset
+    const hoursOffset = targetOffset - sourceOffset;
+
+    // If no offset needed, return data as-is
+    if (hoursOffset === 0) {
+        logger.log('[Forecast] No timezone conversion needed (already CEST)');
+        return {
+            success: true,
+            data: forecastData,
+            hoursOffset: 0
+        };
+    }
+
+    // Convert intervals (30-minute intervals, so hours * 2)
+    const intervalOffset = Math.round(hoursOffset * 2);
+
+    logger.log(`[Forecast] Converting CEST to ${targetTimezone}: ${hoursOffset} hours (${intervalOffset} intervals)`);
+
+    // Convert each day
+    const convertedData = forecastData.map(dayData => {
+        if (!dayData.hourly_intervals || dayData.hourly_intervals.length === 0) {
+            return dayData; // Return as-is if no intervals
+        }
+
+        const currentIntervals = dayData.hourly_intervals;
+        const convertedIntervals = [];
+
+        // Get adjacent day data for wrapping
+        const prevDayData = getPreviousDayData(forecastData, dayData.day);
+        const nextDayData = getNextDayData(forecastData, dayData.day);
+
+        for (let i = 0; i &lt; 48; i++) {
+            // Check if current interval exists
+            if (!currentIntervals[i]) {
+                logger.warn(`[Forecast] Missing interval ${i} for day ${dayData.day}, skipping`);
+                continue;
+            }
+
+            // Calculate source index
+            // LOGIC: We're displaying target timezone, need to find corresponding CEST time
+            // Negative offset (west, like CET): target is BEHIND source, so need LATER CEST times
+            // Positive offset (east, like JST): target is AHEAD of source, so need EARLIER CEST times
+            // Example: CET is 1h behind CEST, so CET 00:00 = CEST 01:00 (need index +2)
+            const sourceIntervalIndex = i - intervalOffset;
+
+            let sourceInterval;
+
+            if (sourceIntervalIndex >= 0 &amp;&amp; sourceIntervalIndex &lt; 48) {
+                // Source is within current day
+                sourceInterval = currentIntervals[sourceIntervalIndex];
+
+                // If source interval doesn't exist, use current as fallback
+                if (!sourceInterval) {
+                    logger.warn(`[Forecast] Missing source interval ${sourceIntervalIndex} for day ${dayData.day}, using current interval`);
+                    sourceInterval = currentIntervals[i];
+                }
+            } else if (sourceIntervalIndex &lt; 0) {
+                // Need data from previous day (eastward timezone, like JST)
+                if (!prevDayData || !prevDayData.hourly_intervals) {
+                    // Fallback: use first available interval from current day
+                    logger.warn(`[Forecast] Previous day data not available for day ${dayData.day}, using fallback`);
+                    sourceInterval = currentIntervals[0];
+                } else {
+                    const wrappedIndex = 48 + sourceIntervalIndex;
+                    sourceInterval = prevDayData.hourly_intervals[wrappedIndex];
+
+                    // If wrapped interval doesn't exist, use first of current day
+                    if (!sourceInterval) {
+                        logger.warn(`[Forecast] Missing wrapped interval ${wrappedIndex} from previous day, using fallback`);
+                        sourceInterval = currentIntervals[0];
+                    }
+                }
+            } else {
+                // Need data from next day (westward timezone, like CET, PST)
+                if (!nextDayData || !nextDayData.hourly_intervals) {
+                    // Fallback: use last available interval from current day
+                    logger.warn(`[Forecast] Next day data not available for day ${dayData.day}, using fallback`);
+                    sourceInterval = currentIntervals[currentIntervals.length - 1];
+                } else {
+                    const wrappedIndex = sourceIntervalIndex - 48;
+                    sourceInterval = nextDayData.hourly_intervals[wrappedIndex];
+
+                    // If wrapped interval doesn't exist, use last of current day
+                    if (!sourceInterval) {
+                        logger.warn(`[Forecast] Missing wrapped interval ${wrappedIndex} from next day, using fallback`);
+                        sourceInterval = currentIntervals[currentIntervals.length - 1];
+                    }
+                }
+            }
+
+            // Keep the time labels, but use source interval's prices
+            convertedIntervals.push({
+                start_time: currentIntervals[i].start_time,
+                end_time: currentIntervals[i].end_time,
+                fuel_price_per_ton: sourceInterval.fuel_price_per_ton,
+                co2_price_per_ton: sourceInterval.co2_price_per_ton
+            });
+        }
+
+        return {
+            day: dayData.day,
+            hourly_intervals: convertedIntervals
+        };
+    });
+
+    return {
+        success: true,
+        data: convertedData,
+        hoursOffset: hoursOffset
+    };
+}
+
+/**
+ * Generate metadata for API response
+ * @param {string} targetTimezone - Target timezone
+ * @param {number} hoursOffset - Hours offset from CEST
+ * @returns {Object} Metadata object
+ */
+function generateMetadata(targetTimezone, hoursOffset) {
+    const targetOffset = getTimezoneOffsetHours(targetTimezone);
+
+    return {
+        source_timezone: 'CEST',
+        source_utc_offset: 2,
+        delivered_timezone: targetTimezone,
+        delivered_utc_offset: targetOffset,
+        timezone_shift_hours: hoursOffset,
+        timestamp: new Date().toISOString(),
+        note: `Data originally captured in CEST (UTC+2), converted to ${targetTimezone} (UTC${targetOffset >= 0 ? '+' : ''}${targetOffset})`
+    };
+}
+
+/**
+ * Generate formatted text output for chatbot
+ * @param {Object} dayData - Day data with intervals
+ * @param {number} day - Day number
+ * @param {string} timezone - Timezone abbreviation
+ * @param {string} companyName - Company name for header
+ * @returns {string} Formatted text
+ */
+function generateChatbotText(dayData, day, timezone, companyName, eventDiscount = null) {
+    const now = new Date();
+    const dateStr = `${String(day).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+
+    let text = `📢 ${companyName}'s Forecast Service\n\n`;
+    text += `Forecast 👉 ${dateStr} (${timezone})\n\n`;
+
+    // Add event discount notice if active
+    if (eventDiscount &amp;&amp; eventDiscount.percentage &amp;&amp; eventDiscount.type) {
+        const type = eventDiscount.type.charAt(0).toUpperCase() + eventDiscount.type.slice(1);
+        text += `Event Active: ${type} -${eventDiscount.percentage}%\n\n`;
+    }
+
+    text += 'TIME   FUEL  CO2\n';
+    text += '-------------------\n';
+
+    // Show ALL 30-minute intervals (48 entries)
+    for (const interval of dayData.hourly_intervals) {
+        const time = interval.start_time.substring(0, 5);
+
+        // Apply event discount if active
+        let fuelPrice = interval.fuel_price_per_ton;
+        let co2Price = interval.co2_price_per_ton;
+
+        if (eventDiscount &amp;&amp; eventDiscount.percentage) {
+            if (eventDiscount.type === 'fuel') {
+                fuelPrice = Math.round(fuelPrice * (1 - eventDiscount.percentage / 100));
+            } else if (eventDiscount.type === 'co2') {
+                co2Price = Math.round(co2Price * (1 - eventDiscount.percentage / 100));
+            }
+        }
+
+        const fuel = String(fuelPrice).padStart(4, ' ');
+        const co2 = String(co2Price).padStart(3, ' ');
+        text += `${time}  ${fuel}  ${co2}\n`;
+    }
+
+    text += `\nFair winds 🚢`;
+
+    return text;
+}
+
+/**
+ * GET /api/forecast
+ * Returns forecast data converted to target timezone
+ *
+ * Query parameters:
+ * - timezone: Target timezone (default: server local timezone)
+ * - source=chatbot: Returns formatted text instead of JSON
+ * - day: Specific day (1-31, default: current day for chatbot mode)
+ */
+router.get('/', async (req, res) => {
+    try {
+        const { source, day, timezone: requestedTz } = req.query;
+
+        // Load original CEST forecast data
+        const dataPath = getForecastDataPath();
+        const rawData = await fs.readFile(dataPath, 'utf-8');
+        const forecastData = JSON.parse(rawData);
+
+        // Determine target timezone (default: server local timezone)
+        const serverTz = getServerLocalTimezone();
+        const targetTimezone = requestedTz ? requestedTz.toUpperCase() : serverTz.name;
+
+        logger.log(`[Forecast] Request: timezone=${targetTimezone}, source=${source || 'json'}, day=${day || 'all'}`);
+
+        // Convert from CEST to target timezone
+        const conversionResult = convertCESTToTimezone(forecastData, targetTimezone);
+
+        if (!conversionResult.success) {
+            return res.status(400).json(conversionResult);
+        }
+
+        const convertedData = conversionResult.data;
+        const hoursOffset = conversionResult.hoursOffset;
+
+        // Chatbot mode: return formatted text
+        if (source === 'chatbot') {
+            const { getUserCompanyName } = require('../utils/api');
+            const companyName = getUserCompanyName() || 'Captain';
+
+            // Get current event discount info
+            const { fetchPrices } = require('../gameapi');
+            let eventDiscount = null;
+            try {
+                const prices = await fetchPrices();
+                eventDiscount = prices.eventDiscount || null;
+            } catch (error) {
+                logger.error('[Forecast] Error fetching event discount:', error);
+                // Continue without event discount
+            }
+
+            // Determine day (default to tomorrow for chatbot)
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const targetDay = day ? parseInt(day) : tomorrow.getDate();
+
+            // Find the day data
+            const dayData = convertedData.find(d => d.day === targetDay);
+            if (!dayData) {
+                return res.status(404).send(`No forecast data available for day ${targetDay}`);
+            }
+
+            // Generate formatted text with event discount
+            const text = generateChatbotText(dayData, targetDay, targetTimezone, companyName, eventDiscount);
+
+            // Send as plain text
+            res.type('text/plain; charset=utf-8').send(text);
+        } else {
+            // Normal JSON response
+            const response = {
+                metadata: generateMetadata(targetTimezone, hoursOffset),
+                data: convertedData
+            };
+
+            logger.log(`[Forecast] Serving data in ${targetTimezone} (${hoursOffset >= 0 ? '+' : ''}${hoursOffset}h from CEST)`);
+
+            res.json(response);
+        }
+    } catch (error) {
+        logger.error('[Forecast] Error loading forecast data:', error);
+        res.status(500).json({
+            error: 'Failed to load forecast data',
+            message: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/forecast/raw
+ * Returns original unmodified CEST data (for debugging)
+ */
+router.get('/raw', async (req, res) => {
+    try {
+        const dataPath = getForecastDataPath();
+        const rawData = await fs.readFile(dataPath, 'utf-8');
+        const forecastData = JSON.parse(rawData);
+
+        res.json({
+            metadata: {
+                timezone: 'CEST',
+                utc_offset: 2,
+                adjusted: false,
+                note: 'Original data as captured, no timezone conversion applied',
+                timestamp: new Date().toISOString()
+            },
+            data: forecastData
+        });
+    } catch (error) {
+        logger.error('[Forecast] Error loading raw data:', error);
+        res.status(500).json({
+            error: 'Failed to load forecast data',
+            message: error.message
+        });
+    }
+});
+
+// Export router and helper functions for direct use by ChatBot
+module.exports = router;
+module.exports.convertCESTToTimezone = convertCESTToTimezone;
+module.exports.getServerLocalTimezone = getServerLocalTimezone;
+module.exports.generateChatbotText = generateChatbotText;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation Version: 0.0.7 - ShippingManager CoPilot
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

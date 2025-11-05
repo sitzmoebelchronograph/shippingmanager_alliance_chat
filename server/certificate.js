@@ -41,32 +41,50 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const os = require('os');
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 const forge = require('node-forge');
+const logger = require('./utils/logger');
+
+/**
+ * APPDATA directory for storing user data (certificates, sessions, etc.)
+ * Uses platform-specific AppData directory (no env vars)
+ * @constant {string}
+ */
+const { getAppDataDir } = require('./config');
+const APPDATA_DIR = path.join(getAppDataDir(), 'ShippingManagerCoPilot');
+const CERTS_DIR = path.join(APPDATA_DIR, 'certs');
+
+// Ensure directories exist
+if (!fs.existsSync(APPDATA_DIR)) {
+    fs.mkdirSync(APPDATA_DIR, { recursive: true });
+}
+if (!fs.existsSync(CERTS_DIR)) {
+    fs.mkdirSync(CERTS_DIR, { recursive: true });
+}
 
 /**
  * File path for the Certificate Authority certificate (10-year validity)
  * @constant {string}
  */
-const CA_CERT_PATH = path.join(__dirname, '..', 'ca-cert.pem');
+const CA_CERT_PATH = path.join(CERTS_DIR, 'ca-cert.pem');
 
 /**
  * File path for the Certificate Authority private key
  * @constant {string}
  */
-const CA_KEY_PATH = path.join(__dirname, '..', 'ca-key.pem');
+const CA_KEY_PATH = path.join(CERTS_DIR, 'ca-key.pem');
 
 /**
  * File path for the server certificate (1-year validity)
  * @constant {string}
  */
-const CERT_PATH = path.join(__dirname, '..', 'cert.pem');
+const CERT_PATH = path.join(CERTS_DIR, 'cert.pem');
 
 /**
  * File path for the server private key
  * @constant {string}
  */
-const KEY_PATH = path.join(__dirname, '..', 'key.pem');
+const KEY_PATH = path.join(CERTS_DIR, 'key.pem');
 
 /**
  * Detects all non-internal IPv4 addresses from network interfaces.
@@ -142,7 +160,7 @@ function getNetworkIPs() {
  * console.log(ca.cert); // PEM-encoded certificate
  */
 function generateCA() {
-  console.log('Generating Certificate Authority (CA)...');
+  logger.log('Generating Certificate Authority (CA)...');
 
   const keys = forge.pki.rsa.generateKeyPair(2048);
   const cert = forge.pki.createCertificate();
@@ -181,30 +199,46 @@ function generateCA() {
   fs.writeFileSync(CA_CERT_PATH, caPem);
   fs.writeFileSync(CA_KEY_PATH, caKeyPem);
 
-  console.log('✓ CA generated successfully');
+  logger.log('✓ CA generated successfully');
 
   // Try to install CA certificate automatically on Windows
   if (os.platform() === 'win32') {
     try {
-      console.log('\n🔒 Installing CA certificate to Windows Trust Store...');
-      console.log('   (Admin rights required - UAC dialog will appear)\n');
+      logger.log('\n🔒 Installing CA certificate to Windows Trust Store...');
+      logger.log('   (Admin rights required - UAC dialog will appear)\n');
 
-      execSync(`powershell -Command "Start-Process certutil -ArgumentList '-addstore','-f','Root','${CA_CERT_PATH}' -Verb RunAs -Wait"`, {
+      // Validate path doesn't contain dangerous characters (defense in depth)
+      if (CA_CERT_PATH.includes("'") || CA_CERT_PATH.includes('"') || CA_CERT_PATH.includes(';')) {
+        throw new Error('Invalid certificate path detected');
+      }
+
+      // Use spawnSync with proper argument escaping for PowerShell
+      // PowerShell single quotes need to be escaped as ''
+      const escapedPath = CA_CERT_PATH.replace(/'/g, "''");
+
+      const result = spawnSync('powershell', [
+        '-Command',
+        `Start-Process certutil -ArgumentList '-addstore','-f','Root','${escapedPath}' -Verb RunAs -Wait`
+      ], {
         stdio: 'inherit'
       });
 
-      console.log('\n✓ CA certificate installed successfully!');
-      console.log('✓ Browser will now trust all certificates from this CA\n');
+      if (result.error) {
+        throw result.error;
+      }
+
+      logger.log('\n✓ CA certificate installed successfully!');
+      logger.log('✓ Browser will now trust all certificates from this CA\n');
     } catch (error) {
-      console.log('\n⚠ Installation cancelled or failed');
-      console.log('📋 Manual installation:');
-      console.log(`   1. Right-click Command Prompt → "Run as Administrator"`);
-      console.log(`   2. Run: certutil -addstore -f "Root" "${CA_CERT_PATH}"\n`);
+      logger.log('\n⚠ Installation cancelled or failed');
+      logger.log('📋 Manual installation:');
+      logger.log(`   1. Right-click Command Prompt → "Run as Administrator"`);
+      logger.log(`   2. Run: certutil -addstore -f "Root" "${CA_CERT_PATH}"\n`);
     }
   } else if (os.platform() === 'darwin') {
-    console.log(`\n📋 macOS: sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "${CA_CERT_PATH}"\n`);
+    logger.log(`\n📋 macOS: sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "${CA_CERT_PATH}"\n`);
   } else {
-    console.log(`\n📋 Linux: sudo cp "${CA_CERT_PATH}" /usr/local/share/ca-certificates/ && sudo update-ca-certificates\n`);
+    logger.log(`\n📋 Linux: sudo cp "${CA_CERT_PATH}" /usr/local/share/ca-certificates/ && sudo update-ca-certificates\n`);
   }
 
   return { cert: caPem, key: caKeyPem };
@@ -258,7 +292,7 @@ function generateCA() {
  * //   "✓ Server certificate generated successfully"
  */
 function generateCertificate() {
-  console.log('Generating server certificate...');
+  logger.log('Generating server certificate...');
 
   // Load or generate CA
   let caCert, caKey;
@@ -302,7 +336,7 @@ function generateCertificate() {
 
   networkIPs.forEach(ip => {
     altNames.push({ type: 7, ip });
-    console.log(`  Adding network IP to certificate: ${ip}`);
+    logger.log(`  Adding network IP to certificate: ${ip}`);
   });
 
   cert.setExtensions([
@@ -334,7 +368,7 @@ function generateCertificate() {
   fs.writeFileSync(CERT_PATH, certPem);
   fs.writeFileSync(KEY_PATH, keyPem);
 
-  console.log('✓ Server certificate generated successfully');
+  logger.log('✓ Server certificate generated successfully');
 }
 
 /**

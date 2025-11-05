@@ -62,6 +62,11 @@ export function escapeHtml(text) {
  * formatNumber(1000);       // Returns: "1,000"
  */
 export function formatNumber(num) {
+  // Round to whole number if it's close to an integer
+  const rounded = Math.round(num);
+  if (Math.abs(num - rounded) < 0.01) {
+    return rounded.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
   return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
@@ -87,7 +92,7 @@ export function showSideNotification(message, type = 'info', duration = null, is
   // Determine duration based on type if not specified
   if (!duration) {
     if (isAlert) {
-      duration = 30000; // 30 seconds for alerts
+      duration = 20000; // 20 seconds for alerts
     } else if (type === 'warning') {
       duration = 12000; // 12 seconds for warnings
     } else if (type === 'error') {
@@ -160,7 +165,7 @@ export function showSideNotification(message, type = 'info', duration = null, is
     if (dismissTimeout) {
       clearTimeout(dismissTimeout);
     }
-    notif.style.animation = 'slideOutToRight 0.3s ease-in';
+    notif.classList.add('slide-out-animation');
     setTimeout(() => {
       if (notif.parentNode) {
         notif.parentNode.removeChild(notif);
@@ -423,6 +428,46 @@ export function handleNotifications(newMessages) {
 // --- Tooltip System ---
 
 export function initCustomTooltips() {
+  // Detect if device has touch capability (mobile/tablet)
+  const isTouchDevice = ('ontouchstart' in window) ||
+                        (navigator.maxTouchPoints > 0) ||
+                        (navigator.msMaxTouchPoints > 0);
+
+  // If touch device, remove ALL title attributes and don't create tooltips
+  if (isTouchDevice) {
+    // Remove all existing title attributes
+    document.querySelectorAll('[title]').forEach(el => {
+      el.removeAttribute('title');
+    });
+
+    // Watch for dynamically added elements and remove their titles too
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType === 1) { // Element node
+            if (node.hasAttribute && node.hasAttribute('title')) {
+              node.removeAttribute('title');
+            }
+            // Check children too
+            if (node.querySelectorAll) {
+              node.querySelectorAll('[title]').forEach(el => {
+                el.removeAttribute('title');
+              });
+            }
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    return; // Don't initialize tooltip system at all
+  }
+
+  // Desktop only - original tooltip code
   const tooltip = document.createElement('div');
   tooltip.className = 'custom-tooltip';
   document.body.appendChild(tooltip);
@@ -463,8 +508,8 @@ export function initCustomTooltips() {
           top = 10;
         }
 
-        tooltip.style.left = left + 'px';
-        tooltip.style.top = top + 'px';
+        tooltip.style.setProperty('--tooltip-left', left + 'px');
+        tooltip.style.setProperty('--tooltip-top', top + 'px');
       };
 
       moveTooltip(e);
@@ -525,14 +570,59 @@ export async function saveSettings(settings) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to save settings');
+      // Try to get error message from response
+      let errorMessage = 'Failed to save settings';
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // Ignore JSON parse errors
+      }
+      throw new Error(errorMessage);
     }
 
     const result = await response.json();
+
+    // Verify settings were actually saved by loading them back
+    const verifyResponse = await fetch(window.apiUrl('/api/settings'));
+    if (!verifyResponse.ok) {
+      throw new Error('Failed to verify settings');
+    }
+
+    const savedSettings = await verifyResponse.json();
+
+    // Compare a few critical values to ensure they match
+    const criticalFields = ['fuelThreshold', 'co2Threshold', 'autoRebuyFuel', 'autoRebuyCO2', 'autoDepartAll', 'autoPilotNotifications'];
+    let allMatch = true;
+
+    for (const field of criticalFields) {
+      if (settings[field] !== savedSettings[field]) {
+        console.error(`[Settings] Mismatch for ${field}: sent=${settings[field]}, received=${savedSettings[field]}`);
+        allMatch = false;
+      }
+    }
+
+    if (allMatch) {
+      // Show success notification only if settings actually match
+      showSideNotification('<div style="text-align: center;">⚙️ <strong>Settings saved</strong></div>', 'success', 2000, false);
+    } else {
+      // Show warning if settings don't match
+      showSideNotification('⚙️ <strong>Settings saved but verification failed</strong><br><br>Please reload page', 'error', 4000);
+    }
+
     return result;
   } catch (error) {
     console.error('Error saving settings to server:', error);
-    showSideNotification('⚙️ <strong>Failed to save settings</strong><br><br>Check connection', 'error');
+
+    // Show specific error message if available
+    let errorMessage = 'Failed to save settings';
+    if (error.message && error.message !== 'Failed to save settings') {
+      errorMessage = error.message;
+    }
+
+    showSideNotification(`⚙️ <strong>Failed to save settings</strong><br><br>${errorMessage}`, 'error', 5000);
     throw error;
   }
 }
@@ -542,7 +632,10 @@ export function isAutoPilotActive(settings) {
          settings.autoRebuyCO2 ||
          settings.autoDepartAll ||
          settings.autoBulkRepair ||
-         settings.autoCampaignRenewal;
+         settings.autoCampaignRenewal ||
+         settings.autoCoopEnabled ||
+         settings.autoAnchorPointEnabled ||
+         settings.autoNegotiateHijacking;
 }
 
 export function updatePageTitle(settings) {
@@ -557,12 +650,39 @@ export function updatePageTitle(settings) {
 
   // Update page header with shiny effect ONLY on "AutoPilot" word
   const headerElement = document.getElementById('pageHeaderTitle');
+  const toggleBtn = document.getElementById('autopilotToggleBtn');
+
   if (headerElement) {
+    // Get notification button first
+    const notificationBtn = document.getElementById('notificationBtn');
+
     if (autoPilotActive) {
-      // Split text so only "AutoPilot" has the shiny effect
-      headerElement.innerHTML = 'Shipping Manager - <span class="autopilot-active">AutoPilot</span>';
+      // Create AutoPilot text and button, then re-add notification button
+      headerElement.innerHTML = `Shipping Manager - <span class="autopilot-active" id="autopilotUnit" onclick="window.toggleAutopilot()" title="Toggle AutoPilot">AutoPilot <span id="autopilotToggleBtn" class="autopilot-toggle-btn"><svg id="autopilotToggleIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg></span></span>`;
+
+      // Re-append notification button after innerHTML change
+      if (notificationBtn) {
+        headerElement.appendChild(notificationBtn);
+      }
+
+      // Update button state after recreating it
+      if (window.updateAutopilotButton) {
+        try {
+          const cachedPauseState = window.getStorage('autopilotPaused');
+          const isPaused = cachedPauseState ? JSON.parse(cachedPauseState) : false;
+          window.updateAutopilotButton(isPaused);
+        } catch (error) {
+          console.error('[updatePageTitle] Failed to update button state:', error);
+          window.updateAutopilotButton(false);
+        }
+      }
     } else {
       headerElement.textContent = 'Shipping Manager - CoPilot';
+
+      // Re-append notification button after textContent change
+      if (notificationBtn) {
+        headerElement.appendChild(notificationBtn);
+      }
     }
   }
 

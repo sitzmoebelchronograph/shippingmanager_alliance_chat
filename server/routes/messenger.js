@@ -43,8 +43,64 @@ const express = require('express');
 const validator = require('validator');
 const { apiCall, getUserId, getUserCompanyName } = require('../utils/api');
 const { messageLimiter } = require('../middleware');
+const chatBot = require('../chatbot');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const logger = require('../utils/logger');
 
 const router = express.Router();
+
+// Centralized data directory for hijack history - use platform-specific AppData (no env vars)
+const { getAppDataDir } = require('../config');
+const APPDATA_DIR = path.join(getAppDataDir(), 'ShippingManagerCoPilot');
+const DATA_DIR = path.join(APPDATA_DIR, 'data');
+
+// Old location (for migration)
+const OLD_DATA_DIR = path.join(__dirname, '../../data/localdata');
+
+/**
+ * Migrates hijack history from old location to APPDATA.
+ * Runs once on server startup.
+ */
+function migrateHijackHistory() {
+  const oldHistoryDir = path.join(OLD_DATA_DIR, 'hijack_history');
+  const newHistoryDir = path.join(DATA_DIR, 'hijack_history');
+
+  // Create new directory if it doesn't exist
+  if (!fs.existsSync(newHistoryDir)) {
+    fs.mkdirSync(newHistoryDir, { recursive: true });
+  }
+
+  // Check if old directory exists and has files
+  if (fs.existsSync(oldHistoryDir)) {
+    try {
+      const files = fs.readdirSync(oldHistoryDir);
+      let migratedCount = 0;
+
+      for (const file of files) {
+        const oldPath = path.join(oldHistoryDir, file);
+        const newPath = path.join(newHistoryDir, file);
+
+        // Only migrate if file doesn't exist in new location
+        if (!fs.existsSync(newPath)) {
+          fs.copyFileSync(oldPath, newPath);
+          migratedCount++;
+        }
+      }
+
+      if (migratedCount > 0) {
+        logger.log(`[Hijacking] Migrated ${migratedCount} hijack history file(s) to APPDATA`);
+        logger.log(`[Hijacking] New location: ${newHistoryDir}`);
+      }
+    } catch (error) {
+      logger.error('[Hijacking] Error migrating hijack history:', error.message);
+    }
+  }
+}
+
+// Run migration on module load
+migrateHijackHistory();
 
 /**
  * GET /api/contact/get-contacts - Retrieves user's contact list and alliance contacts.
@@ -98,7 +154,7 @@ router.get('/contact/get-contacts', async (req, res) => {
       own_company_name: getUserCompanyName()
     });
   } catch (error) {
-    console.error('Failed to get contacts:', error);
+    logger.error('Failed to get contacts:', error);
     res.status(500).json({ error: 'Failed to retrieve contacts' });
   }
 });
@@ -139,6 +195,7 @@ router.get('/contact/get-contacts', async (req, res) => {
  */
 router.get('/messenger/get-chats', async (req, res) => {
   try {
+    // Unified 90s timeout for messenger chats (can be very slow with many messages)
     const data = await apiCall('/messenger/get-chats', 'POST', {});
 
     // Handle case where data.data might be undefined or null
@@ -150,7 +207,7 @@ router.get('/messenger/get-chats', async (req, res) => {
       own_company_name: getUserCompanyName()
     });
   } catch (error) {
-    console.error('Failed to get chats:', error.message, error.stack);
+    logger.error('Failed to get chats:', error.message, error.stack);
 
     // Return empty chats instead of error to prevent UI breaking
     res.json({
@@ -216,7 +273,7 @@ router.post('/messenger/get-messages', express.json(), async (req, res) => {
       user_id: getUserId()
     });
   } catch (error) {
-    console.error('Error getting messages:', error);
+    logger.error('Error getting messages:', error);
     res.status(500).json({ error: 'Failed to retrieve messages' });
   }
 });
@@ -278,7 +335,9 @@ router.post('/messenger/send-private', messageLimiter, express.json(), async (re
     return res.status(400).json({ error: 'Subject is required' });
   }
 
-  if (!target_user_id || !Number.isInteger(target_user_id)) {
+  const targetUserIdNum = typeof target_user_id === 'string' ? parseInt(target_user_id, 10) : target_user_id;
+
+  if (!targetUserIdNum || !Number.isInteger(targetUserIdNum) || targetUserIdNum <= 0) {
     return res.status(400).json({ error: 'Valid target_user_id required' });
   }
 
@@ -289,12 +348,12 @@ router.post('/messenger/send-private', messageLimiter, express.json(), async (re
     await apiCall('/messenger/send-message', 'POST', {
       subject: validator.unescape(sanitizedSubject),
       body: validator.unescape(sanitizedMessage),
-      recipient: target_user_id
+      recipient: targetUserIdNum
     });
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error sending private message:', error);
+    logger.error('Error sending private message:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -333,8 +392,28 @@ router.post('/messenger/send-private', messageLimiter, express.json(), async (re
  * @param {express.Response} res - Express response object
  * @returns {Promise<void>} Sends JSON response { success: true, data: {...} }
  */
-router.post('/messenger/delete-chat', express.json(), async (req, res) => {
+router.post('/messenger/mark-as-read', express.json(), async (req, res) => {
   const { chat_ids, system_message_ids } = req.body;
+
+  if (!chat_ids || !system_message_ids) {
+    return res.status(400).json({ error: 'chat_ids and system_message_ids required' });
+  }
+
+  try {
+    const data = await apiCall('/messenger/mark-as-read', 'POST', {
+      chat_ids,
+      system_message_ids
+    });
+
+    res.json({ success: true, data });
+  } catch (error) {
+    logger.error('Error marking chat as read:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/messenger/delete-chat', express.json(), async (req, res) => {
+  const { chat_ids, system_message_ids, case_id } = req.body;
 
   if (!chat_ids || !system_message_ids) {
     return res.status(400).json({ error: 'chat_ids and system_message_ids required' });
@@ -346,10 +425,393 @@ router.post('/messenger/delete-chat', express.json(), async (req, res) => {
       system_message_ids
     });
 
+    // If case_id is provided, delete the corresponding history file
+    if (case_id) {
+      const userId = getUserId();
+      const fs = require('fs');
+      const historyDir = path.join(DATA_DIR, 'hijack_history');
+      const historyFile = path.join(historyDir, `${userId}-${case_id}.json`);
+
+      try {
+        if (fs.existsSync(historyFile)) {
+          fs.unlinkSync(historyFile);
+          logger.log(`[Hijacking] Deleted history file for case ${case_id}`);
+        }
+      } catch (error) {
+        logger.error(`[Hijacking] Failed to delete history file for case ${case_id}:`, error);
+        // Don't fail the entire request if history deletion fails
+      }
+    }
+
     res.json({ success: true, data });
   } catch (error) {
-    console.error('Error deleting chat:', error);
+    logger.error('Error deleting chat:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/user/search - Search for users by name.
+ *
+ * This endpoint searches for users matching a given name pattern.
+ * Returns array of matching users with their IDs and company names.
+ *
+ * Why This Endpoint:
+ * - Resolves company names to user IDs for users not in contacts
+ * - Enables messaging users who sent DMs but aren't in contact list
+ * - Provides fallback when contact list lookup fails
+ *
+ * Request Body:
+ * {
+ *   name: string  // Search term (partial match supported)
+ * }
+ *
+ * Response Structure:
+ * {
+ *   data: {
+ *     companies: [{id, company_name, ...}, ...]
+ *   },
+ *   user: {...}  // Current user data
+ * }
+ *
+ * Side Effects:
+ * - Makes API call to /user/search
+ *
+ * @name POST /api/user/search
+ * @function
+ * @memberof module:server/routes/messenger
+ * @param {express.Request} req - Express request object with { name: string } body
+ * @param {express.Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON response with search results
+ */
+router.post('/user/search', express.json(), async (req, res) => {
+  const { name } = req.body;
+
+  if (!name || typeof name !== 'string' || name.length === 0) {
+    return res.status(400).json({ error: 'Search name required' });
+  }
+
+  try {
+    const data = await apiCall('/user/search', 'POST', { name });
+    res.json(data);
+  } catch (error) {
+    // Game API sometimes returns 500 for user search
+    // Return empty results instead of error to prevent frontend issues
+    logger.error('Error searching users:', error.message);
+    res.json({
+      data: { companies: [] },
+      user: {}
+    });
+  }
+});
+
+/**
+ * GET /api/hijacking/history/:caseId - Get negotiation history for a case
+ */
+router.get('/hijacking/history/:caseId', (req, res) => {
+  const { caseId } = req.params;
+  const userId = getUserId();
+  const fs = require('fs');
+  const path = require('path');
+
+  const historyDir = path.join(DATA_DIR, 'hijack_history');
+  const historyFile = path.join(historyDir, `${userId}-${caseId}.json`);
+
+  try {
+    if (!fs.existsSync(historyDir)) {
+      fs.mkdirSync(historyDir, { recursive: true });
+    }
+
+    if (fs.existsSync(historyFile)) {
+      const data = JSON.parse(fs.readFileSync(historyFile, 'utf8'));
+
+      // Handle both old format (array) and new format (object with history + autopilot_resolved)
+      if (Array.isArray(data)) {
+        res.json({ history: data, autopilot_resolved: false });
+      } else {
+        res.json({
+          history: data.history || [],
+          autopilot_resolved: data.autopilot_resolved || false,
+          resolved_at: data.resolved_at || null
+        });
+      }
+    } else {
+      res.json({ history: [], autopilot_resolved: false });
+    }
+  } catch (error) {
+    logger.error('Error reading hijack history:', error);
+    res.json({ history: [], autopilot_resolved: false });
+  }
+});
+
+/**
+ * POST /api/hijacking/history/:caseId - Save negotiation history for a case
+ */
+router.post('/hijacking/history/:caseId', express.json(), (req, res) => {
+  const { caseId } = req.params;
+  const { history } = req.body;
+  const userId = getUserId();
+  const fs = require('fs');
+  const path = require('path');
+
+  const historyDir = path.join(DATA_DIR, 'hijack_history');
+  const historyFile = path.join(historyDir, `${userId}-${caseId}.json`);
+
+  try {
+    if (!fs.existsSync(historyDir)) {
+      fs.mkdirSync(historyDir, { recursive: true });
+    }
+
+    // Read existing data to preserve autopilot_resolved flag
+    let dataToSave = history;
+    if (fs.existsSync(historyFile)) {
+      const existingData = JSON.parse(fs.readFileSync(historyFile, 'utf8'));
+      if (!Array.isArray(existingData) && existingData.autopilot_resolved) {
+        // Preserve autopilot_resolved flag
+        dataToSave = {
+          history: history,
+          autopilot_resolved: existingData.autopilot_resolved,
+          resolved_at: existingData.resolved_at
+        };
+      }
+    }
+
+    fs.writeFileSync(historyFile, JSON.stringify(dataToSave, null, 2), 'utf8');
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error saving hijack history:', error);
+    res.status(500).json({ error: 'Failed to save history' });
+  }
+});
+
+/**
+ * POST /api/hijacking/get-case - Get hijacking case details.
+ *
+ * Request Body:
+ * {
+ *   case_id: number  // Required: Hijacking case ID
+ * }
+ *
+ * Response Structure:
+ * {
+ *   data: {
+ *     id: number,
+ *     requested_amount: number,
+ *     paid_amount: number|null,
+ *     user_proposal: number|null,
+ *     has_negotiation: boolean|number,
+ *     round_end_time: number,
+ *     status: string,
+ *     danger_zone_slug: string,
+ *     registered_at: number
+ *   },
+ *   user: {...}
+ * }
+ */
+router.post('/hijacking/get-case', express.json(), async (req, res) => {
+  const { case_id } = req.body;
+
+  if (!case_id || !Number.isInteger(case_id)) {
+    return res.status(400).json({ error: 'Valid case_id required' });
+  }
+
+  try {
+    const data = await apiCall('/hijacking/get-case', 'POST', { case_id });
+    res.json(data);
+  } catch (error) {
+    logger.error('Error getting hijacking case:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/hijacking/submit-offer - Submit ransom counter-offer.
+ *
+ * Request Body:
+ * {
+ *   case_id: number,  // Required: Hijacking case ID
+ *   amount: number    // Required: Counter-offer amount
+ * }
+ *
+ * Response Structure:
+ * {
+ *   data: {
+ *     id: number,
+ *     requested_amount: number,  // Updated pirate counter-offer
+ *     user_proposal: number,     // Your last offer
+ *     has_negotiation: boolean,
+ *     round_end_time: number,    // New deadline
+ *     status: string,
+ *     ...
+ *   },
+ *   user: {...}  // Updated user data (reputation may decrease)
+ * }
+ */
+router.post('/hijacking/submit-offer', express.json(), async (req, res) => {
+  const { case_id, amount } = req.body;
+
+  if (!case_id || !Number.isInteger(case_id)) {
+    return res.status(400).json({ error: 'Valid case_id required' });
+  }
+
+  if (!amount || !Number.isInteger(amount) || amount <= 0) {
+    return res.status(400).json({ error: 'Valid amount required' });
+  }
+
+  try {
+    const data = await apiCall('/hijacking/submit-offer', 'POST', { case_id, amount });
+    res.json(data);
+  } catch (error) {
+    logger.error('Error submitting hijacking offer:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/hijacking/pay - Pay the ransom to close the hijacking case.
+ *
+ * Request body:
+ * {
+ *   case_id: number  // The hijacking case ID
+ * }
+ *
+ * Response:
+ * {
+ *   data: {
+ *     id: number,
+ *     paid_amount: number,    // Amount actually paid
+ *     status: string,         // Case status after payment
+ *     ...
+ *   },
+ *   user: {...}  // Updated user data (cash deducted, reputation may change)
+ * }
+ */
+router.post('/hijacking/pay', express.json(), async (req, res) => {
+  const { case_id } = req.body;
+
+  if (!case_id || !Number.isInteger(case_id)) {
+    return res.status(400).json({ error: 'Valid case_id required' });
+  }
+
+  try {
+    const data = await apiCall('/hijacking/pay', 'POST', { case_id });
+    res.json(data);
+  } catch (error) {
+    logger.error('Error paying hijacking ransom:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/hijacking/get-cases - Get all hijacking cases with details.
+ *
+ * This endpoint aggregates all hijacking cases from the messenger inbox,
+ * fetches full details for each case, and returns them with open/closed status.
+ *
+ * Why This Endpoint:
+ * - Separates hijacking inbox from regular messenger inbox
+ * - Provides dedicated list of all hijacking cases (open + closed)
+ * - Adds isOpen field for UI rendering (OPEN vs CLOSED status)
+ * - Used by "Blackbeard's Phone Booth" overlay
+ *
+ * Response Structure:
+ * {
+ *   cases: [{
+ *     id: number,                    // System message ID
+ *     values: {
+ *       case_id: number,             // Hijacking case ID
+ *       vessel_name: string,         // Hijacked vessel name
+ *       ...
+ *     },
+ *     caseDetails: {                 // Full case data from /hijacking/get-case
+ *       requested_amount: number,
+ *       paid_amount: number|null,
+ *       user_proposal: number|null,
+ *       status: string,
+ *       ...
+ *     },
+ *     isOpen: boolean,               // true if case is still open
+ *     time_last_message: number      // Unix timestamp
+ *   }, ...],
+ *   own_user_id: number
+ * }
+ *
+ * Case Status Logic:
+ * - OPEN: paid_amount === null && status !== 'solved'
+ * - CLOSED: paid_amount !== null || status === 'solved'
+ *
+ * Side Effects:
+ * - Makes API call to /messenger/get-chats
+ * - Makes multiple API calls to /hijacking/get-case (one per case)
+ *
+ * @name GET /api/hijacking/get-cases
+ * @function
+ * @memberof module:server/routes/messenger
+ * @param {express.Request} req - Express request object
+ * @param {express.Response} res - Express response object
+ * @returns {Promise<void>} Sends JSON response with all hijacking cases
+ */
+router.get('/hijacking/get-cases', async (req, res) => {
+  try {
+    // Get all messenger chats
+    const chatsData = await apiCall('/messenger/get-chats', 'POST', {});
+    const allChats = chatsData?.data || [];
+
+    // Filter for hijacking cases only
+    const hijackingChats = allChats.filter(chat =>
+      chat.system_chat && chat.body === 'vessel_got_hijacked'
+    );
+
+    // Fetch full details for each case
+    const casesWithDetails = await Promise.all(
+      hijackingChats.map(async (chat) => {
+        try {
+          const caseId = chat.values?.case_id;
+          if (!caseId) {
+            logger.error('[Hijacking] Chat missing case_id:', chat);
+            return null;
+          }
+
+          // Fetch full case details
+          const caseData = await apiCall('/hijacking/get-case', 'POST', { case_id: caseId });
+          const details = caseData?.data;
+
+          if (!details) {
+            logger.error(`[Hijacking] No details for case ${caseId}`);
+            return null;
+          }
+
+          // Determine if case is open
+          // Open = paid_amount is null AND status is not 'solved'
+          const isOpen = details.paid_amount === null && details.status !== 'solved';
+
+          return {
+            id: chat.id,                    // System message ID (for deletion)
+            values: chat.values,            // Contains case_id, vessel_name, etc.
+            caseDetails: details,           // Full case data
+            isOpen: isOpen,
+            time_last_message: chat.time_last_message
+          };
+        } catch (error) {
+          logger.error(`[Hijacking] Error fetching case details:`, error.message);
+          return null;
+        }
+      })
+    );
+
+    // Filter out any null entries (failed fetches)
+    const validCases = casesWithDetails.filter(c => c !== null);
+
+    // Sort by timestamp (newest first)
+    validCases.sort((a, b) => b.time_last_message - a.time_last_message);
+
+    res.json({
+      cases: validCases,
+      own_user_id: getUserId()
+    });
+  } catch (error) {
+    logger.error('[Hijacking] Error fetching cases:', error);
+    res.status(500).json({ error: 'Failed to retrieve hijacking cases' });
   }
 });
 

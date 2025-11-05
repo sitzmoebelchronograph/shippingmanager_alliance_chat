@@ -1,0 +1,13 @@
+<Window x:Class="ShippingManagerCoPilot.Installer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ShippingManager CoPilot Setup"
+        Height="600" Width="700"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="{StaticResource BackgroundColor}">
+    <Grid>
+        <!-- Content Frame for page navigation -->
+        <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden"/>
+    </Grid>
+</Window>

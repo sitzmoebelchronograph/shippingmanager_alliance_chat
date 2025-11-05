@@ -1,0 +1,126 @@
+/**
+ * @fileoverview Scheduler Service
+ *
+ * Manages timed tasks using cron.
+ *
+ * Event-Driven Autopilot Architecture:
+ * - Main loop runs every 60 seconds, checks game state
+ * - Triggers autopilot functions based on conditions (vessels ready, repair needed, etc.)
+ * - Price updates: :01 and :31 every hour (when game updates prices)
+ * - Auto-Anchor: Every 5 minutes (separate from main loop)
+ *
+ * @module server/scheduler
+ */
+
+// Using 'cron' package instead of 'node-cron' because it handles DST properly
+const { CronJob } = require('cron');
+const autopilot = require('./autopilot');
+const state = require('./state');
+const { getUserId } = require('./utils/api');
+const logger = require('./utils/logger');
+
+/**
+ * Server ready state flag
+ * Set to true after initial data load completes
+ */
+let serverReady = false;
+
+/**
+ * Initializes all schedulers.
+ * Called once during server startup.
+ */
+function initScheduler() {
+  logger.log('[Scheduler] Initializing schedulers...');
+
+  // 1. Auto-Anchor: Every 5 minutes (separate from main loop)
+  new CronJob('0 */5 * * * *', async () => {
+    try {
+      const userId = getUserId();
+      if (!userId) return;
+
+      // Skip if server not ready yet (initial data not loaded)
+      if (!serverReady) {
+        logger.debug('[Scheduler] Auto-Anchor skipped - server not ready');
+        return;
+      }
+
+      const settings = state.getSettings(userId);
+      if (settings.autoAnchorPointEnabled) {
+        // Validate essential data before running
+        const bunker = state.getBunkerState(userId);
+        if (!bunker || bunker.points === undefined) {
+          logger.warn('[Scheduler] Auto-Anchor skipped - bunker data not loaded');
+          return;
+        }
+
+        logger.log('[Scheduler] Running Auto-Anchor (Harbormaster)');
+        await autopilot.autoAnchorPointPurchase(userId);
+      }
+    } catch (error) {
+      logger.error('[Scheduler] Auto-Anchor failed:', error);
+    }
+  }, null, true, 'Europe/Berlin');
+
+  logger.log('[Scheduler] Schedulers initialized');
+  logger.log('[Scheduler] - Auto-Anchor: every 5 minutes');
+  logger.log('[Scheduler] - Price updates: every 60 seconds (in main event loop)');
+
+  // Initial startup: Load essential data BEFORE starting event loop
+  logger.log('[Scheduler] Loading initial UI data in 10 seconds...');
+  setTimeout(async () => {
+    logger.log('[Scheduler] INITIAL DATA LOAD FOR UI');
+
+    try {
+      const userId = getUserId();
+      if (!userId) {
+        throw new Error('[Scheduler] No user ID available');
+      }
+
+      const settings = state.getSettings(userId);
+      if (!settings) {
+        throw new Error('[Scheduler] No settings available');
+      }
+
+      // Initialize autopilot pause state
+      autopilot.initializeAutopilotState(userId);
+
+      // Load all initial data
+      logger.log('[Scheduler] Step 1/4: Loading all game data...');
+      await autopilot.updateAllData();
+
+      logger.log('[Scheduler] Step 2/4: Loading current prices...');
+      await autopilot.updatePrices();
+
+      logger.log('[Scheduler] Step 3/4: Loading hijacking badge...');
+      await autopilot.refreshHijackingBadge();
+
+      logger.log('[Scheduler] Step 4/4: Checking price alerts...');
+      await autopilot.checkPriceAlerts();
+
+      logger.log('[Scheduler] INITIAL DATA LOADED - UI READY');
+
+      // Mark server as ready
+      serverReady = true;
+
+      // Start event-driven autopilot loop (60s interval)
+      logger.log('[Scheduler] Starting event-driven autopilot loop...');
+      autopilot.startMainEventLoop();
+
+    } catch (error) {
+      logger.error('[Scheduler] Initial data load failed:', error);
+    }
+  }, 10000);
+}
+
+/**
+ * Check if server has completed initial data load
+ * @returns {boolean} True if server is ready
+ */
+function isServerReady() {
+  return serverReady;
+}
+
+module.exports = {
+  initScheduler,
+  isServerReady
+};

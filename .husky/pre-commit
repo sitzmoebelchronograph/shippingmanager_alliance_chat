@@ -1,11 +1,93 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+#!/bin/sh
 
-# Generate JSDoc documentation before commit
-echo "🔨 Generating documentation..."
+echo "Running pre-commit checks..."
+echo ""
+
+# 0. Check PageFlip version
+echo "[1/5] Checking PageFlip version..."
+node -e "
+const https = require('https');
+const CURRENT_VERSION = '2.0.7';
+
+https.get('https://registry.npmjs.org/page-flip/latest', (res) => {
+    let data = '';
+    res.on('data', (chunk) => { data += chunk; });
+    res.on('end', () => {
+        try {
+            const pkg = JSON.parse(data);
+            if (pkg.version !== CURRENT_VERSION) {
+                console.error('[BLOCKED] PageFlip is outdated!');
+                console.error('   Current: ' + CURRENT_VERSION);
+                console.error('   Latest:  ' + pkg.version);
+                console.error('   Update at: https://www.npmjs.com/package/page-flip');
+                console.error('   Files: public/js/vendor/page-flip.browser.min.js');
+                process.exit(1);
+            }
+            console.log('[OK] PageFlip version ' + CURRENT_VERSION + ' is up to date');
+        } catch (e) {
+            console.warn('Warning: Could not check PageFlip version');
+        }
+    });
+}).on('error', () => {
+    console.warn('Warning: Could not check PageFlip version');
+});
+" || exit 1
+echo ""
+
+# 1. Check for npm vulnerabilities
+echo "[2/5] Checking npm dependencies..."
+if ! npm audit --audit-level=high; then
+  echo "[BLOCKED] npm audit found HIGH or CRITICAL vulnerabilities!"
+  echo "   Fix with: npm audit fix"
+  exit 1
+fi
+echo "[OK] npm audit passed"
+echo ""
+
+# 2. Run ESLint security scan
+echo "[3/5] Running ESLint security scan..."
+ESLINT_OUTPUT=$(npm run lint 2>&1)
+if echo "$ESLINT_OUTPUT" | grep -q " error "; then
+  echo "[BLOCKED] ESLint found errors!"
+  echo "   Fix issues or add them to eslint.config.js ignores if intentional"
+  echo "   Fix with: npm run lint -- --fix"
+  echo ""
+  echo "$ESLINT_OUTPUT" | grep " error "
+  exit 1
+fi
+echo "[OK] ESLint passed (0 errors, warnings allowed)"
+echo ""
+
+# 3. Run Bandit Python security scan
+echo "[4/5] Running Bandit Python security scan..."
+if ! python -m bandit -r helper/ -c .bandit --quiet; then
+  echo "[BLOCKED] Bandit found security issues!"
+  echo "   Review with: npm run bandit:full"
+  echo "   Details:"
+  python -m bandit -r helper/ -c .bandit
+  exit 1
+fi
+echo "[OK] Bandit passed"
+echo ""
+
+# 4. Run C# Security Code Scan (if installer project exists)
+if [ -f "installer/ShippingManagerCoPilot.Installer.csproj" ]; then
+  echo "[5/5] Running C# Security Code Scan..."
+  if ! dotnet build installer/ShippingManagerCoPilot.Installer.csproj -c Release /p:TreatWarningsAsErrors=true /p:WarningsAsErrors=SCS0001,SCS0002,SCS0003,SCS0004,SCS0005,SCS0006,SCS0007,SCS0008,SCS0009,SCS0010 --no-restore 2>&1 | grep -E "(error SCS|Build FAILED)" > /dev/null; then
+    echo "[OK] C# Security Code Scan passed"
+  else
+    echo "[BLOCKED] SecurityCodeScan found security issues in C# code!"
+    echo "   Review with: cd installer && dotnet build -c Release"
+    exit 1
+  fi
+  echo ""
+fi
+
+echo "Generating documentation..."
 npm run docs
 
 # Add generated docs to commit
 git add public/docs/
 
-echo "✓ Documentation updated and staged"
+echo "[OK] Documentation updated and staged"
+echo "[SUCCESS] All checks passed - ready to commit!"

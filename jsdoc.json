@@ -3,17 +3,19 @@
     "include": [
       "app.js",
       "server",
-      "public/js/modules"
+      "public/js/modules",
+      "docs"
     ],
     "includePattern": ".+\\.js(doc|x)?$",
-    "excludePattern": "(node_modules|docs|for-claude)"
+    "excludePattern": "(node_modules|development)"
   },
   "opts": {
     "destination": "./public/docs",
     "recurse": true,
     "readme": "./README.md",
     "template": "./jsdoc-template/docdash",
-    "encoding": "utf8"
+    "encoding": "utf8",
+    "tutorials": "./docs/tutorials"
   },
   "plugins": [
     "plugins/markdown"
@@ -25,6 +27,15 @@
     },
     "cleverLinks": false,
     "monospaceLinks": false
+  },
+  "docdash": {
+    "sectionOrder": [
+      "Tutorials",
+      "Classes",
+      "Modules",
+      "Namespaces",
+      "Global"
+    ]
   },
   "markdown": {
     "hardwrap": false,

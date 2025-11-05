@@ -1,0 +1,50 @@
+# Environment and secrets
+.env
+
+# Personal configuration
+.claude
+CLAUDE.md
+data/localdata/
+development/
+logs/
+data/known-harbor-fee-bugs.json
+data/known-bunker-price-bugs.json
+server.pid
+
+
+# Generated certificates
+cert.pem
+key.pem
+ca-cert.pem
+ca-key.pem
+
+# Logs
+*.log
+.*.log
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+helper/__pycache__/
+helper/api-helpers/
+
+# Build artifacts
+dist/
+build/
+*.spec
+!build-python.spec
+
+# Security reports
+reports/
+
+# C# / .NET Build artifacts
+installer/bin/
+installer/obj/
+installer/Resources/app-payload.zip
+*.exe
