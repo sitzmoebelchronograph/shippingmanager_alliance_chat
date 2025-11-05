@@ -306,7 +306,6 @@ const path = require('path');
 const { broadcast } = require('./websocket');
 
 const SETTINGS_FILE = path.join(__dirname, '../settings.json');
-const AUTO_REPAIR_LOG = path.join(__dirname, '../auto-repair.log');
 
 // Auto-repair timer
 let autoRepairTimer = null;
@@ -423,17 +422,6 @@ async function runAutoRepair() {
     });
 
     if (result.success || result.data) {
-      const timestamp = new Date().toISOString();
-      const logEntry = `[${timestamp}] Repaired ${repairDetails.length} vessel(s) | Total: $${totalCost}\n`;
-      const detailsLog = repairDetails.map(v => `  - ${v.name}: ${v.wear}% wear -> $${v.cost}`).join('\n') + '\n';
-
-      // Log to file
-      try {
-        await fs.appendFile(AUTO_REPAIR_LOG, logEntry + detailsLog);
-      } catch (logError) {
-        console.error('[Backend Auto-Repair] Failed to write log:', logError);
-      }
-
       // Broadcast to all connected clients
       const message = `🔧 Backend Auto-Repair: ${repairDetails.length} vessel(s) repaired for $${totalCost.toLocaleString()}`;
       broadcast('auto_repair_complete', {
