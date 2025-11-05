@@ -156,28 +156,29 @@ namespace ShippingManagerCoPilot.Installer.Logic
         /// </summary>
         private void CreateUninstaller()
         {
-            // Use AppContext.BaseDirectory instead of Assembly.Location for single-file apps
-            var installerDir = AppContext.BaseDirectory;
+            // Get the actual installer EXE path (where Setup.exe is running from)
+            var installerExe = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(installerExe))
+            {
+                throw new Exception("Could not determine installer executable path");
+            }
+
+            var installerDir = Path.GetDirectoryName(installerExe);
             var uninstallerDir = Path.Combine(_installPath, "Uninstaller");
 
             // Create uninstaller directory
             Directory.CreateDirectory(uninstallerDir);
 
-            // Copy all installer files (exe + DLLs) to uninstaller directory
-            foreach (var file in Directory.GetFiles(installerDir))
-            {
-                var fileName = Path.GetFileName(file);
-                var destFile = Path.Combine(uninstallerDir, fileName);
+            // Copy the installer EXE as Uninstall.exe
+            File.Copy(installerExe, Path.Combine(uninstallerDir, "Uninstall.exe"), overwrite: true);
 
-                // Rename main exe to Uninstall.exe
-                if (fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                {
-                    File.Copy(file, Path.Combine(uninstallerDir, "Uninstall.exe"), overwrite: true);
-                }
-                else
-                {
-                    File.Copy(file, destFile, overwrite: true);
-                }
+            // Copy all WPF DLLs that are next to the installer
+            var dllFiles = Directory.GetFiles(installerDir, "*.dll");
+            foreach (var dllFile in dllFiles)
+            {
+                var fileName = Path.GetFileName(dllFile);
+                var destFile = Path.Combine(uninstallerDir, fileName);
+                File.Copy(dllFile, destFile, overwrite: true);
             }
         }
 

@@ -9,7 +9,7 @@
         </Grid.RowDefinitions>
 
         <!-- Main Content -->
-        <StackPanel Grid.Row="0" Margin="40,20,40,20">
+        <StackPanel Grid.Row="0" Margin="40,15,40,20">
                 <Grid Margin="0,0,0,20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -62,11 +62,11 @@
                 <CheckBox x:Name="DesktopShortcut" Content="Create Desktop Shortcut" IsChecked="True"
                          Style="{StaticResource ModernCheckBox}"/>
                 <CheckBox x:Name="StartMenuShortcut" Content="Create Start Menu Entry" IsChecked="True"
-                         Style="{StaticResource ModernCheckBox}"/>
+                         Style="{StaticResource ModernCheckBox}" Margin="0,0,0,10"/>
 
                 <!-- License Agreement -->
                 <Border Background="{StaticResource CardBackground}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1"
-                       CornerRadius="6" Padding="15" Margin="0,20,0,0">
+                       CornerRadius="6" Padding="10" Margin="0,5,0,0" MaxWidth="600" HorizontalAlignment="Left">
                     <StackPanel>
                         <CheckBox x:Name="LicenseCheckbox" IsChecked="False" Style="{StaticResource ModernCheckBox}">
                             <TextBlock TextWrapping="Wrap">
