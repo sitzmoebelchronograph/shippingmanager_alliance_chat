@@ -323,8 +323,9 @@ def show_session_selector(valid_sessions, expired_sessions=None, show_action_but
             creationflags = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_BREAKAWAY_FROM_JOB
 
         if getattr(sys, 'frozen', False):
-            # Running as .exe - use compiled dialog executable with icon
-            selector_exe = Path(sys._MEIPASS) / 'helper' / 'session-selector.exe'
+            # Running as .exe - session-selector.exe should be in same directory
+            exe_dir = Path(sys.executable).parent
+            selector_exe = exe_dir / 'session-selector.exe'
             proc = subprocess.Popen(
                 [str(selector_exe), session_json, expired_json, show_buttons_str],
                 stdout=subprocess.PIPE,
@@ -428,8 +429,9 @@ def show_login_dialog():
             creationflags = subprocess.CREATE_NO_WINDOW
 
         if getattr(sys, 'frozen', False):
-            # Running as .exe - use compiled dialog executable with icon
-            dialog_exe = Path(sys._MEIPASS) / 'helper' / 'login-dialog.exe'
+            # Running as .exe - login-dialog.exe should be in same directory
+            exe_dir = Path(sys.executable).parent
+            dialog_exe = exe_dir / 'login-dialog.exe'
             result = subprocess.run(
                 [str(dialog_exe)],
                 capture_output=True,
@@ -482,8 +484,9 @@ def show_expired_sessions_dialog(expired_sessions):
         sessions_json = json.dumps(expired_sessions)
 
         if getattr(sys, 'frozen', False):
-            # Running as .exe - use compiled dialog executable with icon
-            dialog_exe = Path(sys._MEIPASS) / 'helper' / 'expired-sessions-dialog.exe'
+            # Running as .exe - expired-sessions-dialog.exe should be in same directory
+            exe_dir = Path(sys.executable).parent
+            dialog_exe = exe_dir / 'expired-sessions-dialog.exe'
             result = subprocess.run(
                 [str(dialog_exe), sessions_json],
                 capture_output=True,
