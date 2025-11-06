@@ -69,9 +69,9 @@ else:
 
 # Settings location depends on execution mode
 if IS_FROZEN:
-    # Running as .exe - use AppData
-    DATA_ROOT = Path(os.environ['APPDATA']) / 'ShippingManagerCoPilot'
-    print(f"[DEBUG] Using APPDATA: {DATA_ROOT}")
+    # Running as .exe - use LocalAppData
+    DATA_ROOT = Path(os.environ['LOCALAPPDATA']) / 'ShippingManagerCoPilot'
+    print(f"[DEBUG] Using LOCALAPPDATA: {DATA_ROOT}")
 else:
     # Running as .py - use data/localdata
     DATA_ROOT = PROJECT_ROOT / 'data' / 'localdata'
@@ -397,8 +397,8 @@ def start_server(settings):
 
         # Clear the server log file before starting (so we only see current startup logs)
         if getattr(sys, 'frozen', False):
-            # .exe mode - logs in AppData
-            server_log_path = Path(os.environ.get('APPDATA', '')) / 'ShippingManagerCoPilot' / 'logs' / 'server.log'
+            # .exe mode - logs in LocalAppData
+            server_log_path = Path(os.environ.get('LOCALAPPDATA', '')) / 'ShippingManagerCoPilot' / 'logs' / 'server.log'
         else:
             # .py mode - logs in project data/logs directory
             server_log_path = PROJECT_ROOT / 'data' / 'logs' / 'server.log'
@@ -1644,8 +1644,8 @@ def show_loading_dialog(settings, on_ready_callback):
     def log_monitor_thread():
         # Use the SAME log path logic as Node.js
         if getattr(sys, 'frozen', False):
-            # .exe mode - logs in AppData
-            log_file = Path(os.environ.get('APPDATA', '')) / 'ShippingManagerCoPilot' / 'logs' / 'server.log'
+            # .exe mode - logs in LocalAppData
+            log_file = Path(os.environ.get('LOCALAPPDATA', '')) / 'ShippingManagerCoPilot' / 'logs' / 'server.log'
         else:
             # .py mode - logs in project data/logs directory
             log_file = PROJECT_ROOT / 'data' / 'logs' / 'server.log'
@@ -2016,9 +2016,9 @@ def migrate_roaming_to_local():
     roaming_base = Path.home() / 'AppData' / 'Roaming' / 'ShippingManagerCoPilot'
     local_base = Path.home() / 'AppData' / 'Local' / 'ShippingManagerCoPilot'
 
-    # Check if Local settings already exist (migration already done)
-    local_settings = local_base / 'settings'
-    if local_settings.exists():
+    # Check if Local sessions.json already exists (migration already done)
+    local_sessions = local_base / 'settings' / 'sessions.json'
+    if local_sessions.exists():
         return  # Already migrated
 
     # Check if Roaming data exists
@@ -2183,6 +2183,9 @@ def emergency_cleanup():
         pass
 
 if __name__ == '__main__':
+    # Run one-time migration from Roaming to Local (if needed)
+    migrate_roaming_to_local()
+
     # Register emergency cleanup handlers
     atexit.register(emergency_cleanup)
 

@@ -52,3 +52,7 @@ installer/obj/
 installer/Resources/app-payload.zip
 *.exe
 settings.json
+
+# BrowserLogin Build artifacts
+BrowserLogin/bin/
+BrowserLogin/obj/

@@ -52,11 +52,11 @@ warnings.filterwarnings('ignore')
 TARGET_DOMAIN = 'shippingmanager.cc'
 TARGET_COOKIE_NAME = 'shipping_manager_session'
 
-# Use APPDATA for all user data (cross-platform support)
+# Use LOCALAPPDATA for all user data (cross-platform support)
 # Determine data directory based on execution mode
 if getattr(sys, 'frozen', False):
-    # Running as .exe - use AppData
-    DATA_ROOT = Path(os.environ.get('APPDATA', os.path.expanduser('~/.config'))) / 'ShippingManagerCoPilot'
+    # Running as .exe - use LocalAppData
+    DATA_ROOT = Path(os.environ.get('LOCALAPPDATA', os.path.expanduser('~/.local/share'))) / 'ShippingManagerCoPilot'
 else:
     # Running as .py - use data/localdata
     SCRIPT_DIR_PARENT = Path(__file__).parent.parent

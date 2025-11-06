@@ -21,7 +21,7 @@ namespace ShippingManagerCoPilot.Installer.Pages.Uninstall
             {
                 DataKeptInfo.Visibility = Visibility.Visible;
                 var appDataPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "ShippingManagerCoPilot");
                 DataPathText.Text = appDataPath;
             }

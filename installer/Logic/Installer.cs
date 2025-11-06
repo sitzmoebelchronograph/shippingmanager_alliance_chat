@@ -92,7 +92,16 @@ namespace ShippingManagerCoPilot.Installer.Logic
                 UpdateStatus("Registering application...");
                 UpdateProgress(85, "Registering in Windows");
 
-                var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.1.0";
+                // Get version from FileVersionInfo to get actual file version string (not assembly version)
+                var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                var fileVersionInfo = System.Diagnostics.FileVersionInfo.GetVersionInfo(exePath);
+                var version = fileVersionInfo.FileVersion;
+
+                if (string.IsNullOrEmpty(version))
+                {
+                    throw new Exception("Failed to read version from installer. Build may be corrupted.");
+                }
+
                 RegistryHelper.RegisterUninstallEntry(_installPath, version);
 
                 // Step 7: Complete
