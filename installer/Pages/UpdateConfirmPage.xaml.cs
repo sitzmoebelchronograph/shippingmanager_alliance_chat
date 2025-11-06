@@ -23,9 +23,9 @@ namespace ShippingManagerCoPilot.Installer.Pages
             // Display installation path
             InstallPathText.Text = existingPath;
 
-            // Display new version from assembly
+            // Display new version from assembly (full version string)
             var version = Assembly.GetExecutingAssembly().GetName().Version;
-            NewVersionText.Text = $"Version {version.Major}.{version.Minor}.{version.Build}";
+            NewVersionText.Text = $"Version {version}";
         }
 
         private void UpdateButton_Click(object sender, RoutedEventArgs e)

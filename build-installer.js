@@ -51,8 +51,18 @@ try {
     process.exit(1);
 }
 
+// Clean previous build artifacts to prevent stale cache
+console.log('[2/6] Cleaning previous build artifacts...');
+try {
+    execSync('dotnet clean installer -c Release', { stdio: 'inherit' });
+    console.log('  [OK] Build artifacts cleaned');
+} catch (error) {
+    console.error('  [ERROR] Failed to clean build');
+    process.exit(1);
+}
+
 // Restore dependencies
-console.log('[2/5] Restoring .NET dependencies...');
+console.log('[3/6] Restoring .NET dependencies...');
 try {
     execSync('dotnet restore installer', { stdio: 'inherit' });
     console.log('  [OK] Dependencies restored');
@@ -62,9 +72,10 @@ try {
 }
 
 // Build installer with PublishSingleFile (C# self-extracting)
-console.log('[3/5] Building self-extracting installer...');
+console.log('[4/6] Building self-extracting installer...');
 try {
-    const buildCommand = 'dotnet publish installer -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true';
+    // Pass version from package.json to MSBuild properties (no calculation, use as-is)
+    const buildCommand = `dotnet publish installer -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:FileVersion=${version} -p:AssemblyVersion=${version}`;
     console.log(`  Running: ${buildCommand}`);
     execSync(buildCommand, { stdio: 'inherit' });
     console.log('  [OK] Installer built successfully');
@@ -74,7 +85,7 @@ try {
 }
 
 // Copy installer to dist folder
-console.log('[4/5] Copying installer...');
+console.log('[5/6] Copying installer...');
 const publishFolder = path.join(installerProject, 'bin', 'Release', 'net8.0-windows10.0.19041.0', 'win-x64', 'publish');
 const setupExePath = path.join(publishFolder, 'Setup.exe');
 
@@ -99,7 +110,7 @@ console.log(`  [OK] Single-file installer: ${installerSizeInMB} MB`);
 console.log(`  Location: ${installerOutputPath}`);
 
 // Generate checksums
-console.log('[5/5] Generating checksums...');
+console.log('[6/6] Generating checksums...');
 
 function generateSHA256(filePath) {
     const hash = crypto.createHash('sha256');
