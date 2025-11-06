@@ -10,6 +10,8 @@ logs/
 data/known-harbor-fee-bugs.json
 data/known-bunker-price-bugs.json
 server.pid
+sessions.json
+settings*.json
 
 
 # Generated certificates
@@ -49,3 +51,4 @@ installer/bin/
 installer/obj/
 installer/Resources/app-payload.zip
 *.exe
+settings.json
