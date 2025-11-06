@@ -183,12 +183,12 @@ def get_log_paths():
     Matches the logic in server/config.js getLogDir()
     """
     if getattr(sys, 'frozen', False):
-        # Running as packaged .exe - use AppData/Roaming (same as sessions.json)
+        # Running as packaged .exe - use AppData/Local
         if platform.system() == 'Windows':
-            log_dir = Path.home() / 'AppData' / 'Roaming' / 'ShippingManagerCoPilot' / 'logs'
+            log_dir = Path.home() / 'AppData' / 'Local' / 'ShippingManagerCoPilot' / 'logs'
         else:
             # macOS/Linux
-            log_dir = Path.home() / '.config' / 'ShippingManagerCoPilot' / 'logs'
+            log_dir = Path.home() / '.local' / 'share' / 'ShippingManagerCoPilot' / 'logs'
     else:
         # Running from source - use project directory
         log_dir = PROJECT_ROOT / 'data' / 'logs'
@@ -1998,6 +1998,63 @@ def on_exit(icon, item):
 
 # Global reference to tray icon
 tray_icon = None
+
+def migrate_roaming_to_local():
+    """
+    One-time migration: Move user data from AppData/Roaming to AppData/Local.
+    Only runs once when Roaming data exists but Local data doesn't.
+    Settings are ALWAYS stored in LocalAppData, regardless of install location.
+    """
+    # Only run when packaged as .exe
+    if not getattr(sys, 'frozen', False):
+        return
+
+    # Only run on Windows
+    if platform.system() != 'Windows':
+        return
+
+    roaming_base = Path.home() / 'AppData' / 'Roaming' / 'ShippingManagerCoPilot'
+    local_base = Path.home() / 'AppData' / 'Local' / 'ShippingManagerCoPilot'
+
+    # Check if Local settings already exist (migration already done)
+    local_settings = local_base / 'settings'
+    if local_settings.exists():
+        return  # Already migrated
+
+    # Check if Roaming data exists
+    if not roaming_base.exists():
+        return  # Nothing to migrate
+
+    print("[SM-CoPilot] ========================================")
+    print("[SM-CoPilot] Migrating user data to AppData/Local...")
+    print("[SM-CoPilot] ========================================")
+
+    try:
+        import shutil
+
+        # Create Local directory if it doesn't exist
+        local_base.mkdir(parents=True, exist_ok=True)
+
+        print(f"[SM-CoPilot] Copying data from Roaming to Local...")
+        print(f"[SM-CoPilot] Source: {roaming_base}")
+        print(f"[SM-CoPilot] Target: {local_base}")
+
+        # Copy entire directory tree
+        shutil.copytree(roaming_base, local_base, dirs_exist_ok=True)
+
+        print(f"[SM-CoPilot] ✓ Data copied successfully")
+
+        # Delete old Roaming directory after successful copy
+        print(f"[SM-CoPilot] Removing old Roaming directory...")
+        shutil.rmtree(roaming_base)
+
+        print(f"[SM-CoPilot] ✓ Migration complete")
+        print(f"[SM-CoPilot] New location: {local_base}")
+        print("[SM-CoPilot] ========================================")
+
+    except Exception as e:
+        print(f"[SM-CoPilot] ✗ Migration failed: {e}", file=sys.stderr)
+        print(f"[SM-CoPilot] Continuing with empty Local directory...")
 
 def main():
     """Main entry point"""

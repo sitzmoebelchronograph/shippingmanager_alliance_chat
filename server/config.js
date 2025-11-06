@@ -18,16 +18,16 @@ const os = require('os');
 
 /**
  * Get platform-specific AppData directory without using environment variables.
- * Used for user settings, sessions, certificates (roaming data)
- * @returns {string} AppData\Roaming directory path
+ * Used for user settings, sessions, certificates (local data)
+ * @returns {string} AppData\Local directory path
  */
 function getAppDataDir() {
   if (process.platform === 'win32') {
-    // Windows: C:\Users\Username\AppData\Roaming
-    return path.join(os.homedir(), 'AppData', 'Roaming');
+    // Windows: C:\Users\Username\AppData\Local
+    return path.join(os.homedir(), 'AppData', 'Local');
   }
-  // Linux/Mac: ~/.config
-  return path.join(os.homedir(), '.config');
+  // Linux/Mac: ~/.local/share
+  return path.join(os.homedir(), '.local', 'share');
 }
 
 /**
@@ -46,7 +46,7 @@ function getLocalAppDataDir() {
 
 /**
  * Get log directory path.
- * When packaged as .exe: AppData/Roaming/ShippingManagerCoPilot/logs/
+ * When packaged as .exe: AppData/Local/ShippingManagerCoPilot/logs/
  * When running from source: ./data/logs/
  * @returns {string} Log directory path
  */
@@ -55,14 +55,14 @@ function getLogDir() {
   console.log(`[DEBUG] getLogDir - process.pkg = ${isPkg}`);
 
   if (isPkg) {
-    // Running as packaged .exe - use AppData/Roaming (same as Python helpers)
+    // Running as packaged .exe - use AppData/Local
     if (process.platform === 'win32') {
-      const appDataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'ShippingManagerCoPilot', 'logs');
-      console.log(`[DEBUG] Using APPDATA logs: ${appDataPath}`);
+      const appDataPath = path.join(os.homedir(), 'AppData', 'Local', 'ShippingManagerCoPilot', 'logs');
+      console.log(`[DEBUG] Using LocalAppData logs: ${appDataPath}`);
       return appDataPath;
     }
     // macOS/Linux
-    return path.join(os.homedir(), '.config', 'ShippingManagerCoPilot', 'logs');
+    return path.join(os.homedir(), '.local', 'share', 'ShippingManagerCoPilot', 'logs');
   }
   // Running from source - use project directory
   const localPath = path.join(__dirname, '..', 'data', 'logs');
@@ -94,7 +94,7 @@ function getSessionCookie() {
 
 /**
  * Get settings directory path based on execution mode.
- * - .exe mode: AppData/Roaming/ShippingManagerCoPilot/settings/
+ * - .exe mode: AppData/Local/ShippingManagerCoPilot/settings/
  * - dev mode: ./data/localdata/settings/
  * @returns {string} Settings directory path
  */
@@ -103,14 +103,14 @@ function getSettingsDir() {
   console.log(`[DEBUG] getSettingsDir - process.pkg = ${isPkg}`);
 
   if (isPkg) {
-    // Running as packaged .exe - use AppData
+    // Running as packaged .exe - use AppData/Local
     if (process.platform === 'win32') {
-      const appDataPath = path.join(os.homedir(), 'AppData', 'Roaming', 'ShippingManagerCoPilot', 'settings');
-      console.log(`[DEBUG] Using APPDATA settings: ${appDataPath}`);
+      const appDataPath = path.join(os.homedir(), 'AppData', 'Local', 'ShippingManagerCoPilot', 'settings');
+      console.log(`[DEBUG] Using LocalAppData settings: ${appDataPath}`);
       return appDataPath;
     }
     // macOS/Linux
-    return path.join(os.homedir(), '.config', 'ShippingManagerCoPilot', 'settings');
+    return path.join(os.homedir(), '.local', 'share', 'ShippingManagerCoPilot', 'settings');
   }
   // Running from source - use data/localdata
   const localPath = path.join(__dirname, '..', 'data', 'localdata', 'settings');

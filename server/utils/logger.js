@@ -24,11 +24,11 @@ function loadLogLevel() {
     let settingsPath;
 
     if (isPkg) {
-      // Running as .exe - use AppData/Roaming
+      // Running as .exe - use AppData/Local
       if (process.platform === 'win32') {
-        settingsPath = path.join(os.homedir(), 'AppData', 'Roaming', 'ShippingManagerCoPilot', 'settings', 'settings.json');
+        settingsPath = path.join(os.homedir(), 'AppData', 'Local', 'ShippingManagerCoPilot', 'settings', 'settings.json');
       } else {
-        settingsPath = path.join(os.homedir(), '.config', 'ShippingManagerCoPilot', 'settings', 'settings.json');
+        settingsPath = path.join(os.homedir(), '.local', 'share', 'ShippingManagerCoPilot', 'settings', 'settings.json');
       }
     } else {
       // Running from source - use data/localdata
