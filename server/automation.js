@@ -16,8 +16,9 @@ const { apiCall } = require('./utils/api');
 const fs = require('fs').promises;
 const path = require('path');
 const { broadcast } = require('./websocket');
+const { getSettingsDir } = require('./config');
 
-const SETTINGS_FILE = path.join(__dirname, '../settings.json');
+const SETTINGS_FILE = path.join(getSettingsDir(), 'settings.json');
 
 // Auto-repair timer
 let autoRepairTimer = null;
