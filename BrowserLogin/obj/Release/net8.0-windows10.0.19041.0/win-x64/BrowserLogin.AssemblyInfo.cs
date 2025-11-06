@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Browser login helper using WebView2 for Windows")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7c57809998b1b9d839fb30528b69039d11af9d02")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3cf311092cbc6b599ce7d3a0161fd7be25876c80")]
 [assembly: System.Reflection.AssemblyProductAttribute("ShippingManager CoPilot Browser Login")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BrowserLogin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

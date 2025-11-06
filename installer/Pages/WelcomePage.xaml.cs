@@ -15,9 +15,9 @@ namespace ShippingManagerCoPilot.Installer.Pages
             InitializeComponent();
             _mainWindow = mainWindow;
 
-            // Display version from assembly
+            // Display version from assembly (full version string)
             var version = Assembly.GetExecutingAssembly().GetName().Version;
-            VersionText.Text = $"Version {version.Major}.{version.Minor}.{version.Build}";
+            VersionText.Text = $"Version {version}";
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)
