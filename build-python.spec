@@ -10,11 +10,7 @@ block_cipher = None
 session_windows = Analysis(
     ['helper/get_session_windows.py'],
     pathex=[],
-    binaries=[
-        ('helper/webdrivers/chromedriver.exe', 'webdrivers'),
-        ('helper/webdrivers/msedgedriver.exe', 'webdrivers'),
-        ('helper/webdrivers/geckodriver.exe', 'webdrivers')
-    ],
+    binaries=[],
     datas=[],
     hiddenimports=[
         'win32crypt',

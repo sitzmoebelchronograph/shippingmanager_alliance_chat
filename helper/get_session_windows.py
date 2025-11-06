@@ -19,6 +19,21 @@ import urllib3
 import hashlib
 import platform
 
+# Selenium imports for browser login
+# Note: These are in try/except because start.py imports this module but doesn't bundle Selenium
+# PyInstaller will still detect them via hiddenimports in build-python.spec
+try:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options as ChromeOptions
+    from selenium.webdriver.chrome.service import Service as ChromeService
+    from selenium.webdriver.firefox.options import Options as FirefoxOptions
+    from selenium.webdriver.firefox.service import Service as FirefoxService
+    from selenium.webdriver.edge.options import Options as EdgeOptions
+    from selenium.webdriver.edge.service import Service as EdgeService
+    SELENIUM_AVAILABLE = True
+except ImportError:
+    SELENIUM_AVAILABLE = False
+
 # Try to import keyring for cross-platform secure storage
 try:
     import keyring
@@ -53,16 +68,22 @@ SETTINGS_DIR.mkdir(parents=True, exist_ok=True)
 SESSIONS_FILE = SETTINGS_DIR / 'sessions.json'
 SERVICE_NAME = 'ShippingManagerCoPilot'
 
-# Determine script directory for finding other helper scripts
+# Determine helper directory for finding other helper scripts
+# When imported as module: __name__ != '__main__'  → use __file__ (points to sys._MEIPASS/helper/)
+# When run as standalone: __name__ == '__main__' → use sys.executable.parent
+if __name__ == '__main__':
+    # Standalone mode: executable is in helper/ dir, other helpers are siblings
+    HELPER_DIR = Path(sys.executable).parent
+else:
+    # Imported as module: __file__ points to extracted module location
+    HELPER_DIR = Path(__file__).parent
+
+# SCRIPT_DIR is the project root (parent of helper/)
 if getattr(sys, 'frozen', False):
-    # Running as compiled .exe (PyInstaller sets sys.frozen)
-    # sys.executable = .../helper/get-session-windows.exe
-    # We want the parent of helper/ (the app root)
-    SCRIPT_DIR = Path(sys.executable).parent.parent
+    # When running as frozen app, helper files are in installation dir
+    SCRIPT_DIR = Path(sys.executable).parent.parent if Path(sys.executable).parent.name == 'helper' else Path(sys.executable).parent
 else:
     # Running as .py script from helper/ folder
-    # __file__ = .../helper/get-session-windows.py
-    # We want the project root (parent of helper/)
     SCRIPT_DIR = Path(__file__).parent.parent
 
 # =============================================================================
@@ -323,9 +344,8 @@ def show_session_selector(valid_sessions, expired_sessions=None, show_action_but
             creationflags = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_BREAKAWAY_FROM_JOB
 
         if getattr(sys, 'frozen', False):
-            # Running as .exe - session-selector.exe should be in same directory
-            exe_dir = Path(sys.executable).parent
-            selector_exe = exe_dir / 'session-selector.exe'
+            # Running as .exe - session-selector.exe is in helper directory
+            selector_exe = HELPER_DIR / 'session-selector.exe'
             proc = subprocess.Popen(
                 [str(selector_exe), session_json, expired_json, show_buttons_str],
                 stdout=subprocess.PIPE,
@@ -429,9 +449,8 @@ def show_login_dialog():
             creationflags = subprocess.CREATE_NO_WINDOW
 
         if getattr(sys, 'frozen', False):
-            # Running as .exe - login-dialog.exe should be in same directory
-            exe_dir = Path(sys.executable).parent
-            dialog_exe = exe_dir / 'login-dialog.exe'
+            # Running as .exe - login-dialog.exe is in helper directory
+            dialog_exe = HELPER_DIR / 'login-dialog.exe'
             result = subprocess.run(
                 [str(dialog_exe)],
                 capture_output=True,
@@ -484,9 +503,8 @@ def show_expired_sessions_dialog(expired_sessions):
         sessions_json = json.dumps(expired_sessions)
 
         if getattr(sys, 'frozen', False):
-            # Running as .exe - expired-sessions-dialog.exe should be in same directory
-            exe_dir = Path(sys.executable).parent
-            dialog_exe = exe_dir / 'expired-sessions-dialog.exe'
+            # Running as .exe - expired-sessions-dialog.exe is in helper directory
+            dialog_exe = HELPER_DIR / 'expired-sessions-dialog.exe'
             result = subprocess.run(
                 [str(dialog_exe), sessions_json],
                 capture_output=True,
@@ -742,29 +760,19 @@ def steam_login():
 
 def detect_browser():
     """Detect available compatible browser and return appropriate driver."""
-    import platform
     system = platform.system()
 
     print("[*] Detecting available browsers...", file=sys.stderr)
 
-    # Try to import selenium
-    try:
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options as ChromeOptions
-        from selenium.webdriver.chrome.service import Service as ChromeService
-        from selenium.webdriver.firefox.options import Options as FirefoxOptions
-        from selenium.webdriver.firefox.service import Service as FirefoxService
-        from selenium.webdriver.edge.options import Options as EdgeOptions
-        from selenium.webdriver.edge.service import Service as EdgeService
-    except ImportError:
+    # Check if Selenium is available (imported at module level)
+    if not SELENIUM_AVAILABLE:
         print("[-] ERROR: Selenium not installed. Please run: pip install selenium", file=sys.stderr)
         sys.exit(1)
 
     # Determine if running as PyInstaller bundle
     if getattr(sys, 'frozen', False):
-        # Running as compiled executable
-        bundle_dir = sys._MEIPASS
-        webdriver_dir = os.path.join(bundle_dir, 'webdrivers')
+        # Running as compiled executable - webdrivers are in helper/webdrivers/
+        webdriver_dir = os.path.join(HELPER_DIR, 'webdrivers')
     else:
         # Running as script
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -904,12 +912,100 @@ def detect_browser():
     print("[-]   pip install selenium", file=sys.stderr)
     sys.exit(1)
 
+def browser_login_native():
+    """
+    Windows-native browser login using C# WebView2 (BrowserLogin.exe).
+    Returns cookie or None.
+    Automatically falls back to Selenium if BrowserLogin.exe is not available.
+    """
+    import subprocess
+    import os
+    import platform
+
+    # Check if we're on Windows
+    if platform.system() != 'Windows':
+        print("[*] Not on Windows, using Selenium fallback...", file=sys.stderr)
+        return None  # Fallback to Selenium
+
+    # Check if BrowserLogin.exe exists
+    # When running as PyInstaller exe, this module is embedded in ShippingManagerCoPilot.exe
+    # sys.executable points to ShippingManagerCoPilot.exe in the installation directory
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe - sys.executable is the main exe
+        # e.g., C:\Users\Bob\AppData\Local\ShippingManagerCoPilot\ShippingManagerCoPilot.exe
+        install_dir = os.path.dirname(os.path.abspath(sys.executable))
+        helper_dir = os.path.join(install_dir, 'helper')
+    else:
+        # Running as .py script - use script directory
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        helper_dir = script_dir
+
+    browser_login_exe = os.path.join(helper_dir, 'BrowserLogin.exe')
+
+    if not os.path.exists(browser_login_exe):
+        print(f"[*] BrowserLogin.exe not found at: {browser_login_exe}", file=sys.stderr)
+        print("[*] Using Selenium fallback...", file=sys.stderr)
+        return None  # Fallback to Selenium
+
+    print(f"[*] Using native Windows browser login (WebView2)...", file=sys.stderr)
+    print(f"[*] Starting browser login for '{TARGET_DOMAIN}'...", file=sys.stderr)
+
+    try:
+        # Call BrowserLogin.exe with arguments
+        result = subprocess.run(
+            [browser_login_exe, '--url', f'https://{TARGET_DOMAIN}', '--timeout', '300'],
+            capture_output=True,
+            text=True,
+            timeout=310  # Slightly longer than the internal timeout
+        )
+
+        # Check exit code
+        if result.returncode == 0:
+            # Success - cookie is in stdout
+            cookie = result.stdout.strip()
+            if cookie:
+                print("[+] Browser login successful! Session cookie extracted.", file=sys.stderr)
+                print(f"[+] Cookie length: {len(cookie)}", file=sys.stderr)
+                return cookie
+            else:
+                print("[-] ERROR: Empty cookie received from BrowserLogin.exe", file=sys.stderr)
+                return None
+        elif result.returncode == 1:
+            print("[-] ERROR: Login timeout - no valid session found within 5 minutes", file=sys.stderr)
+            return None
+        elif result.returncode == 2:
+            print("[-] Login cancelled by user", file=sys.stderr)
+            return None
+        elif result.returncode == 3:
+            print(f"[-] ERROR: BrowserLogin.exe error", file=sys.stderr)
+            if result.stderr:
+                print(f"[-] Details: {result.stderr}", file=sys.stderr)
+            return None
+        else:
+            print(f"[-] ERROR: Unknown exit code from BrowserLogin.exe: {result.returncode}", file=sys.stderr)
+            return None
+
+    except subprocess.TimeoutExpired:
+        print("[-] ERROR: BrowserLogin.exe timeout (exceeded 310 seconds)", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"[-] ERROR: Failed to run BrowserLogin.exe: {e}", file=sys.stderr)
+        print("[*] Falling back to Selenium...", file=sys.stderr)
+        return None
+
 def browser_login():
     """Browser-based login using Selenium. Returns cookie or None."""
     # Import subprocess and os at module level (sys is already imported globally)
     import subprocess
     import os
 
+    # Try native Windows login first if available
+    native_cookie = browser_login_native()
+    if native_cookie:
+        return native_cookie
+
+    # Fallback to Selenium
+    print("[*] Using Selenium browser automation...", file=sys.stderr)
     print(f"[*] Starting browser login for '{TARGET_DOMAIN}'...", file=sys.stderr)
 
     # Suppress browser output (Chrome DevTools messages)
@@ -921,7 +1017,7 @@ def browser_login():
 
     driver = None
     try:
-        # Redirect stderr to suppress Chrome messages
+        # Suppress stderr during detect_browser() (Chrome DevTools spam)
         sys.stderr = devnull
 
         driver = detect_browser()

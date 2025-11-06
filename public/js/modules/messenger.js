@@ -560,6 +560,14 @@ async function displaySystemMessage(chat) {
         }
 
         caseDetails.offers = negotiationHistory;
+
+        // Start polling for active (unresolved) hijacking cases
+        // This ensures we get notifications when pirates respond
+        const isActive = caseDetails.paid_amount === null && caseDetails.status !== 'solved';
+        if (isActive) {
+          console.log(`[Hijacking] Starting polling for active case ${chat.values.case_id}`);
+          startHijackingPolling(chat.values.case_id);
+        }
       }
     } catch (error) {
       console.error('Error fetching hijacking case:', error);
@@ -670,7 +678,7 @@ function formatSystemMessage(body, values, subject, caseDetails, messageTimestam
           <div style="font-size: 12px; line-height: 1.6;">
       `;
 
-      negotiationHistory.forEach((offer, index) => {
+      negotiationHistory.forEach((offer) => {
         const isUserOffer = offer.type === 'user';
         const amount = offer.amount;
 
@@ -699,14 +707,14 @@ function formatSystemMessage(body, values, subject, caseDetails, messageTimestam
       // Case is resolved (paid) - if paid_amount is null but status is 'solved', use requested_amount
       const finalAmount = paidAmount || requestedAmount;
 
-      // Captain Blackbeard signature if autopilot-resolved
-      const signatureHTML = autopilotResolved ? `
+      // Captain Blackbeard signature (always shown for resolved cases)
+      const signatureHTML = `
         <div style="position: absolute; right: -8px; top: calc(35% + 50px); transform: translateY(-50%); text-align: right;">
           <div style="font-family: 'Segoe Script', 'Lucida Handwriting', 'Brush Script MT', cursive; font-size: 24px; font-weight: 900; color: #8b4513; opacity: 0.7; transform: rotate(-15deg); letter-spacing: 1px;">
             Blackbeard
           </div>
         </div>
-      ` : '';
+      `;
 
       actionsHTML = `
         ${negotiationHistoryHTML}
@@ -777,13 +785,18 @@ function formatSystemMessage(body, values, subject, caseDetails, messageTimestam
         actionsHTML = `
           ${statusHTML}
           ${negotiationHistoryHTML}
-          <div style="margin-top: 12px; padding: 12px; background: rgba(34, 197, 94, 0.1); border-left: 3px solid #4ade80; border-radius: 4px;">
+          <div style="margin-top: 12px; padding: 12px; background: rgba(34, 197, 94, 0.1); border-left: 3px solid #4ade80; border-radius: 4px; position: relative;">
             <div style="font-size: 13px; font-weight: bold; color: #4ade80; margin-bottom: 8px;">
               ☠️ Goal achieved, won't get cheaper. Give them the few bucks
             </div>
             <div style="font-size: 12px; opacity: 0.8; font-style: italic; margin-top: 8px; color: #6b7280;">
               "If you were waiting for the opportune moment, that was it."<br>
               — Captain Blackbeard
+            </div>
+            <div style="position: absolute; right: -8px; top: calc(50% - 10px); transform: translateY(-50%); text-align: right;">
+              <div style="font-family: 'Segoe Script', 'Lucida Handwriting', 'Brush Script MT', cursive; font-size: 24px; font-weight: 900; color: #8b4513; opacity: 0.7; transform: rotate(-15deg); letter-spacing: 1px;">
+                Blackbeard
+              </div>
             </div>
           </div>
           <div id="hijacking-actions-${caseId}" style="margin-top: 16px;">

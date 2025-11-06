@@ -10,6 +10,7 @@
 const winston = require('winston');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { getLogDir } = require('../config');
 
 /**
@@ -19,7 +20,21 @@ const { getLogDir } = require('../config');
  */
 function loadLogLevel() {
   try {
-    const settingsPath = path.join(__dirname, '..', '..', 'data', 'startup', 'settings.json');
+    const isPkg = !!process.pkg;
+    let settingsPath;
+
+    if (isPkg) {
+      // Running as .exe - use AppData/Roaming
+      if (process.platform === 'win32') {
+        settingsPath = path.join(os.homedir(), 'AppData', 'Roaming', 'ShippingManagerCoPilot', 'settings', 'settings.json');
+      } else {
+        settingsPath = path.join(os.homedir(), '.config', 'ShippingManagerCoPilot', 'settings', 'settings.json');
+      }
+    } else {
+      // Running from source - use data/localdata
+      settingsPath = path.join(__dirname, '..', '..', 'data', 'localdata', 'settings', 'settings.json');
+    }
+
     if (fs.existsSync(settingsPath)) {
       const data = fs.readFileSync(settingsPath, 'utf8');
       const settings = JSON.parse(data);
@@ -79,34 +94,51 @@ const serverLogPath = path.join(logDir, 'server.log');
 const debugLogPath = path.join(logDir, 'debug.log');
 
 /**
+ * Build transports array - only include debug.log when debug mode is active
+ */
+const transports = [
+  // Console output (colored)
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      consoleFormat
+    )
+  }),
+  // server.log - info and above (append mode - cleared by Python on startup)
+  new winston.transports.File({
+    filename: serverLogPath,
+    level: 'info',
+    format: fileFormat,
+    options: { flags: 'a' } // Append mode - Python clears the file before starting Node
+  })
+];
+
+// Only add debug.log transport when debug mode is active
+// Filter: ONLY [DEBUG] messages, no INFO/WARN/ERROR duplication
+if (loadLogLevel() === 'debug') {
+  transports.push(
+    new winston.transports.File({
+      filename: debugLogPath,
+      level: 'debug',
+      format: winston.format.combine(
+        // Filter out everything except debug level
+        winston.format((info) => {
+          return info.level === 'debug' ? info : false;
+        })(),
+        fileFormat
+      ),
+      options: { flags: 'a' } // Append mode - user manages manually
+    })
+  );
+}
+
+/**
  * Winston logger instance with log level from startup settings
  */
 const logger = winston.createLogger({
   level: loadLogLevel(),  // Load from settings.json (no env vars)
   format: consoleFormat,
-  transports: [
-    // Console output (colored)
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        consoleFormat
-      )
-    }),
-    // server.log - info and above (append mode - cleared by Python on startup)
-    new winston.transports.File({
-      filename: serverLogPath,
-      level: 'info',
-      format: fileFormat,
-      options: { flags: 'a' } // Append mode - Python clears the file before starting Node
-    }),
-    // debug.log - debug and above (append mode, no rotation)
-    new winston.transports.File({
-      filename: debugLogPath,
-      level: 'debug',
-      format: fileFormat,
-      options: { flags: 'a' } // Append mode - user manages manually
-    })
-  ]
+  transports: transports
 });
 
 /**
