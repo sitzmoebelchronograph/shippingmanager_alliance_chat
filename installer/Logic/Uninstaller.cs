@@ -87,6 +87,22 @@ namespace ShippingManagerCoPilot.Installer.Logic
                                 var dirName = Path.GetFileName(dir).ToLowerInvariant();
                                 if (dirName == "data" || dirName == "settings" || dirName == "logs" || dirName == "certs")
                                 {
+                                    // For 'data' folder, delete forecast cache but keep user data
+                                    if (dirName == "data")
+                                    {
+                                        var forecastDir = Path.Combine(dir, "forecast");
+                                        if (Directory.Exists(forecastDir))
+                                        {
+                                            try
+                                            {
+                                                Directory.Delete(forecastDir, true);
+                                            }
+                                            catch
+                                            {
+                                                // Ignore if can't delete forecast cache
+                                            }
+                                        }
+                                    }
                                     continue; // Skip this directory
                                 }
                             }
