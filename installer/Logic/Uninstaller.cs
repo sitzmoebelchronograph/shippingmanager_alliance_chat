@@ -110,7 +110,7 @@ namespace ShippingManagerCoPilot.Installer.Logic
                     UpdateProgress(70, "Removing personal data");
 
                     var appDataPath = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                         "ShippingManagerCoPilot");
 
                     if (Directory.Exists(appDataPath))
