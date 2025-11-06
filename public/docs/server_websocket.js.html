@@ -786,7 +786,6 @@ function initWebSocket(server) {
             if (!coopData) {
               // No cached data - fetch fresh from game API
               try {
-                const { apiCall } = require('./gameapi');
                 const coopResponse = await apiCall('/coop/get-coop-data', 'POST', {});
                 if (coopResponse?.data?.coop) {
                   const coop = coopResponse.data.coop;

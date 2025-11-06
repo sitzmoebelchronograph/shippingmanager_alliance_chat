@@ -2905,7 +2905,7 @@ async function autoNegotiateHijacking() {
 
   const THRESHOLD = 20000; // Stop negotiating below this amount
   const OFFER_PERCENTAGE = 0.01; // Always offer 1%
-  const VERIFY_DELAY = 3000; // Wait 3 seconds after offer before verification
+  const VERIFY_DELAY = 60000; // Wait 1 minute after offer before verification (pirates need time to respond)
   const MAX_RETRIES = 3; // Retry failed API calls up to 3 times
 
   try {
@@ -3053,8 +3053,9 @@ async function processHijackingCase(userId, caseId, vesselName, threshold, offer
       });
     }
 
-    // Check if case is already resolved
-    if (status !== 'successful' &amp;&amp; status !== 'active') {
+    // Check if case is already resolved (paid)
+    // 'pending_payment' means ready to pay (price under threshold), NOT already paid!
+    if (status === 'solved' || status === 'paid') {
       logger.debug(`[Auto-Negotiate Hijacking] Case ${caseId}: Already resolved (status="${status}"), stopping`);
       return;
     }
@@ -3119,7 +3120,7 @@ async function processHijackingCase(userId, caseId, vesselName, threshold, offer
 
       // Check if we have enough cash to pay
       const vesselData = await apiCall('/game/index', 'POST', {});
-      const currentCash = vesselData?.data?.money || 0;
+      const currentCash = vesselData.user.cash;
 
       if (currentCash &lt; requestedAmount) {
         logger.warn(`[Auto-Negotiate Hijacking] Case ${caseId}: INSUFFICIENT FUNDS - Need $${requestedAmount}, have $${currentCash}`);

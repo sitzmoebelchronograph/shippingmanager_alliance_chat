@@ -15,7 +15,7 @@
     "build:python": "python -m PyInstaller build-start.spec",
     "build:python:helpers": "python -m PyInstaller build-python.spec",
     "build:node": "npx @yao-pkg/pkg . --targets node22-win-x64 --output dist/ShippingManagerCoPilot-Server.exe",
-    "build:all": "npm run build:python:helpers && npm run build:node && npm run build:python && node build-package.js && node build-installer.js",
+    "build:all": "npm run build:python:helpers && npm run build:node && npm run build:python && node build-browser-login.js && node build-package.js && node build-installer.js",
     "lint": "eslint .",
     "bandit": "python -m bandit -r helper/ -c .bandit",
     "bandit:full": "python -m bandit -r helper/",

@@ -356,6 +356,7 @@ def start_server(settings):
 
         # Prepare session (encrypt and save to sessions.json)
         user_id = prepare_session()
+
         if not user_id:
             # User cancelled or no session found - exit gracefully
             print("No session available. Exiting...", file=sys.stderr)
@@ -617,30 +618,7 @@ def stop_server():
 
 def restart_server(settings):
     """Restart the server with new settings"""
-    global loading_dialog, settings_window
     print("[SM-CoPilot] Restarting server...", file=sys.stderr)
-
-    # Close ALL open windows before restart (loading dialog, settings, etc.)
-    if loading_dialog is not None:
-        try:
-            print("[SM-CoPilot] Closing loading dialog...", file=sys.stderr)
-            loading_dialog.quit()
-            loading_dialog.destroy()
-            loading_dialog = None
-        except Exception as e:
-            print(f"[SM-CoPilot] Error closing loading dialog: {e}", file=sys.stderr)
-            loading_dialog = None
-
-    if settings_window is not None:
-        try:
-            print("[SM-CoPilot] Closing settings window...", file=sys.stderr)
-            settings_window.quit()
-            settings_window.destroy()
-            settings_window = None
-        except Exception as e:
-            print(f"[SM-CoPilot] Error closing settings window: {e}", file=sys.stderr)
-            settings_window = None
-
     stop_server()
     return start_server(settings)
 
@@ -1002,8 +980,13 @@ def show_loading_dialog(settings, on_ready_callback):
 
     # Handle window close
     def on_close():
-        root.quit()
-        root.destroy()
+        global loading_dialog
+        loading_dialog = None
+        try:
+            root.quit()  # Stop mainloop first
+        except:
+            pass
+        root.destroy()  # Then destroy window
 
     root.protocol("WM_DELETE_WINDOW", on_close)
 
@@ -1054,6 +1037,10 @@ def show_loading_dialog(settings, on_ready_callback):
     # Treasure chest canvas (initially hidden) - drawn treasure chest
     def launch_and_close():
         webbrowser.open(url)
+        try:
+            root.quit()
+        except:
+            pass
         root.destroy()
 
     treasure_canvas = tk.Canvas(
@@ -1795,6 +1782,10 @@ def show_ready_dialog(settings):
     # Launch button
     def launch_and_close():
         webbrowser.open(url)
+        try:
+            root.quit()
+        except:
+            pass
         root.destroy()
 
     launch_btn = tk.Button(
@@ -1848,44 +1839,21 @@ def on_settings(icon, item):
 
 def on_restart(icon, item):
     """Restart menu item clicked"""
-    global loading_dialog, settings_window, _server_starting
-
-    # Prevent restart during server startup
-    if _server_starting:
-        print("[SM-CoPilot] Cannot restart while server is starting", file=sys.stderr)
-        return
-
     print("[SM-CoPilot] Restart requested from tray menu...", file=sys.stderr)
 
-    # Close ALL open windows before restart
-    if loading_dialog is not None:
-        try:
-            print("[SM-CoPilot] Closing loading dialog...", file=sys.stderr)
-            loading_dialog.quit()
-            loading_dialog.destroy()
-            loading_dialog = None
-        except Exception as e:
-            print(f"[SM-CoPilot] Error closing loading dialog: {e}", file=sys.stderr)
-            loading_dialog = None
+    def do_restart():
+        # Load current settings
+        settings = load_settings()
 
-    if settings_window is not None:
-        try:
-            print("[SM-CoPilot] Closing settings window...", file=sys.stderr)
-            settings_window.quit()
-            settings_window.destroy()
-            settings_window = None
-        except Exception as e:
-            print(f"[SM-CoPilot] Error closing settings window: {e}", file=sys.stderr)
-            settings_window = None
+        # Restart server (will show loading dialog automatically)
+        if restart_server(settings):
+            print("[SM-CoPilot] Server restarted successfully", file=sys.stderr)
+        else:
+            print("[SM-CoPilot] Failed to restart server", file=sys.stderr)
 
-    # Load current settings
-    settings = load_settings()
-
-    # Restart server
-    if restart_server(settings):
-        print("[SM-CoPilot] Server restarted successfully", file=sys.stderr)
-    else:
-        print("[SM-CoPilot] Failed to restart server", file=sys.stderr)
+    # Run restart in separate thread to avoid blocking tray icon
+    thread = threading.Thread(target=do_restart, daemon=True)
+    thread.start()
 
 def on_toggle_debug_mode(icon, item):
     """Toggle Debug Mode menu item clicked"""

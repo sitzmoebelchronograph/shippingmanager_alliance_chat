@@ -62,10 +62,46 @@ if (!fs.existsSync(mainExe)) {
 fs.copyFileSync(mainExe, path.join(outputFolder, 'ShippingManagerCoPilot.exe'));
 console.log('  [OK] ShippingManagerCoPilot.exe (single-file: Python + embedded Node.js server) copied');
 
+// Copy helper executables
+console.log('[2.5/5] Copying helper executables...');
+const helperFolder = path.join(outputFolder, 'helper');
+fs.mkdirSync(helperFolder, { recursive: true });
+
+// Python-built helpers (from dist/)
+const pythonHelperExes = [
+    'get-session-windows.exe',
+    'login-dialog.exe',
+    'session-selector.exe',
+    'expired-sessions-dialog.exe'
+];
+
+for (const helperExe of pythonHelperExes) {
+    const srcPath = path.join(distFolder, helperExe);
+    if (!fs.existsSync(srcPath)) {
+        console.error(`  [ERROR] ${helperExe} not found in dist/`);
+        process.exit(1);
+    }
+    fs.copyFileSync(srcPath, path.join(helperFolder, helperExe));
+    console.log(`  [OK] ${helperExe} copied (from dist/)`);
+}
+
+// C#-built BrowserLogin.exe (from helper/)
+const browserLoginSrc = path.join(__dirname, 'helper', 'BrowserLogin.exe');
+if (fs.existsSync(browserLoginSrc)) {
+    fs.copyFileSync(browserLoginSrc, path.join(helperFolder, 'BrowserLogin.exe'));
+    console.log(`  [OK] BrowserLogin.exe copied (from helper/)`);
+} else {
+    console.error(`  [ERROR] BrowserLogin.exe not found in helper/`);
+    console.error('  Run: node build-browser-login.js');
+    process.exit(1);
+}
+
+// WebDrivers: NOT bundled - Selenium Manager downloads them automatically
+console.log('  [INFO] WebDrivers will be downloaded automatically by Selenium Manager on first run');
+
 // Note: Everything is embedded in one exe
 console.log('[3/5] Embedded resources...');
 console.log('  [INFO] Node.js server embedded in main .exe (extracted to temp at runtime)');
-console.log('  [INFO] Python helper scripts embedded in main .exe (no separate files needed)');
 
 // Copy public assets (favicon.ico)
 console.log('[3.5/5] Copying public assets...');
