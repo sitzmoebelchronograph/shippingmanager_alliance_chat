@@ -81,6 +81,16 @@ namespace ShippingManagerCoPilot.Installer.Logic
                         // Delete subdirectories
                         foreach (var dir in Directory.GetDirectories(_installPath))
                         {
+                            // Skip user data directories if user wants to keep personal data
+                            if (_keepPersonalData)
+                            {
+                                var dirName = Path.GetFileName(dir).ToLowerInvariant();
+                                if (dirName == "data" || dirName == "settings" || dirName == "logs" || dirName == "certs")
+                                {
+                                    continue; // Skip this directory
+                                }
+                            }
+
                             try
                             {
                                 Directory.Delete(dir, true);
