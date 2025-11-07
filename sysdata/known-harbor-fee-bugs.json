@@ -1,0 +1,32 @@
+{
+  "description": "Known harbors with harbor fee calculation bugs. Collected for game developers.",
+  "bugs": {
+    "norfolk": {
+      "first_seen": "2025-10-30T03:24:52.481Z",
+      "vessel_name": "MV Wyvern_0839",
+      "vessel_id": 18155355,
+      "income": 26086,
+      "harbor_fee": 49455,
+      "net_income": -23369,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\harborfeebug\\depart-response-MV Wyvern_0839-2025-10-30T03-24-52-481Z.json"
+    },
+    "southampton": {
+      "first_seen": "2025-11-02T22:22:28.934Z",
+      "vessel_name": "MV Vidette",
+      "vessel_id": 17656828,
+      "income": 77625,
+      "harbor_fee": 412467,
+      "net_income": -334842,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\harborfeebug\\depart-response-MV Vidette-2025-11-02T22-22-28-932Z.json"
+    },
+    "amsterdam": {
+      "first_seen": "2025-11-02T23:00:29.714Z",
+      "vessel_name": "MV Vidette",
+      "vessel_id": 17656828,
+      "income": 77645,
+      "harbor_fee": 410319,
+      "net_income": -332674,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\harborfeebug\\depart-response-MV Vidette-2025-11-02T23-00-29-712Z.json"
+    }
+  }
+}

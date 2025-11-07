@@ -1,0 +1,229 @@
+{
+  "description": "Known timeslots where API doesn't return price data. Collected for game developers.",
+  "bugs": {
+    "18:00": {
+      "first_seen": "2025-11-04T17:27:54.389Z",
+      "last_seen": "2025-11-05T17:29:29.455Z",
+      "occurrence_count": 32,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-18-00-2025-11-04T17-27-54-388Z.json"
+    },
+    "18:30": {
+      "first_seen": "2025-11-04T17:30:34.845Z",
+      "last_seen": "2025-11-05T17:30:30.300Z",
+      "occurrence_count": 21,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-18-30-2025-11-04T17-30-34-843Z.json"
+    },
+    "19:00": {
+      "first_seen": "2025-11-04T18:03:13.421Z",
+      "last_seen": "2025-11-06T18:29:40.995Z",
+      "occurrence_count": 17,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-19-00-2025-11-04T18-03-13-421Z.json"
+    },
+    "20:30": {
+      "first_seen": "2025-11-04T19:34:38.537Z",
+      "last_seen": "2025-11-04T19:36:00.493Z",
+      "occurrence_count": 3,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-20-30-2025-11-04T19-34-38-536Z.json"
+    },
+    "21:00": {
+      "first_seen": "2025-11-04T20:25:40.677Z",
+      "last_seen": "2025-11-06T20:16:22.901Z",
+      "occurrence_count": 8,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-21-00-2025-11-04T20-25-40-676Z.json"
+    },
+    "21:30": {
+      "first_seen": "2025-11-04T20:30:48.987Z",
+      "last_seen": "2025-11-05T20:57:04.902Z",
+      "occurrence_count": 51,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-21-30-2025-11-04T20-30-48-986Z.json"
+    },
+    "22:00": {
+      "first_seen": "2025-11-04T21:00:34.249Z",
+      "last_seen": "2025-11-04T21:29:34.971Z",
+      "occurrence_count": 33,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-22-00-2025-11-04T21-00-34-246Z.json"
+    },
+    "22:30": {
+      "first_seen": "2025-11-04T21:30:35.690Z",
+      "last_seen": "2025-11-04T21:59:02.565Z",
+      "occurrence_count": 34,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-22-30-2025-11-04T21-30-35-689Z.json"
+    },
+    "23:00": {
+      "first_seen": "2025-11-04T22:00:04.751Z",
+      "last_seen": "2025-11-04T22:29:32.279Z",
+      "occurrence_count": 30,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-23-00-2025-11-04T22-00-04-750Z.json"
+    },
+    "23:30": {
+      "first_seen": "2025-11-04T22:30:34.567Z",
+      "last_seen": "2025-11-04T22:59:30.995Z",
+      "occurrence_count": 30,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-23-30-2025-11-04T22-30-34-566Z.json"
+    },
+    "00:00": {
+      "first_seen": "2025-11-04T23:00:33.378Z",
+      "last_seen": "2025-11-04T23:29:41.435Z",
+      "occurrence_count": 30,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-00-00-2025-11-04T23-00-33-377Z.json"
+    },
+    "00:30": {
+      "first_seen": "2025-11-04T23:30:44.967Z",
+      "last_seen": "2025-11-04T23:59:14.219Z",
+      "occurrence_count": 30,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-00-30-2025-11-04T23-30-44-965Z.json"
+    },
+    "01:00": {
+      "first_seen": "2025-11-05T00:00:48.903Z",
+      "last_seen": "2025-11-05T00:29:38.086Z",
+      "occurrence_count": 30,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-01-00-2025-11-05T00-00-48-902Z.json"
+    },
+    "01:30": {
+      "first_seen": "2025-11-05T00:30:41.622Z",
+      "last_seen": "2025-11-07T00:55:20.697Z",
+      "occurrence_count": 43,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-01-30-2025-11-05T00-30-41-619Z.json"
+    },
+    "02:00": {
+      "first_seen": "2025-11-05T01:00:25.920Z",
+      "last_seen": "2025-11-05T01:00:25.920Z",
+      "occurrence_count": 1,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-02-00-2025-11-05T01-00-25-919Z.json"
+    },
+    "02:30": {
+      "first_seen": "2025-11-05T01:42:21.181Z",
+      "last_seen": "2025-11-05T01:59:05.122Z",
+      "occurrence_count": 19,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-02-30-2025-11-05T01-42-21-180Z.json"
+    },
+    "03:00": {
+      "first_seen": "2025-11-05T02:00:06.165Z",
+      "last_seen": "2025-11-05T02:29:12.987Z",
+      "occurrence_count": 36,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-03-00-2025-11-05T02-00-06-163Z.json"
+    },
+    "03:30": {
+      "first_seen": "2025-11-05T02:30:24.015Z",
+      "last_seen": "2025-11-05T02:59:30.736Z",
+      "occurrence_count": 40,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-03-30-2025-11-05T02-30-24-013Z.json"
+    },
+    "04:00": {
+      "first_seen": "2025-11-05T03:00:43.403Z",
+      "last_seen": "2025-11-05T03:28:08.841Z",
+      "occurrence_count": 29,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-04-00-2025-11-05T03-00-43-402Z.json"
+    },
+    "14:30": {
+      "first_seen": "2025-11-05T13:42:55.634Z",
+      "last_seen": "2025-11-05T13:59:25.595Z",
+      "occurrence_count": 18,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-14-30-2025-11-05T13-42-55-633Z.json"
+    },
+    "15:00": {
+      "first_seen": "2025-11-05T14:00:28.940Z",
+      "last_seen": "2025-11-05T14:26:50.187Z",
+      "occurrence_count": 21,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-15-00-2025-11-05T14-00-28-937Z.json"
+    },
+    "16:30": {
+      "first_seen": "2025-11-05T15:50:20.482Z",
+      "last_seen": "2025-11-06T15:59:38.432Z",
+      "occurrence_count": 45,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-16-30-2025-11-05T15-50-20-480Z.json"
+    },
+    "17:00": {
+      "first_seen": "2025-11-05T16:00:23.598Z",
+      "last_seen": "2025-11-06T16:19:51.835Z",
+      "occurrence_count": 55,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-17-00-2025-11-05T16-00-23-594Z.json"
+    },
+    "17:30": {
+      "first_seen": "2025-11-05T16:30:39.681Z",
+      "last_seen": "2025-11-05T16:59:56.388Z",
+      "occurrence_count": 22,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-17-30-2025-11-05T16-30-39-680Z.json"
+    },
+    "04:30": {
+      "first_seen": "2025-11-06T03:46:54.175Z",
+      "last_seen": "2025-11-06T03:59:00.065Z",
+      "occurrence_count": 12,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-04-30-2025-11-06T03-46-54-173Z.json"
+    },
+    "05:00": {
+      "first_seen": "2025-11-06T04:10:03.098Z",
+      "last_seen": "2025-11-06T04:29:31.807Z",
+      "occurrence_count": 18,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-05-00-2025-11-06T04-10-03-097Z.json"
+    },
+    "05:30": {
+      "first_seen": "2025-11-06T04:45:44.864Z",
+      "last_seen": "2025-11-06T04:55:22.735Z",
+      "occurrence_count": 20,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-05-30-2025-11-06T04-45-44-863Z.json"
+    },
+    "13:00": {
+      "first_seen": "2025-11-06T12:17:20.401Z",
+      "last_seen": "2025-11-06T12:27:57.702Z",
+      "occurrence_count": 14,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-13-00-2025-11-06T12-17-20-400Z.json"
+    },
+    "14:00": {
+      "first_seen": "2025-11-06T13:07:41.635Z",
+      "last_seen": "2025-11-06T13:13:20.488Z",
+      "occurrence_count": 7,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-14-00-2025-11-06T13-07-41-634Z.json"
+    },
+    "16:00": {
+      "first_seen": "2025-11-06T15:11:53.796Z",
+      "last_seen": "2025-11-06T15:27:24.101Z",
+      "occurrence_count": 17,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-16-00-2025-11-06T15-11-53-795Z.json"
+    },
+    "19:30": {
+      "first_seen": "2025-11-06T18:30:42.215Z",
+      "last_seen": "2025-11-06T18:59:12.539Z",
+      "occurrence_count": 30,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-19-30-2025-11-06T18-30-42-213Z.json"
+    },
+    "20:00": {
+      "first_seen": "2025-11-06T19:00:13.596Z",
+      "last_seen": "2025-11-06T19:24:19.245Z",
+      "occurrence_count": 23,
+      "has_discounted_prices": false,
+      "response_file": "C:\\Users\\Bob\\Documents\\shippingmanager_messanger\\data\\logs\\bunkerpricebug\\price-response-20-00-2025-11-06T19-00-13-592Z.json"
+    }
+  }
+}
